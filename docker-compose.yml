@@ -1,0 +1,86 @@
+services:
+
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB:       ${DB_NAME:-funcione}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test:     ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+  # ─── AI — Workout Generator ──────────────────────────────────────────────────
+  ai:
+    build:
+      context: ./ai/workout-generator
+    restart: unless-stopped
+    env_file:
+      - path: ./ai/workout-generator/.env
+        required: false
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test:     ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+
+  # ─── Backend — Go / Gin ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      # Service hostnames (override localhost values from .env)
+      DB_HOST:                  postgres
+      AI_WORKOUT_GENERATOR_URL: http://ai:8001
+      FRONTEND_URL:             http://localhost:3000
+      GOOGLE_REDIRECT_URL:      http://localhost:3000/api/v1/auth/google/callback
+      # DB credentials must match the postgres service — controlled here to stay in sync
+      DB_PORT:     5432
+      DB_USER:     ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME:     ${DB_NAME:-funcione}
+      DB_SSLMODE:  disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    healthcheck:
+      test:     ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+
+  # ─── Frontend — React / Vite → Nginx ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Empty → frontend uses relative paths (/api/v1/...) and
+        # Nginx proxies them to the backend service.
+        VITE_API_URL: ""
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  postgres_data:
