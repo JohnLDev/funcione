@@ -1,0 +1,10 @@
+[features]
+hooks = true
+
+[[hooks.PreToolUse]]
+matcher = "Bash"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "node /Users/john/Documents/john/Langchain/.codex/hooks/rtk-pretooluse.js"
+statusMessage = "Applying RTK command proxy"

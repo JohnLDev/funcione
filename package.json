@@ -1,0 +1,22 @@
+{
+  "name": "langchain",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsgo",
+    "typecheck": "tsgo --noEmit",
+    "prestart": "npm run build",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@typescript/native-preview": "latest",
+    "dotenv": "^17.4.2"
+  },
+  "dependencies": {
+    "@langchain/openai": "^1.4.7",
+    "langchain": "^1.4.1",
+    "zod": "^4.4.3"
+  }
+}

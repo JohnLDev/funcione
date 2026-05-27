@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+output.json
+agent-debug.json
