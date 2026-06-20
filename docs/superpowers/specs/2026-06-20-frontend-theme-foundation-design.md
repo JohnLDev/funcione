@@ -8,6 +8,7 @@ Referencias fornecidas:
 
 - uniforme MX Volley Ball em versao preta e branca;
 - logos MileX/MX com preto, branco, azul eletrico e ciano;
+- imagem oficial do produto `Funcione`, com atletas em silhueta azul e assinatura MX;
 - painel web Funcione como referencia de densidade, navegacao e estrutura, sem copiar a interface;
 - regra permanente de mobile first registrada em `AGENTS.md`.
 
@@ -21,6 +22,7 @@ O co-branding sera usado como `by MileX`. A hierarquia de marca deve ser:
 
 - `Funcione` como nome principal em headers, splash, navegacao e textos de produto;
 - `by MileX` como assinatura secundaria em pontos institucionais, header inicial, login, configuracoes, tela sobre e rodape quando existir.
+- a logo oficial do `Funcione` deve ser usada nos pontos pertinentes da interface como PNG horizontal recortado para UI, adaptada por tamanho e composicao responsiva sem distorcer a arte.
 
 O tom visual deve ser esportivo, tecnico, energetico e premium, sem perder clareza operacional para uso diario.
 

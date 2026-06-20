@@ -4,3 +4,6 @@ dist/
 .env
 output.json
 agent-debug.json
+.superpowers/
+apps/frontend/test-results/
+apps/frontend/playwright-report/

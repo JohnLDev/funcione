@@ -1,0 +1,41 @@
+{
+  "brand": {
+    "name": "Funcione",
+    "byline": "by MileX",
+    "logoAlt": "Logo oficial do Funcione"
+  },
+  "dashboard": {
+    "eyebrow": "Plano de hoje",
+    "title": "Potencia",
+    "subtitle": "Volei • 90 min • intermediario",
+    "progressLabel": "Progresso do treino",
+    "nextBlockLabel": "Proximo bloco",
+    "nextBlock": "Aterrissagem controlada",
+    "bottomNav": {
+      "home": "Inicio",
+      "workout": "Treino",
+      "history": "Historico",
+      "profile": "Perfil"
+    }
+  },
+  "metrics": {
+    "load": "Carga",
+    "loadValue": "Alta",
+    "impact": "Impacto",
+    "impactValue": "Seguro"
+  },
+  "actions": {
+    "startWorkout": "Iniciar treino"
+  },
+  "theme": {
+    "button": "Tema: {{theme}}",
+    "system": "sistema",
+    "light": "claro",
+    "dark": "escuro"
+  },
+  "language": {
+    "button": "Idioma: {{language}}",
+    "pt-BR": "Portugues",
+    "en-US": "English"
+  }
+}

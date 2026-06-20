@@ -4,89 +4,70 @@ import { writeFile } from 'node:fs/promises';
 import * as z from 'zod';
 import { createAgent, HumanMessage, tool, toolStrategy } from 'langchain';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { Agent } from '../../agent.js';
+import { Agent } from '../../../shared/agent.js';
+import {
+  categoriaExercicioLabel,
+  focosPorModalidade,
+  getCategoriasPorObjetivo,
+  getIntensidadesSemana,
+  getPoliticaImpacto,
+  getQuantidadeTreinos,
+  gravidadeLesaoLabel,
+  intensidadeTreinoLabel,
+  localTreinoLabel,
+  modalidadeLabel,
+  nivelImpactoLabel,
+  nivelExperienciaLabel,
+  objetivoTreinoLabel,
+  PlanoTreinoSchema,
+  tempoDisponivelLabel,
+  tipoLesaoLabel,
+  TipoLesao,
+  type DadosUsuario,
+  type LesaoUsuario,
+  type PlanoTreino,
+  type TreinoAnterior,
+} from '../domain/index.js';
 
-export enum NivelExperiencia {
-  Iniciante = 'iniciante',
-  Intermediario = 'intermediario',
-  Avancado = 'avancado',
-}
-
-export enum TempoDisponivel {
-  DuasVezesPorSemana = '2x_semana',
-  TresVezesPorSemana = '3x_semana',
-  QuatroVezesPorSemana = '4x_semana',
-  CincoVezesPorSemana = '5x_semana',
-  SeisVezesPorSemana = '6x_semana',
-  SeteVezesPorSemana = '7x_semana',
-}
-
-export enum ModalidadeEsportiva {
-  Volei = 'volei',
-  Basquete = 'basquete',
-  FutebolFutsal = 'futebol_futsal',
-  BeachTenis = 'beach_tenis',
-}
-
-export enum LocalTreino {
-  Academia = 'academia',
-  Casa = 'casa',
-  ArLivre = 'ar_livre',
-}
-
-export enum TipoLesao {
-  Joelho = 'joelho',
-  Tornozelo = 'tornozelo',
-  Ombro = 'ombro',
-  Lombar = 'lombar',
-  Quadril = 'quadril',
-  Punho = 'punho',
-  Customizada = 'customizada',
-}
-
-export enum GravidadeLesao {
-  Leve = 'leve',
-  Moderada = 'moderada',
-  Alta = 'alta',
-}
-
-export type LesaoUsuario =
-  | {
-      tipo: Exclude<TipoLesao, TipoLesao.Customizada>;
-      gravidade?: GravidadeLesao;
-      observacoes?: string;
-    }
-  | {
-      tipo: TipoLesao.Customizada;
-      descricao: string;
-      gravidade?: GravidadeLesao;
-      observacoes?: string;
-    };
-
-export type DadosUsuario = {
-  userId: string;
-  modalidade: ModalidadeEsportiva;
-  idade: string;
-  peso: string;
-  altura: string;
-  objetivo: string;
-  nivelExperiencia: NivelExperiencia;
-  tempoDisponivel: TempoDisponivel;
-  duracaoTreinoMinutos: number;
-  localTreino: LocalTreino;
-  lesoes: LesaoUsuario[];
-};
+export {
+  AlongamentoSchema,
+  Athlete,
+  CategoriaExercicio,
+  DadosUsuarioSchema,
+  Exercise,
+  ExercicioSchema,
+  GravidadeLesao,
+  IntensidadeTreino,
+  Injury,
+  LesaoUsuarioSchema,
+  LocalTreino,
+  ModalidadeEsportiva,
+  NivelImpacto,
+  NivelExperiencia,
+  ObjetivoTreino,
+  PlanoTreinoSchema,
+  Stretching,
+  TempoDisponivel,
+  TipoLesao,
+  TrainingHistory,
+  TrainingPlan,
+  TrainingSession,
+  TreinoSchema,
+} from '../domain/index.js';
+export type {
+  AlongamentoDTO,
+  DadosUsuario,
+  ExercicioDTO,
+  LesaoUsuario,
+  PlanoTreino,
+  TreinoAnterior,
+  TreinoDTO,
+} from '../domain/index.js';
 
 export type InstructorModelConfig = {
   provider: string;
   modelName: string;
   model: BaseChatModel;
-};
-
-export type TreinoAnterior = {
-  userId: string;
-  feedback: string;
-  resumoTreinoAnterior: string;
 };
 
 const historicoTreinos: TreinoAnterior[] = [
@@ -109,125 +90,6 @@ const historicoTreinos: TreinoAnterior[] = [
 export function buscarTreinoAnterior(userId: string): TreinoAnterior | undefined {
   return historicoTreinos.find((treino) => treino.userId === userId);
 }
-
-const nivelExperienciaLabel: Record<NivelExperiencia, string> = {
-  [NivelExperiencia.Iniciante]: 'Iniciante',
-  [NivelExperiencia.Intermediario]: 'Intermediário',
-  [NivelExperiencia.Avancado]: 'Avançado',
-};
-
-const tempoDisponivelLabel: Record<TempoDisponivel, string> = {
-  [TempoDisponivel.DuasVezesPorSemana]: '2x por semana',
-  [TempoDisponivel.TresVezesPorSemana]: '3x por semana',
-  [TempoDisponivel.QuatroVezesPorSemana]: '4x por semana',
-  [TempoDisponivel.CincoVezesPorSemana]: '5x por semana',
-  [TempoDisponivel.SeisVezesPorSemana]: '6x por semana',
-  [TempoDisponivel.SeteVezesPorSemana]: '7x por semana',
-};
-
-const modalidadeLabel: Record<ModalidadeEsportiva, string> = {
-  [ModalidadeEsportiva.Volei]: 'vôlei',
-  [ModalidadeEsportiva.Basquete]: 'basquete',
-  [ModalidadeEsportiva.FutebolFutsal]: 'futebol/futsal',
-  [ModalidadeEsportiva.BeachTenis]: 'beach tennis',
-};
-
-const localTreinoLabel: Record<LocalTreino, string> = {
-  [LocalTreino.Academia]: 'academia',
-  [LocalTreino.Casa]: 'casa',
-  [LocalTreino.ArLivre]: 'ao ar livre',
-};
-
-const tipoLesaoLabel: Record<TipoLesao, string> = {
-  [TipoLesao.Joelho]: 'joelho',
-  [TipoLesao.Tornozelo]: 'tornozelo',
-  [TipoLesao.Ombro]: 'ombro',
-  [TipoLesao.Lombar]: 'lombar',
-  [TipoLesao.Quadril]: 'quadril',
-  [TipoLesao.Punho]: 'punho',
-  [TipoLesao.Customizada]: 'customizada',
-};
-
-const gravidadeLesaoLabel: Record<GravidadeLesao, string> = {
-  [GravidadeLesao.Leve]: 'leve',
-  [GravidadeLesao.Moderada]: 'moderada',
-  [GravidadeLesao.Alta]: 'alta',
-};
-
-const focosPorModalidade: Record<ModalidadeEsportiva, string> = {
-  [ModalidadeEsportiva.Volei]:
-    'salto, agilidade, força de membros superiores, core, aterrissagem e prevenção',
-  [ModalidadeEsportiva.Basquete]:
-    'mudança de direção, aceleração, desaceleração, salto, core, estabilidade de joelho e tornozelo',
-  [ModalidadeEsportiva.FutebolFutsal]:
-    'aceleração, agilidade, resistência específica, potência de membros inferiores, core e prevenção de lesões',
-  [ModalidadeEsportiva.BeachTenis]:
-    'deslocamento na areia, rotação de tronco, potência de membros superiores, core, ombro e prevenção',
-};
-
-const AlongamentoSchema = z.object({
-  nome: z
-    .string()
-    .describe('Nome claro e reconhecível do alongamento ou mobilidade preparatória'),
-  duracaoSegundos: z.number(),
-  motivoEscolha: z
-    .string()
-    .describe(
-      'Explique por que este alongamento foi escolhido considerando modalidade, objetivo, nível, local de treino e restrições do usuário',
-    ),
-  instrucoesExecucao: z
-    .string()
-    .describe(
-      'Explique como executar em 2-4 frases, incluindo posição inicial, movimento principal, controle/postura, respiração ou ritmo, e pelo menos um erro comum a evitar.',
-    ),
-  observacoes: z.string().optional(),
-});
-
-const ExercicioSchema = z.object({
-  nome: z
-    .string()
-    .describe('Nome claro e reconhecível do exercício, evitando nomes vagos ou inventados'),
-  series: z.number(),
-  repeticoes: z.string().describe('Ex: "4x8" ou "3x30s"'),
-  motivoEscolha: z
-    .string()
-    .describe(
-      'Explique por que este exercício foi escolhido considerando modalidade, objetivo, nível, local de treino e restrições do usuário',
-    ),
-  instrucoesExecucao: z
-    .string()
-    .describe(
-      'Explique como executar em 2-4 frases, incluindo posição inicial, movimento principal, controle/postura, respiração ou ritmo, e pelo menos um erro comum a evitar.',
-    ),
-  observacoes: z.string().optional(),
-});
-
-export const PlanoTreinoSchema = z.object({
-  resumo: z.string().describe('Visão geral do plano em 1-2 frases'),
-  treinos: z
-    .array(
-      z.object({
-        dia: z.string().describe('Ex: Segunda-feira'),
-        foco: z.string().describe('Ex: potência de salto'),
-        duracaoMinutos: z.number(),
-        alongamentos: z
-          .array(AlongamentoSchema)
-          .describe(
-            'Alongamentos e mobilidade separados da parte principal do treino',
-          ),
-        exercicios: z
-          .array(ExercicioSchema)
-          .describe(
-            'Exercícios principais de performance, força, potência, agilidade ou prevenção',
-          ),
-      }),
-    )
-    .min(2)
-    .max(7)
-    .describe(
-      'Entre 2 e 7 treinos semanais, conforme o tempo disponível informado',
-    ),
-});
 
 const BuscarTreinoAnteriorInputSchema = z.object({
   userId: z.string().describe('ID do usuário para buscar treino anterior'),
@@ -293,28 +155,30 @@ export function createOpenAICompatibleModel({
 
 export function createNvidiaModel(
   modelName = 'meta/llama-3.3-70b-instruct',
+  env: NodeJS.ProcessEnv = process.env,
 ): InstructorModelConfig {
   return createOpenAICompatibleModel({
     provider: 'nvidia',
     modelName,
-    apiKey: process.env.NVIDIA_API_KEY,
+    apiKey: env.NVIDIA_API_KEY,
     baseURL: 'https://integrate.api.nvidia.com/v1',
   });
 }
 
 export function createOpenRouterModel(
   modelName = 'openai/gpt-oss-120b',
+  env: NodeJS.ProcessEnv = process.env,
 ): InstructorModelConfig {
   return createOpenAICompatibleModel({
     provider: 'openrouter',
     modelName,
-    apiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: env.OPENROUTER_API_KEY,
     baseURL: 'https://openrouter.ai/api/v1',
     defaultHeaders: {
       'HTTP-Referer':
-        process.env.OPENROUTER_SITE_URL ?? 'http://localhost',
+        env.OPENROUTER_SITE_URL ?? 'http://localhost',
       'X-OpenRouter-Title':
-        process.env.OPENROUTER_SITE_NAME ?? 'LangChain Training Plan',
+        env.OPENROUTER_SITE_NAME ?? 'LangChain Training Plan',
     },
   });
 }
@@ -406,7 +270,49 @@ function formatarLesoes(lesoes: LesaoUsuario[]): string {
     .join('\n');
 }
 
+function formatarObjetivos(dados: DadosUsuario): string {
+  return dados.objetivos
+    .map((objetivo) => objetivoTreinoLabel[objetivo])
+    .join(', ');
+}
+
+function formatarCategoriasPrioritarias(dados: DadosUsuario): string {
+  return getCategoriasPorObjetivo(dados.objetivos)
+    .map((categoria) => categoriaExercicioLabel[categoria])
+    .join(', ');
+}
+
+function formatarIntensidadesSemana(dados: DadosUsuario): string {
+  return getIntensidadesSemana(dados.tempoDisponivel, dados.nivelExperiencia)
+    .map((intensidade) => intensidadeTreinoLabel[intensidade])
+    .join(', ');
+}
+
+function formatarPoliticaImpacto(dados: DadosUsuario): string {
+  const politica = getPoliticaImpacto({
+    idade: dados.idade,
+    pesoKg: dados.pesoKg,
+    alturaCm: dados.alturaCm,
+    lesoes: dados.lesoes,
+  });
+
+  const motivos =
+    politica.motivos.length > 0 ? politica.motivos.join('; ') : 'sem alerta específico';
+  const recomendacoes =
+    politica.recomendacoes.length > 0
+      ? politica.recomendacoes.join('; ')
+      : 'seguir progressão normal compatível com o nível';
+
+  return [
+    `Nível de impacto recomendado: ${nivelImpactoLabel[politica.nivel]}`,
+    `Motivos: ${motivos}`,
+    `Recomendações: ${recomendacoes}`,
+  ].join('\n');
+}
+
 export function criarPrompt(dados: DadosUsuario): string {
+  const quantidadeTreinos = getQuantidadeTreinos(dados.tempoDisponivel);
+
   return `
 Crie um plano de treinamento para ${modalidadeLabel[dados.modalidade]} com base APENAS nos dados abaixo.
 
@@ -414,9 +320,9 @@ Crie um plano de treinamento para ${modalidadeLabel[dados.modalidade]} com base 
 ID do usuário: ${dados.userId}
 Modalidade: ${modalidadeLabel[dados.modalidade]}
 Idade: ${dados.idade}
-Peso: ${dados.peso}
-Altura: ${dados.altura}
-Objetivo: ${dados.objetivo}
+Peso: ${dados.pesoKg}kg
+Altura: ${dados.alturaCm}cm
+Objetivos: ${formatarObjetivos(dados)}
 Nível de experiência: ${nivelExperienciaLabel[dados.nivelExperiencia]}
 Tempo disponível: ${tempoDisponivelLabel[dados.tempoDisponivel]}
 Duração de cada treino: ${dados.duracaoTreinoMinutos} minutos
@@ -425,13 +331,23 @@ Lesões/restrições:
 ${formatarLesoes(dados.lesoes)}
 </Usuario>
 
+<DecisoesDeDominio>
+Quantidade exata de treinos na semana: ${quantidadeTreinos}
+Categorias prioritárias por objetivo: ${formatarCategoriasPrioritarias(dados)}
+Sequência sugerida de intensidade semanal: ${formatarIntensidadesSemana(dados)}
+${formatarPoliticaImpacto(dados)}
+</DecisoesDeDominio>
+
 Regras:
 - Use o userId informado para consultar histórico de treino anterior antes de gerar o novo plano
 - Se existir feedback anterior, adapte o plano atual ao feedback sem ignorar os dados atuais do usuário
-- Gere exatamente a quantidade de treinos indicada em "Tempo disponível"
+- Gere exatamente ${quantidadeTreinos} treinos, conforme o tempo disponível informado
 - Para 3 treinos por semana, use dias alternados, como Segunda-feira, Quarta-feira e Sexta-feira, salvo se houver outra preferência informada
 - Cada treino deve respeitar a duração informada e ter volume compatível com nível de experiência, frequência semanal, local de treino e restrições
 - Use foco específico para ${modalidadeLabel[dados.modalidade]}: ${focosPorModalidade[dados.modalidade]}
+- Use as categorias prioritárias calculadas como guia para a distribuição dos exercícios, sem ignorar a modalidade
+- Respeite a sequência sugerida de intensidade semanal ao distribuir volume, complexidade e impacto dos treinos
+- Respeite a política de impacto calculada para ajustar pliometria, saltos, corrida, aterrissagens e exercícios articulares
 - Separe cada treino em "alongamentos" e "exercicios"
 - Cada treino de 90 minutos deve conter pelo menos 2 alongamentos ou mobilidades preparatórias e 4 a 6 exercícios principais
 - Alongamentos devem preparar o corpo para o foco do treino e não devem ser genéricos
@@ -443,7 +359,7 @@ Regras:
 - Prefira a alternativa mais simples e segura quando houver duas opções com benefício semelhante
 - Escolha apenas alongamentos e exercícios compatíveis com o local de treino informado
 - Não presuma acesso a academia, máquinas, pesos, elásticos, caixas, cones ou acessórios quando não estiverem informados
-- Para cada alongamento e exercício, explique o motivo da escolha conectando-o à modalidade, objetivo, nível, local de treino e restrições do usuário
+- Para cada alongamento e exercício, explique o motivo da escolha conectando-o à modalidade, objetivos, nível, local de treino, política de impacto e restrições do usuário
 - Toda instrução de execução deve ser específica para o alongamento ou exercício escolhido
 - Toda instrução de execução deve explicar posição inicial, movimento principal, controle/postura, respiração ou ritmo, e pelo menos um erro comum a evitar
 - Não use instruções genéricas como "faça corretamente", "mantenha boa postura" ou "execute com controle" sem explicar como
@@ -477,8 +393,6 @@ Instruções para execução direta sem agente:
 - Se o histórico existir, use o feedback para adaptar seleção de exercícios, volume, intensidade, impacto e foco.
 - Ainda assim, priorize os dados atuais do usuário acima do treino anterior.`;
 }
-
-export type PlanoTreino = z.infer<typeof PlanoTreinoSchema>;
 
 function extrairPlanoDeConteudo(content: unknown): PlanoTreino | null {
   if (typeof content !== 'string' || content.trim().length === 0) {

@@ -1,0 +1,175 @@
+import {
+  GravidadeLesao,
+  LocalTreino,
+  ModalidadeEsportiva,
+  NivelExperiencia,
+  ObjetivoTreino,
+  TempoDisponivel,
+  TipoLesao,
+} from '../domain/index.js';
+
+const lesaoUsuarioJsonSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      required: ['tipo'],
+      additionalProperties: false,
+      properties: {
+        tipo: {
+          type: 'string',
+          enum: [
+            TipoLesao.Joelho,
+            TipoLesao.Tornozelo,
+            TipoLesao.Ombro,
+            TipoLesao.Lombar,
+            TipoLesao.Quadril,
+            TipoLesao.Punho,
+          ],
+        },
+        gravidade: { type: 'string', enum: Object.values(GravidadeLesao) },
+        observacoes: { type: 'string' },
+      },
+    },
+    {
+      type: 'object',
+      required: ['tipo', 'descricao'],
+      additionalProperties: false,
+      properties: {
+        tipo: { type: 'string', enum: [TipoLesao.Customizada] },
+        descricao: { type: 'string' },
+        gravidade: { type: 'string', enum: Object.values(GravidadeLesao) },
+        observacoes: { type: 'string' },
+      },
+    },
+  ],
+} as const;
+
+export const dadosUsuarioJsonSchema = {
+  type: 'object',
+  required: [
+    'userId',
+    'modalidade',
+    'idade',
+    'pesoKg',
+    'alturaCm',
+    'objetivos',
+    'nivelExperiencia',
+    'tempoDisponivel',
+    'duracaoTreinoMinutos',
+    'localTreino',
+    'lesoes',
+  ],
+  additionalProperties: false,
+  properties: {
+    userId: { type: 'string' },
+    modalidade: { type: 'string', enum: Object.values(ModalidadeEsportiva) },
+    idade: { type: 'integer', minimum: 16, maximum: 100 },
+    pesoKg: { type: 'number', exclusiveMinimum: 0 },
+    alturaCm: { type: 'number', exclusiveMinimum: 0 },
+    objetivos: {
+      type: 'array',
+      minItems: 1,
+      items: { type: 'string', enum: Object.values(ObjetivoTreino) },
+    },
+    nivelExperiencia: { type: 'string', enum: Object.values(NivelExperiencia) },
+    tempoDisponivel: { type: 'string', enum: Object.values(TempoDisponivel) },
+    duracaoTreinoMinutos: { type: 'number' },
+    localTreino: { type: 'string', enum: Object.values(LocalTreino) },
+    lesoes: {
+      type: 'array',
+      items: lesaoUsuarioJsonSchema,
+    },
+  },
+} as const;
+
+const alongamentoJsonSchema = {
+  type: 'object',
+  required: ['nome', 'duracaoSegundos', 'motivoEscolha', 'instrucoesExecucao'],
+  additionalProperties: false,
+  properties: {
+    nome: { type: 'string' },
+    duracaoSegundos: { type: 'number' },
+    motivoEscolha: { type: 'string' },
+    instrucoesExecucao: { type: 'string' },
+    observacoes: { type: 'string' },
+  },
+} as const;
+
+const exercicioJsonSchema = {
+  type: 'object',
+  required: ['nome', 'series', 'repeticoes', 'motivoEscolha', 'instrucoesExecucao'],
+  additionalProperties: false,
+  properties: {
+    nome: { type: 'string' },
+    series: { type: 'number' },
+    repeticoes: { type: 'string' },
+    motivoEscolha: { type: 'string' },
+    instrucoesExecucao: { type: 'string' },
+    observacoes: { type: 'string' },
+  },
+} as const;
+
+const treinoJsonSchema = {
+  type: 'object',
+  required: ['dia', 'foco', 'duracaoMinutos', 'alongamentos', 'exercicios'],
+  additionalProperties: false,
+  properties: {
+    dia: { type: 'string' },
+    foco: { type: 'string' },
+    duracaoMinutos: { type: 'number' },
+    alongamentos: {
+      type: 'array',
+      items: alongamentoJsonSchema,
+    },
+    exercicios: {
+      type: 'array',
+      items: exercicioJsonSchema,
+    },
+  },
+} as const;
+
+export const planoTreinoJsonSchema = {
+  type: 'object',
+  required: ['resumo', 'treinos'],
+  additionalProperties: false,
+  properties: {
+    resumo: { type: 'string' },
+    treinos: {
+      type: 'array',
+      minItems: 2,
+      maxItems: 7,
+      items: treinoJsonSchema,
+    },
+  },
+} as const;
+
+export const modelAttemptJsonSchema = {
+  type: 'object',
+  required: ['provider', 'model', 'role', 'status', 'durationMs'],
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string' },
+    model: { type: 'string' },
+    role: { type: 'string', enum: ['primary', 'fallback'] },
+    status: { type: 'string', enum: ['success', 'error'] },
+    durationMs: { type: 'number' },
+    error: { type: 'string' },
+  },
+} as const;
+
+export const generateTrainingPlanSuccessJsonSchema = {
+  type: 'object',
+  required: ['provider', 'model', 'fallbackUsed', 'attempts', 'durationMs', 'result'],
+  additionalProperties: false,
+  properties: {
+    provider: { type: 'string' },
+    model: { type: 'string' },
+    fallbackUsed: { type: 'boolean' },
+    attempts: {
+      type: 'array',
+      items: modelAttemptJsonSchema,
+    },
+    durationMs: { type: 'number' },
+    result: planoTreinoJsonSchema,
+  },
+} as const;

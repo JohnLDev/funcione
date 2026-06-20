@@ -1,22 +1,18 @@
 {
-  "name": "langchain",
+  "name": "langchain-training",
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
   "scripts": {
-    "build": "tsgo",
-    "typecheck": "tsgo --noEmit",
-    "prestart": "npm run build",
-    "start": "node dist/main.js"
-  },
-  "devDependencies": {
-    "@types/node": "^22.15.29",
-    "@typescript/native-preview": "latest",
-    "dotenv": "^17.4.2"
-  },
-  "dependencies": {
-    "@langchain/openai": "^1.4.7",
-    "langchain": "^1.4.1",
-    "zod": "^4.4.3"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace @langchain-training/backend",
+    "test:e2e": "npm run test:e2e --workspace @langchain-training/frontend",
+    "typecheck": "npm run typecheck --workspaces",
+    "dev:backend": "npm run dev --workspace @langchain-training/backend",
+    "dev:frontend": "npm run dev --workspace @langchain-training/frontend"
   }
 }

@@ -1,0 +1,41 @@
+{
+  "brand": {
+    "name": "Funcione",
+    "byline": "by MileX",
+    "logoAlt": "Official Funcione logo"
+  },
+  "dashboard": {
+    "eyebrow": "Today's plan",
+    "title": "Power",
+    "subtitle": "Volleyball • 90 min • intermediate",
+    "progressLabel": "Workout progress",
+    "nextBlockLabel": "Next block",
+    "nextBlock": "Controlled landing",
+    "bottomNav": {
+      "home": "Home",
+      "workout": "Workout",
+      "history": "History",
+      "profile": "Profile"
+    }
+  },
+  "metrics": {
+    "load": "Load",
+    "loadValue": "High",
+    "impact": "Impact",
+    "impactValue": "Safe"
+  },
+  "actions": {
+    "startWorkout": "Start workout"
+  },
+  "theme": {
+    "button": "Theme: {{theme}}",
+    "system": "system",
+    "light": "light",
+    "dark": "dark"
+  },
+  "language": {
+    "button": "Language: {{language}}",
+    "pt-BR": "Portugues",
+    "en-US": "English"
+  }
+}
