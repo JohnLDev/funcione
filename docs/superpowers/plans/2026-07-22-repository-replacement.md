@@ -86,13 +86,13 @@ Expected: a new local commit exists on `main`.
 
 **Files:** none.
 
-- [ ] **Step 1: Push local main over remote main safely**
+- [x] **Step 1: Push local main over remote main safely**
 
 Run: `git push --force-with-lease=refs/heads/main:<original-main-hash> origin main:main`.
 
 Expected: remote `main` now points to the local Funcione project commit.
 
-- [ ] **Step 2: Verify remote branches**
+- [x] **Step 2: Verify remote branches**
 
 Run: `git ls-remote --heads origin main old-main` and `gh repo view JohnLDev/funcione --json defaultBranchRef,url,pushedAt`.
 
