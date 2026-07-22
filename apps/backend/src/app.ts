@@ -1,16 +1,27 @@
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import {
+  authRoutes,
+  createInMemoryUserProfileRepository,
+  createSupabaseAuthVerifier,
+  type AuthVerifier,
+  type UserProfileRepository,
+} from './modules/auth/index.js';
 import { trainingRoutes } from './modules/training/http/training-routes.js';
 import type { TrainingPlanGenerator } from './modules/training/index.js';
+import { getServerConfig } from './shared/config/env.js';
 import { createErrorResponse } from './shared/http/errors.js';
 
 export type BuildAppOptions = {
+  authVerifier?: AuthVerifier;
   logger?: boolean;
   trainingPlanGenerator?: TrainingPlanGenerator;
+  userProfileRepository?: UserProfileRepository;
 };
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
+  const config = getServerConfig();
   const app = Fastify({
     logger: options.logger ?? false,
   });
@@ -45,15 +56,40 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       ],
       tags: [
         {
+          name: 'auth',
+          description: 'Authentication and current user session',
+        },
+        {
           name: 'training',
           description: 'Training plan generation',
         },
       ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
     },
   });
 
   await app.register(fastifySwaggerUi, {
     routePrefix: '/documentation',
+  });
+
+  await app.register(authRoutes, {
+    prefix: '/api',
+    authVerifier:
+      options.authVerifier ??
+      createSupabaseAuthVerifier({
+        supabasePublishableKey: config.supabasePublishableKey,
+        supabaseUrl: config.supabaseUrl,
+      }),
+    userProfileRepository:
+      options.userProfileRepository ?? createInMemoryUserProfileRepository(),
   });
 
   await app.register(trainingRoutes, {

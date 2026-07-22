@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 .env
+.logs/
 output.json
 agent-debug.json
 .superpowers/

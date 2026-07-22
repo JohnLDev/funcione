@@ -8,6 +8,19 @@
 - Use `rg` para buscas quando possivel.
 - Ao executar comandos de shell neste workspace, use `rtk`.
 
+## Superpowers Para Desenvolvimento
+
+- Sempre que uma tarefa envolver desenvolvimento, use o plugin Superpowers antes de implementar. Isso inclui feature, bugfix, refatoracao, rota HTTP, fluxo de frontend, teste, integracao, mudanca visual ou alteracao de arquitetura.
+- A preparacao deve usar a skill Superpowers adequada ao nivel de clareza da demanda:
+  - demandas abertas ou ainda pouco definidas: usar uma skill de brainstorming/preparacao antes de fechar escopo;
+  - demandas com escopo claro: usar uma skill de planejamento antes de editar codigo;
+  - implementacao a partir de plano existente: usar uma skill de execucao de plano ou desenvolvimento orientado por subagentes, conforme aplicavel.
+- Antes de editar codigo, registre ou atualize o plano em `docs/superpowers/plans/` quando a mudanca tiver mais de um passo, tocar varios arquivos, alterar comportamento de usuario ou mudar contrato tecnico.
+- Quando houver decisao de produto, arquitetura, tema, contrato ou fluxo, registre ou atualize a especificacao correspondente em `docs/superpowers/specs/`.
+- Planos Superpowers devem conter objetivo, arquitetura/abordagem, arquivos afetados, tarefas em checklist `- [ ]` e comandos de verificacao esperados.
+- Durante a execucao, mantenha o checklist do plano atualizado conforme as etapas avancam.
+- Se o plugin Superpowers nao estiver disponivel no ambiente, declare o impedimento, siga o mesmo formato de preparacao/planejamento em `docs/superpowers/` e retome o uso do plugin assim que ele voltar a estar disponivel.
+
 ## Desenvolvimento Orientado A Testes
 
 - Toda feature, bugfix ou mudanca de comportamento deve comecar por teste automatizado.

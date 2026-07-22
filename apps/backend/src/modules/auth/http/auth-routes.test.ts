@@ -1,0 +1,191 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildApp } from '../../../app.js';
+import type { AuthVerifier } from '../application/auth-verifier.js';
+import { createInMemoryUserProfileRepository } from '../infra/in-memory-user-profile-repository.js';
+
+const authenticatedUser = {
+  id: 'user-123',
+  email: 'athlete@funcione.app',
+  provider: 'email',
+};
+
+describe('auth routes', () => {
+  const authenticatedAuthVerifier: AuthVerifier = async () => ({
+    authenticated: true,
+    user: authenticatedUser,
+  });
+
+  it('rejects requests without bearer token', async () => {
+    const authVerifier: AuthVerifier = async () => ({
+      authenticated: false,
+      statusCode: 401,
+      code: 'AUTH_TOKEN_MISSING',
+      message: 'Authentication token is required.',
+    });
+    const app = await buildApp({ authVerifier });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/auth/me',
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(response.json().error.code, 'AUTH_TOKEN_MISSING');
+  });
+
+  it('returns the authenticated user for a valid bearer token', async () => {
+    const authVerifier: AuthVerifier = async (authorizationHeader) => {
+      assert.equal(authorizationHeader, 'Bearer valid-token');
+
+      return {
+        authenticated: true,
+        user: authenticatedUser,
+      };
+    };
+    const app = await buildApp({ authVerifier });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/auth/me',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), { user: authenticatedUser });
+  });
+
+  it('returns missing profile state for authenticated users without app registration', async () => {
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepository: createInMemoryUserProfileRepository(),
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().completed, false);
+    assert.equal(response.json().profile, null);
+    assert.deepEqual(response.json().requiredFields, [
+      'firstName',
+      'lastName',
+      'cpf',
+      'birthDate',
+      'phoneNumber',
+      'email',
+    ]);
+  });
+
+  it('rejects invalid registration profile payloads', async () => {
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepository: createInMemoryUserProfileRepository(),
+    });
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+      payload: {
+        firstName: 'Joao',
+        lastName: 'Silva',
+        cpf: '123',
+        birthDate: '2035-01-01',
+        phoneNumber: '11999999999',
+        email: 'athlete@funcione.app',
+      },
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error.code, 'VALIDATION_ERROR');
+  });
+
+  it('creates and returns the authenticated user registration profile', async () => {
+    const userProfileRepository = createInMemoryUserProfileRepository();
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepository,
+    });
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+      payload: {
+        firstName: 'Joao',
+        lastName: 'Silva',
+        cpf: '52998224725',
+        birthDate: '1994-08-20',
+        phoneNumber: '11999999999',
+        email: 'athlete@funcione.app',
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().completed, true);
+    assert.equal(response.json().profile.userId, authenticatedUser.id);
+    assert.equal(response.json().profile.firstName, 'Joao');
+    assert.equal(response.json().profile.cpf, '52998224725');
+  });
+
+  it('rejects profile email changes that do not match the auth provider email', async () => {
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepository: createInMemoryUserProfileRepository(),
+    });
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+      payload: {
+        firstName: 'Joao',
+        lastName: 'Silva',
+        cpf: '52998224725',
+        birthDate: '1994-08-20',
+        phoneNumber: '11999999999',
+        email: 'other@funcione.app',
+      },
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error.code, 'EMAIL_MISMATCH');
+  });
+
+  it('documents the auth route in OpenAPI', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/documentation/json',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.ok(response.json().paths['/api/auth/me'].get);
+    assert.ok(response.json().paths['/api/auth/profile'].get);
+    assert.ok(response.json().paths['/api/auth/profile'].put);
+    assert.deepEqual(
+      response.json().paths['/api/auth/me'].get.security,
+      [{ bearerAuth: [] }],
+    );
+    assert.deepEqual(
+      response.json().paths['/api/auth/profile'].put.security,
+      [{ bearerAuth: [] }],
+    );
+    assert.ok(response.json().components.securitySchemes.bearerAuth);
+  });
+});

@@ -27,6 +27,30 @@
   "actions": {
     "startWorkout": "Start workout"
   },
+  "auth": {
+    "continueWithGoogle": "Continue with Google",
+    "email": "Email",
+    "loading": "Loading Funcione",
+    "password": "Password",
+    "signedInFallback": "Authenticated user",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signUp": "Create account",
+    "title": "Sign in to Funcione"
+  },
+  "registration": {
+    "backToSignIn": "I already have an account",
+    "birthDate": "Birth date",
+    "completeTitle": "Complete your registration",
+    "cpf": "CPF",
+    "email": "Email",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "phoneNumber": "Phone number",
+    "save": "Save registration",
+    "signUpTitle": "Create registration"
+  },
   "theme": {
     "button": "Theme: {{theme}}",
     "system": "system",

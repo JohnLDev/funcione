@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Dumbbell,
   Home,
+  LogOut,
   ShieldCheck,
   UserRound,
   Zap,
@@ -20,8 +21,10 @@ import {
 } from './ui/card.js';
 import { Progress } from './ui/progress.js';
 import { LanguageToggle } from './language-toggle.js';
+import { ProductLogo } from './product-logo.js';
 import { ThemeToggle } from './theme-toggle.js';
 import { cn } from '@/lib/utils.js';
+import type { AuthUser } from '@/auth/types.js';
 
 const navigationItems = [
   { icon: Home, labelKey: 'dashboard.bottomNav.home', active: true },
@@ -29,28 +32,6 @@ const navigationItems = [
   { icon: BarChart3, labelKey: 'dashboard.bottomNav.history', active: false },
   { icon: UserRound, labelKey: 'dashboard.bottomNav.profile', active: false },
 ] as const;
-
-function ProductLogo({
-  className,
-  decorative = false,
-}: {
-  className?: string;
-  decorative?: boolean;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <img
-      alt={decorative ? '' : t('brand.logoAlt')}
-      aria-hidden={decorative ? 'true' : undefined}
-      className={cn(
-        'shrink-0 rounded-xl border border-primary/30 bg-[#02040a] object-contain shadow-[0_18px_42px_rgba(0,89,255,0.22)]',
-        className,
-      )}
-      src="/brand/funcione-logo.png"
-    />
-  );
-}
 
 function MetricCard({
   icon: Icon,
@@ -78,8 +59,15 @@ function MetricCard({
   );
 }
 
-export function AppShell() {
+export function AppShell({
+  onSignOut,
+  user,
+}: {
+  onSignOut: () => void;
+  user: AuthUser;
+}) {
   const { t } = useTranslation();
+  const userLabel = user.email ?? t('auth.signedInFallback');
 
   return (
     <div className="min-h-dvh overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 md:px-8 md:pb-8">
@@ -107,6 +95,21 @@ export function AppShell() {
               </button>
             ))}
           </nav>
+          <div className="mt-8 rounded-2xl border border-border bg-background/50 p-3">
+            <p className="truncate text-xs font-bold text-muted-foreground">
+              {userLabel}
+            </p>
+            <Button
+              className="mt-3 w-full"
+              onClick={onSignOut}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <LogOut aria-hidden="true" size={16} />
+              {t('auth.signOut')}
+            </Button>
+          </div>
         </aside>
 
         <main className="min-w-0">
@@ -124,6 +127,21 @@ export function AppShell() {
                 <h1 className="truncate text-3xl font-black leading-none text-foreground">
                   {t('brand.name')}
                 </h1>
+                <p className="mt-1 max-w-[14rem] truncate text-xs font-bold text-muted-foreground sm:max-w-xs">
+                  {userLabel}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  aria-label={t('auth.signOut')}
+                  onClick={onSignOut}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <LogOut aria-hidden="true" size={18} />
+                  <span className="hidden sm:inline">{t('auth.signOut')}</span>
+                </Button>
               </div>
               <div className="hidden shrink-0 items-center gap-2 sm:flex">
                 <LanguageToggle />
