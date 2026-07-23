@@ -197,7 +197,8 @@ function createMonthlyTrainingPlanRepository(
           updated_at: expiredAt,
         })
         .eq('user_id', userId)
-        .eq('status', MonthlyTrainingPlanStatus.Active);
+        .eq('status', MonthlyTrainingPlanStatus.Active)
+        .lte('available_for_regeneration_at', expiredAt);
 
       throwIfError(error);
     },

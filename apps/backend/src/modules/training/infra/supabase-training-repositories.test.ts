@@ -222,6 +222,16 @@ describe('Supabase training repositories', () => {
       status: MonthlyTrainingPlanStatus.Expired,
       updated_at: '2026-08-22T12:00:00.000Z',
     });
+    const expirationUrl = new URL(requests[3]?.url ?? '');
+    assert.equal(expirationUrl.searchParams.get('user_id'), 'eq.user-123');
+    assert.equal(
+      expirationUrl.searchParams.get('status'),
+      `eq.${MonthlyTrainingPlanStatus.Active}`,
+    );
+    assert.equal(
+      expirationUrl.searchParams.get('available_for_regeneration_at'),
+      'lte.2026-08-22T12:00:00.000Z',
+    );
   });
 
   it('completes the plan and athletic profile through one transactional RPC', async () => {
