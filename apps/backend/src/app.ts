@@ -25,6 +25,11 @@ export type BuildAppOptions = {
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
   const config = getServerConfig();
   const app = Fastify({
+    ajv: {
+      customOptions: {
+        removeAdditional: false,
+      },
+    },
     logger: options.logger ?? false,
   });
 

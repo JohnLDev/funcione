@@ -696,6 +696,12 @@ free-text constraints are documented without applying conflicting raw string
 length validation. Verify custom equipment with whitespace that normalizes to
 80 characters reaches the generator.
 
+- [x] **Review fixes: Reject unexpected schema properties**
+
+Configure Fastify/Ajv so request schemas reject, rather than remove, unexpected
+properties. Cover a predefined equipment payload with an unexpected
+`descricao` and verify the generator is not invoked.
+
 ---
 
 ### Task 3: AI Prompt Uses Equipment And Delimited User Text

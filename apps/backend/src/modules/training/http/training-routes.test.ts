@@ -122,6 +122,39 @@ describe('training routes', () => {
     assert.match(JSON.stringify(response.json()), /equipamentos/);
   });
 
+  it('rejects unexpected fields on predefined equipment without calling the generator', async () => {
+    let generatorCalled = false;
+    const app = await buildApp({
+      trainingPlanGenerator: async () => {
+        generatorCalled = true;
+
+        return {
+          fallbackUsed: false,
+          attempts: [],
+          error: 'not called',
+        };
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      payload: {
+        ...validInput,
+        equipamentos: [
+          {
+            tipo: EquipamentoTreino.Halteres,
+            descricao: 'campo inesperado',
+          },
+        ],
+      },
+      url: '/api/training-plans',
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(generatorCalled, false);
+    assert.match(response.json().error.message, /additional properties/i);
+  });
+
   it('accepts custom equipment text that normalizes to 80 characters', async () => {
     let receivedInput: DadosUsuario | undefined;
     const normalizedDescription = 'a'.repeat(80);
