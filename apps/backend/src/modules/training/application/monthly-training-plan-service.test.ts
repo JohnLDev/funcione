@@ -1,0 +1,159 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { createInMemoryUserProfileRepository } from '../../auth/index.js';
+import {
+  EquipamentoTreino,
+  LocalTreino,
+  ModalidadeEsportiva,
+  NivelExperiencia,
+  ObjetivoTreino,
+  TempoDisponivel,
+  type PlanoTreino,
+} from '../domain/index.js';
+import { createInMemoryTrainingRepositories } from '../infra/in-memory-training-repositories.js';
+import {
+  createMonthlyTrainingPlan,
+  getActiveMonthlyTrainingPlan,
+} from './monthly-training-plan-service.js';
+
+const user = {
+  email: 'athlete@funcione.app',
+  id: 'user-123',
+  provider: 'password',
+};
+
+const generatedPlan: PlanoTreino = {
+  resumo: 'Plano semanal base.',
+  treinos: [
+    {
+      alongamentos: [],
+      dia: 'Segunda-feira',
+      duracaoMinutos: 60,
+      exercicios: [],
+      foco: 'potencia',
+    },
+    {
+      alongamentos: [],
+      dia: 'Quarta-feira',
+      duracaoMinutos: 60,
+      exercicios: [],
+      foco: 'agilidade',
+    },
+  ],
+};
+
+const payload = {
+  alturaCm: 180,
+  duracaoTreinoMinutos: 60,
+  equipamentos: [{ tipo: EquipamentoTreino.Halteres }],
+  lesoes: [],
+  localTreino: LocalTreino.Casa,
+  modalidade: ModalidadeEsportiva.Volei,
+  nivelExperiencia: NivelExperiencia.Intermediario,
+  objetivos: [ObjetivoTreino.Performance],
+  pesoKg: 82,
+  tempoDisponivel: TempoDisponivel.TresVezesPorSemana,
+};
+
+async function createDependencies(nowIso = '2026-07-23T12:00:00.000Z') {
+  const userProfileRepository = createInMemoryUserProfileRepository();
+  await userProfileRepository.upsert(user.id, {
+    birthDate: '1996-07-20',
+    cpf: '52998224725',
+    email: 'athlete@funcione.app',
+    firstName: 'Joao',
+    lastName: 'Silva',
+    phoneNumber: '11999999999',
+  });
+
+  return {
+    ...createInMemoryTrainingRepositories(),
+    now: () => new Date(nowIso),
+    trainingPlanGenerator: async () => ({
+      attempts: [],
+      durationMs: 10,
+      fallbackUsed: false,
+      model: 'test-model',
+      provider: 'test-provider',
+      result: generatedPlan,
+    }),
+    userProfileRepository,
+  };
+}
+
+describe('monthly training plan service', () => {
+  it('returns generation availability when no active plan exists', async () => {
+    const dependencies = await createDependencies();
+
+    const state = await getActiveMonthlyTrainingPlan(user, dependencies);
+
+    assert.equal(state.canGenerate, true);
+    assert.equal(state.activePlan, null);
+  });
+
+  it('creates a monthly plan with calculated age, snapshot and reusable athletic profile', async () => {
+    const dependencies = await createDependencies();
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+    assert.equal(result.plan.snapshot.idade, 30);
+    assert.equal(result.plan.snapshot.userId, user.id);
+    assert.equal(result.plan.snapshot.equipamentos[0]?.tipo, EquipamentoTreino.Halteres);
+    assert.equal(result.plan.availableForRegenerationAt, '2026-08-22T12:00:00.000Z');
+
+    const profile = await dependencies.athleticProfileRepository.findByUserId(user.id);
+    assert.equal(profile?.pesoKg, 82);
+  });
+
+  it('blocks a second generation before 30 days', async () => {
+    const dependencies = await createDependencies();
+
+    await createMonthlyTrainingPlan(user, payload, dependencies);
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+    assert.equal(result.error.code, 'MONTHLY_PLAN_ALREADY_ACTIVE');
+    assert.equal(result.error.statusCode, 409);
+  });
+
+  it('allows a new generation after 30 days by expiring the old active plan', async () => {
+    const dependencies = await createDependencies('2026-07-01T10:00:00.000Z');
+
+    await createMonthlyTrainingPlan(user, payload, dependencies);
+    dependencies.now = () => new Date('2026-08-01T10:00:00.000Z');
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, true);
+    const state = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(state.activePlan?.generatedAt, '2026-08-01T10:00:00.000Z');
+  });
+
+  it('rejects generation when registration birth date is invalid', async () => {
+    const dependencies = await createDependencies();
+    await dependencies.userProfileRepository.upsert(user.id, {
+      birthDate: 'invalid-date',
+      cpf: '52998224725',
+      email: 'athlete@funcione.app',
+      firstName: 'Joao',
+      lastName: 'Silva',
+      phoneNumber: '11999999999',
+    });
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+    assert.equal(result.error.code, 'PROFILE_BIRTH_DATE_INVALID');
+    assert.equal(result.error.statusCode, 400);
+  });
+});

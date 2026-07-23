@@ -900,7 +900,7 @@ git commit -m "feat: include safe equipment context in prompts"
 - Produces: `MonthlyTrainingPlanRepository`
 - Produces: `AthleticProfileRepository`
 
-- [ ] **Step 1: Write failing application tests**
+- [x] **Step 1: Write failing application tests**
 
 Create `apps/backend/src/modules/training/application/monthly-training-plan-service.test.ts` with these cases:
 
@@ -1066,7 +1066,7 @@ describe('monthly training plan service', () => {
 });
 ```
 
-- [ ] **Step 2: Run application tests and verify red**
+- [x] **Step 2: Run application tests and verify red**
 
 Run:
 
@@ -1077,7 +1077,7 @@ node --test apps/backend/dist/modules/training/application/monthly-training-plan
 
 Expected: FAIL because service and repositories do not exist.
 
-- [ ] **Step 3: Add monthly domain types**
+- [x] **Step 3: Add monthly domain types**
 
 Create `apps/backend/src/modules/training/domain/monthly-plan.ts`:
 
@@ -1183,7 +1183,7 @@ export function calculateAgeFromBirthDate(birthDate: string, now: Date): number 
 }
 ```
 
-- [ ] **Step 4: Add repository interfaces**
+- [x] **Step 4: Add repository interfaces**
 
 Create `apps/backend/src/modules/training/application/athletic-profile-repository.ts`:
 
@@ -1216,7 +1216,7 @@ export type MonthlyTrainingPlanRepository = {
 };
 ```
 
-- [ ] **Step 5: Add in-memory repositories**
+- [x] **Step 5: Add in-memory repositories**
 
 Create `apps/backend/src/modules/training/infra/in-memory-training-repositories.ts`:
 
@@ -1292,7 +1292,7 @@ export function createInMemoryTrainingRepositories(): {
 }
 ```
 
-- [ ] **Step 6: Add monthly plan service**
+- [x] **Step 6: Add monthly plan service**
 
 Create `apps/backend/src/modules/training/application/monthly-training-plan-service.ts`:
 
@@ -1507,7 +1507,7 @@ export async function createMonthlyTrainingPlan(
 }
 ```
 
-- [ ] **Step 7: Export contracts**
+- [x] **Step 7: Export contracts**
 
 Update `apps/backend/src/modules/training/domain/index.ts`:
 
@@ -1524,7 +1524,7 @@ export * from './application/monthly-training-plan-service.js';
 export * from './infra/in-memory-training-repositories.js';
 ```
 
-- [ ] **Step 8: Run service tests**
+- [x] **Step 8: Run service tests**
 
 Run:
 

@@ -1,5 +1,6 @@
 export * from './enums.js';
 export * from './labels.js';
+export * from './monthly-plan.js';
 export * from './policies.js';
 export * from './prompt-text.js';
 export * from './schemas.js';
