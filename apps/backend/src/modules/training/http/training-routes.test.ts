@@ -2,6 +2,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildApp } from '../../../app.js';
 import {
+  createInMemoryUserProfileRepository,
+  type AuthVerifier,
+} from '../../auth/index.js';
+import {
   EquipamentoTreino,
   LocalTreino,
   ModalidadeEsportiva,
@@ -12,6 +16,7 @@ import {
   type PlanoTreino,
 } from '../domain/index.js';
 import type { GenerateTrainingPlanResult } from '../application/generate-training-plan.js';
+import { createInMemoryTrainingRepositories } from '../infra/in-memory-training-repositories.js';
 
 const validInput: DadosUsuario = {
   userId: 'user-2',
@@ -81,6 +86,45 @@ const generatedPlan: PlanoTreino = {
     },
   ],
 };
+
+const authenticatedUser = {
+  email: 'athlete@funcione.app',
+  id: 'user-123',
+  provider: 'password' as const,
+};
+
+const authVerifier: AuthVerifier = async (authorizationHeader) => {
+  if (authorizationHeader === 'Bearer valid-token') {
+    return {
+      authenticated: true,
+      user: authenticatedUser,
+    };
+  }
+
+  return {
+    authenticated: false,
+    code: 'AUTH_TOKEN_MISSING',
+    message: 'Authentication token is required.',
+    statusCode: 401,
+  };
+};
+
+const { idade: _idade, userId: _userId, ...monthlyPayload } = validInput;
+
+async function createUserProfileRepository() {
+  const userProfileRepository = createInMemoryUserProfileRepository();
+
+  await userProfileRepository.upsert(authenticatedUser.id, {
+    birthDate: '1996-07-20',
+    cpf: '52998224725',
+    email: authenticatedUser.email,
+    firstName: 'Joao',
+    lastName: 'Silva',
+    phoneNumber: '11999999999',
+  });
+
+  return userProfileRepository;
+}
 
 describe('training routes', () => {
   it('rejects invalid training plan payloads', async () => {
@@ -317,5 +361,173 @@ describe('training routes', () => {
       schema.properties.lesoes.items.oneOf[1].properties.observacoes.description,
       'Normalized server-side: must contain 1 to 180 characters after control-character removal and whitespace collapsing.',
     );
+  });
+
+  it('requires authentication for monthly training routes', async () => {
+    const app = await buildApp({ authVerifier });
+
+    const [activeResponse, createResponse] = await Promise.all([
+      app.inject({
+        method: 'GET',
+        url: '/api/training-plans/active',
+      }),
+      app.inject({
+        method: 'POST',
+        payload: monthlyPayload,
+        url: '/api/training-plans/monthly',
+      }),
+    ]);
+
+    assert.equal(activeResponse.statusCode, 401);
+    assert.equal(createResponse.statusCode, 401);
+  });
+
+  it('returns the authenticated user active monthly plan state', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    const app = await buildApp({
+      authVerifier,
+      trainingRepositories: createInMemoryTrainingRepositories(),
+      userProfileRepository,
+    });
+
+    const response = await app.inject({
+      headers: { authorization: 'Bearer valid-token' },
+      method: 'GET',
+      url: '/api/training-plans/active',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json(), {
+      activePlan: null,
+      athleticProfile: null,
+      canGenerate: true,
+      nextGenerationAvailableAt: null,
+    });
+  });
+
+  it('creates a monthly plan with backend-derived user data and public fields only', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    let generatorInput: DadosUsuario | undefined;
+    const app = await buildApp({
+      authVerifier,
+      trainingPlanGenerator: async (input) => {
+        generatorInput = input;
+
+        return {
+          attempts: [],
+          durationMs: 10,
+          fallbackUsed: false,
+          model: 'test-model',
+          provider: 'test-provider',
+          result: generatedPlan,
+        };
+      },
+      trainingRepositories: createInMemoryTrainingRepositories(),
+      userProfileRepository,
+    });
+
+    const response = await app.inject({
+      headers: { authorization: 'Bearer valid-token' },
+      method: 'POST',
+      payload: monthlyPayload,
+      url: '/api/training-plans/monthly',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(generatorInput?.userId, authenticatedUser.id);
+    assert.equal(generatorInput?.idade, 30);
+    assert.equal(response.json().plan.userId, authenticatedUser.id);
+    assert.equal(response.json().plan.snapshot.idade, 30);
+    assert.equal(response.json().plan.metadata, undefined);
+  });
+
+  it('uses request-scoped monthly storage repositories when factories are configured', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    const trainingRepositories = createInMemoryTrainingRepositories();
+    const trainingTokens: string[] = [];
+    const profileTokens: string[] = [];
+    const app = await buildApp({
+      authVerifier,
+      trainingRepositoryFactory: (accessToken) => {
+        trainingTokens.push(accessToken);
+
+        return trainingRepositories;
+      },
+      userProfileRepositoryFactory: (accessToken) => {
+        profileTokens.push(accessToken);
+
+        return userProfileRepository;
+      },
+    });
+
+    const response = await app.inject({
+      headers: { authorization: 'Bearer valid-token' },
+      method: 'GET',
+      url: '/api/training-plans/active',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(trainingTokens, ['valid-token']);
+    assert.deepEqual(profileTokens, ['valid-token']);
+  });
+
+  it('returns a conflict when a monthly plan is already active', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    const app = await buildApp({
+      authVerifier,
+      trainingPlanGenerator: async () => ({
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      }),
+      trainingRepositories: createInMemoryTrainingRepositories(),
+      userProfileRepository,
+    });
+    const request = {
+      headers: { authorization: 'Bearer valid-token' },
+      method: 'POST' as const,
+      payload: monthlyPayload,
+      url: '/api/training-plans/monthly',
+    };
+
+    await app.inject(request);
+    const response = await app.inject(request);
+
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().error.code, 'MONTHLY_PLAN_ALREADY_ACTIVE');
+  });
+
+  it('documents monthly route security, body, success, and error contracts in OpenAPI', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/documentation/json',
+    });
+
+    assert.equal(response.statusCode, 200);
+    const paths = response.json().paths;
+    const activeRoute = paths['/api/training-plans/active'].get;
+    const monthlyRoute = paths['/api/training-plans/monthly'].post;
+    const bodySchema = monthlyRoute.requestBody.content['application/json'].schema;
+    const monthlyPlanSchema = monthlyRoute.responses['200'].content['application/json'].schema
+      .properties.plan;
+
+    assert.deepEqual(activeRoute.security, [{ bearerAuth: [] }]);
+    assert.deepEqual(monthlyRoute.security, [{ bearerAuth: [] }]);
+    assert.equal(bodySchema.properties.userId, undefined);
+    assert.equal(bodySchema.properties.idade, undefined);
+    assert.equal(bodySchema.required.includes('userId'), false);
+    assert.equal(bodySchema.required.includes('idade'), false);
+    assert.equal(monthlyPlanSchema.properties.metadata, undefined);
+    assert.ok(activeRoute.responses['401']);
+    assert.ok(activeRoute.responses['503']);
+    assert.ok(monthlyRoute.responses['400']);
+    assert.ok(monthlyRoute.responses['401']);
+    assert.ok(monthlyRoute.responses['409']);
+    assert.ok(monthlyRoute.responses['503']);
   });
 });

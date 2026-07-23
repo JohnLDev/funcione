@@ -86,7 +86,7 @@ export const DadosUsuarioSchema = z.object({
 export const CreateMonthlyTrainingPlanRequestSchema = DadosUsuarioSchema.omit({
   idade: true,
   userId: true,
-});
+}).strict();
 
 export const AlongamentoSchema = z.object({
   nome: z

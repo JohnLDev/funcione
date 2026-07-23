@@ -112,6 +112,23 @@ describe('monthly training plan service', () => {
     assert.equal(profile?.pesoKg, 82);
   });
 
+  it('rejects client supplied user identity fields', async () => {
+    const dependencies = await createDependencies();
+
+    const result = await createMonthlyTrainingPlan(
+      user,
+      { ...payload, idade: 16, userId: 'another-user' },
+      dependencies,
+    );
+
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+    assert.equal(result.error.code, 'VALIDATION_ERROR');
+    assert.equal(result.error.statusCode, 400);
+  });
+
   it('completes the active plan and athletic profile through one repository operation', async () => {
     const dependencies = await createDependencies();
     dependencies.athleticProfileRepository.upsert = async () => {

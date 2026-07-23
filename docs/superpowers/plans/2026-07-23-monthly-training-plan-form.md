@@ -2054,7 +2054,7 @@ git commit -m "feat: add supabase training persistence"
 - Produces: `POST /api/training-plans/monthly`
 - Produces: OpenAPI paths for both endpoints
 
-- [ ] **Step 1: Write failing HTTP tests**
+- [x] **Step 1: Write failing HTTP tests**
 
 Append tests to `apps/backend/src/modules/training/http/training-routes.test.ts`:
 
@@ -2225,7 +2225,7 @@ it('documents monthly training routes in OpenAPI', async () => {
 });
 ```
 
-- [ ] **Step 2: Run route tests and verify red**
+- [x] **Step 2: Run route tests and verify red**
 
 Run:
 
@@ -2236,7 +2236,7 @@ node --test apps/backend/dist/modules/training/http/training-routes.test.js
 
 Expected: FAIL because monthly routes are not registered.
 
-- [ ] **Step 3: Add OpenAPI JSON schemas**
+- [x] **Step 3: Add OpenAPI JSON schemas**
 
 In `apps/backend/src/modules/training/http/training-json-schemas.ts`, export:
 
@@ -2340,7 +2340,7 @@ export const createMonthlyTrainingPlanResponseJsonSchema = {
 } as const;
 ```
 
-- [ ] **Step 4: Add route dependencies and serializers**
+- [x] **Step 4: Add route dependencies and serializers**
 
 In `apps/backend/src/modules/training/http/training-routes.ts`, extend options:
 
@@ -2389,7 +2389,7 @@ function serializePublicMonthlyPlan(plan: MonthlyTrainingPlan) {
 }
 ```
 
-- [ ] **Step 5: Implement authenticated monthly routes**
+- [x] **Step 5: Implement authenticated monthly routes**
 
 Add `GET /training-plans/active` and `POST /training-plans/monthly` to `trainingRoutes`. Each route must:
 
@@ -2427,7 +2427,7 @@ if (!repositories || !userProfileRepository) {
 
 `GET` calls `getActiveMonthlyTrainingPlan` and serializes `activePlan`. `POST` calls `createMonthlyTrainingPlan`; for `ok: false`, reply with `result.error.statusCode` and `createErrorResponse(result.error.code, result.error.message, result.error.details)`.
 
-- [ ] **Step 6: Wire monthly training dependencies in buildApp**
+- [x] **Step 6: Wire monthly training dependencies in buildApp**
 
 In `apps/backend/src/app.ts`, extend options:
 
@@ -2451,7 +2451,7 @@ Pass to training routes:
     userProfileRepositoryFactory,
 ```
 
-- [ ] **Step 7: Run route tests**
+- [x] **Step 7: Run route tests**
 
 Run:
 
@@ -2462,7 +2462,7 @@ node --test apps/backend/dist/modules/training/http/training-routes.test.js
 
 Expected: PASS.
 
-- [ ] **Step 8: Verify OpenAPI JSON manually**
+- [x] **Step 8: Verify OpenAPI JSON manually**
 
 Run:
 
@@ -2472,7 +2472,7 @@ npm test --workspace @langchain-training/backend
 
 Expected: PASS, including OpenAPI route assertions.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/backend/src

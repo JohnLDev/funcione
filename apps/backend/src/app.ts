@@ -143,9 +143,17 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   await app.register(trainingRoutes, {
     prefix: '/api',
+    authVerifier:
+      options.authVerifier ??
+      createSupabaseAuthVerifier({
+        supabasePublishableKey: config.supabasePublishableKey,
+        supabaseUrl: config.supabaseUrl,
+      }),
     trainingPlanGenerator: options.trainingPlanGenerator,
     trainingRepositories: fallbackTrainingRepositories,
     trainingRepositoryFactory,
+    userProfileRepository: fallbackUserProfileRepository,
+    userProfileRepositoryFactory,
   });
 
   return app;
