@@ -2,6 +2,7 @@ import { Dumbbell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
+import { TrainingPlanWizard } from './training-plan-wizard.js';
 import { Card, CardContent } from './ui/card.js';
 
 function TrainingScreenContent() {
@@ -30,11 +31,15 @@ function TrainingScreenContent() {
             </h1>
           </div>
         </div>
-        <Card className="rounded-2xl">
-          <CardContent className="p-4">
-            {state?.activePlan ? t('training.activeTitle') : t('training.newTitle')}
-          </CardContent>
-        </Card>
+        {state?.activePlan ? (
+          <Card className="rounded-2xl">
+            <CardContent className="p-4">
+              <p className="text-xl font-black">{t('training.activeTitle')}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <TrainingPlanWizard />
+        )}
       </section>
     </main>
   );

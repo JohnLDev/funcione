@@ -29,8 +29,57 @@
   },
   "training": {
     "activeTitle": "Active plan",
+    "back": "Back",
+    "continue": "Continue",
+    "fields": {
+      "body": "Physical profile",
+      "frequency": "Frequency",
+      "height": "Height in cm",
+      "modality": "Sport",
+      "routine": "Routine",
+      "safety": "Environment and safety",
+      "weight": "Weight in kg"
+    },
+    "generate": "Generate plan",
+    "generating": "Generating plan",
     "loading": "Loading training plan",
-    "newTitle": "New training plan"
+    "monthlyLimitNotice": "You can generate another plan after 30 days.",
+    "newTitle": "New training plan",
+    "options": {
+      "availability": {
+        "3x_semana": "3 times per week"
+      },
+      "duration": {
+        "60": "60 minutes"
+      },
+      "equipment": {
+        "halteres": "Dumbbells"
+      },
+      "experience": {
+        "intermediario": "Intermediate"
+      },
+      "goals": {
+        "performance": "Performance"
+      },
+      "injuries": {
+        "none": "I have no injury"
+      },
+      "modalities": {
+        "volei": "Volleyball"
+      },
+      "places": {
+        "casa": "Home"
+      }
+    },
+    "reviewTitle": "Review",
+    "stepLabel": "Step {{current}} of {{total}}",
+    "steps": {
+      "body": "Physical profile",
+      "objective": "Sport objective",
+      "review": "Review",
+      "routine": "Routine",
+      "safety": "Environment and safety"
+    }
   },
   "auth": {
     "continueWithGoogle": "Continue with Google",

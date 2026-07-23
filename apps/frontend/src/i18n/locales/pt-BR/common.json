@@ -29,8 +29,57 @@
   },
   "training": {
     "activeTitle": "Plano ativo",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "fields": {
+      "body": "Perfil fisico",
+      "frequency": "Frequencia",
+      "height": "Altura em cm",
+      "modality": "Modalidade",
+      "routine": "Rotina",
+      "safety": "Ambiente e seguranca",
+      "weight": "Peso em kg"
+    },
+    "generate": "Gerar plano",
+    "generating": "Gerando plano",
     "loading": "Carregando plano de treino",
-    "newTitle": "Novo plano de treino"
+    "monthlyLimitNotice": "Voce podera gerar outro plano depois de 30 dias.",
+    "newTitle": "Novo plano de treino",
+    "options": {
+      "availability": {
+        "3x_semana": "3x por semana"
+      },
+      "duration": {
+        "60": "60 minutos"
+      },
+      "equipment": {
+        "halteres": "Halteres"
+      },
+      "experience": {
+        "intermediario": "Intermediario"
+      },
+      "goals": {
+        "performance": "Performance"
+      },
+      "injuries": {
+        "none": "Nao tenho lesao"
+      },
+      "modalities": {
+        "volei": "Volei"
+      },
+      "places": {
+        "casa": "Casa"
+      }
+    },
+    "reviewTitle": "Revisao",
+    "stepLabel": "Etapa {{current}} de {{total}}",
+    "steps": {
+      "body": "Perfil fisico",
+      "objective": "Objetivo esportivo",
+      "review": "Revisao",
+      "routine": "Rotina",
+      "safety": "Ambiente e seguranca"
+    }
   },
   "auth": {
     "continueWithGoogle": "Continuar com Google",
