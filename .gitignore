@@ -6,5 +6,6 @@ dist/
 output.json
 agent-debug.json
 .superpowers/
+.worktrees/
 apps/frontend/test-results/
 apps/frontend/playwright-report/
