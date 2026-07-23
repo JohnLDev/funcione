@@ -27,6 +27,12 @@ const initialForm: MonthlyTrainingPlanRequest = {
 
 const steps = ['objective', 'body', 'routine', 'safety', 'review'] as const;
 
+function parsePositiveNumber(value: string): number | null {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function TrainingPlanWizard() {
   const { t } = useTranslation();
   const { createMonthlyPlan, isGenerating, state } = useTrainingPlan();
@@ -49,9 +55,20 @@ export function TrainingPlanWizard() {
       pesoKg: profile.pesoKg,
     };
   });
+  const [bodyMeasurements, setBodyMeasurements] = useState(() => {
+    const profile = state?.athleticProfile;
+
+    return {
+      alturaCm: String(profile?.alturaCm ?? initialForm.alturaCm),
+      pesoKg: String(profile?.pesoKg ?? initialForm.pesoKg),
+    };
+  });
 
   const currentStep = steps[currentStepIndex];
   const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
+  const alturaCm = parsePositiveNumber(bodyMeasurements.alturaCm);
+  const pesoKg = parsePositiveNumber(bodyMeasurements.pesoKg);
+  const hasValidBodyMeasurements = alturaCm !== null && pesoKg !== null;
 
   function toggleGoal(goal: TrainingGoal) {
     setForm((current) => ({
@@ -89,15 +106,27 @@ export function TrainingPlanWizard() {
       return form.objetivos.length > 0;
     }
 
+    if (currentStep === 'body') {
+      return hasValidBodyMeasurements;
+    }
+
     if (currentStep === 'safety') {
       return form.equipamentos.length > 0;
     }
 
     return true;
-  }, [currentStep, form.equipamentos.length, form.objetivos.length]);
+  }, [currentStep, form.equipamentos.length, form.objetivos.length, hasValidBodyMeasurements]);
 
   async function submit() {
-    const result = await createMonthlyPlan(form);
+    if (!hasValidBodyMeasurements || alturaCm === null || pesoKg === null) {
+      return;
+    }
+
+    const result = await createMonthlyPlan({
+      ...form,
+      alturaCm,
+      pesoKg,
+    });
 
     if (result.ok) {
       setCurrentStepIndex(0);
@@ -152,12 +181,12 @@ export function TrainingPlanWizard() {
                   className="min-h-12 rounded-2xl border border-input bg-background px-4"
                   inputMode="decimal"
                   onChange={(event) =>
-                    setForm((current) => ({
+                    setBodyMeasurements((current) => ({
                       ...current,
-                      pesoKg: Number(event.target.value),
+                      pesoKg: event.target.value,
                     }))
                   }
-                  value={form.pesoKg}
+                  value={bodyMeasurements.pesoKg}
                 />
               </label>
               <label className="grid gap-1 text-sm font-bold">
@@ -166,12 +195,12 @@ export function TrainingPlanWizard() {
                   className="min-h-12 rounded-2xl border border-input bg-background px-4"
                   inputMode="numeric"
                   onChange={(event) =>
-                    setForm((current) => ({
+                    setBodyMeasurements((current) => ({
                       ...current,
-                      alturaCm: Number(event.target.value),
+                      alturaCm: event.target.value,
                     }))
                   }
-                  value={form.alturaCm}
+                  value={bodyMeasurements.alturaCm}
                 />
               </label>
               <OptionChip

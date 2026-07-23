@@ -65,4 +65,46 @@ test.describe('monthly training plan route', () => {
     const viewportWidth = await page.evaluate(() => window.innerWidth);
     expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
   });
+
+  test('requires positive numeric body measurements before continuing', async ({ page }) => {
+    await page.goto('/signup');
+    await page.getByLabel(/^nome$/i).fill('Joao');
+    await page.getByLabel(/sobrenome/i).fill('Silva');
+    await page.getByLabel(/cpf/i).fill('52998224725');
+    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
+    await page.getByLabel(/telefone/i).fill('11999999999');
+    await page.getByLabel(/e-mail/i).fill('measurements@funcione.app');
+    await page.getByLabel(/senha/i).fill('StrongPass123!');
+    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('link', { name: /treino/i }).click();
+    await expect(page).toHaveURL(/\/training$/);
+
+    await page.getByRole('button', { name: /continuar/i }).click();
+
+    const continueButton = page.getByRole('button', { name: /continuar/i });
+    const weightInput = page.getByLabel(/peso/i);
+    const heightInput = page.getByLabel(/altura/i);
+
+    await weightInput.fill('');
+    await expect(continueButton).toBeDisabled();
+
+    await weightInput.fill('0');
+    await expect(continueButton).toBeDisabled();
+
+    await weightInput.fill('-1');
+    await expect(continueButton).toBeDisabled();
+
+    await weightInput.fill('82');
+    await heightInput.fill('nao e numero');
+    await expect(continueButton).toBeDisabled();
+
+    await heightInput.fill('180');
+    await expect(continueButton).toBeEnabled();
+    await continueButton.click();
+
+    await expect(
+      page.getByRole('button', { name: /3x por semana/i }),
+    ).toBeVisible();
+  });
 });
