@@ -3984,7 +3984,7 @@ git commit -m "feat: show active training plan"
 - Consumes: all enum values from `training-plan.ts`
 - Produces: all approved form fields, custom equipment, custom injury and injury observations with limits
 
-- [ ] **Step 1: Add E2E for prompt-injection-like free text**
+- [x] **Step 1: Add E2E for prompt-injection-like free text**
 
 Add to `training-plan.spec.ts`:
 
@@ -4025,7 +4025,7 @@ test('accepts bounded free text as data without breaking the flow', async ({ pag
 });
 ```
 
-- [ ] **Step 2: Run E2E and verify red**
+- [x] **Step 2: Run E2E and verify red**
 
 Run:
 
@@ -4035,7 +4035,7 @@ npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.
 
 Expected: FAIL because full free-text controls do not exist.
 
-- [ ] **Step 3: Expand option arrays in wizard**
+- [x] **Step 3: Expand option arrays in wizard**
 
 Inside `training-plan-wizard.tsx`, define exact arrays:
 
@@ -4085,7 +4085,7 @@ const injuryOptions = [
 
 Render each array with `OptionChip` so every approved option is reachable.
 
-- [ ] **Step 4: Add bounded text inputs**
+- [x] **Step 4: Add bounded text inputs**
 
 Add helper:
 
@@ -4113,7 +4113,7 @@ For custom equipment, render:
 
 For custom injury and observation, use max lengths 120 and 180. When continuing from safety to review, build `form.lesoes` from selected injuries and free text. Custom injury is valid only when the normalized description has length greater than zero.
 
-- [ ] **Step 5: Add i18n for every option**
+- [x] **Step 5: Add i18n for every option**
 
 Add keys for every value in the arrays from Step 3 in both locale files. The final `training.options` object must include:
 
@@ -4152,7 +4152,7 @@ Add keys for every value in the arrays from Step 3 in both locale files. The fin
 
 Add modality, goal, experience, place and injury keys with the same enum names.
 
-- [ ] **Step 6: Verify mobile and desktop E2E**
+- [x] **Step 6: Verify mobile and desktop E2E**
 
 Run:
 
@@ -4163,7 +4163,7 @@ npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.
 
 Expected: PASS in both projects.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/frontend/src apps/frontend/e2e/training-plan.spec.ts

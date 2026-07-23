@@ -45,9 +45,17 @@
     "continue": "Continuar",
     "fields": {
       "body": "Perfil fisico",
+      "customEquipment": "Descreva o equipamento",
+      "customInjury": "Descreva a lesao",
+      "duration": "Duracao do treino",
+      "equipment": "Equipamentos",
       "frequency": "Frequencia",
+      "goals": "Objetivos",
       "height": "Altura em cm",
+      "injuries": "Lesoes",
+      "injuryObservation": "Observacao da lesao",
       "modality": "Modalidade",
+      "place": "Local de treino",
       "routine": "Rotina",
       "safety": "Ambiente e seguranca",
       "weight": "Peso em kg"
@@ -59,27 +67,66 @@
     "newTitle": "Novo plano de treino",
     "options": {
       "availability": {
-        "3x_semana": "3x por semana"
+        "2x_semana": "2x por semana",
+        "3x_semana": "3x por semana",
+        "4x_semana": "4x por semana",
+        "5x_semana": "5x por semana",
+        "6x_semana": "6x por semana",
+        "7x_semana": "7x por semana"
       },
       "duration": {
-        "60": "60 minutos"
+        "30": "30 minutos",
+        "45": "45 minutos",
+        "60": "60 minutos",
+        "75": "75 minutos",
+        "90": "90 minutos"
       },
       "equipment": {
-        "halteres": "Halteres"
+        "banco_caixa": "Banco ou caixa",
+        "barra_anilhas": "Barra e anilhas",
+        "bola": "Bola",
+        "colchonete": "Colchonete",
+        "cones": "Cones",
+        "corda": "Corda",
+        "customizado": "Outro equipamento",
+        "elasticos": "Elasticos",
+        "halteres": "Halteres",
+        "maquinas_academia": "Maquinas de academia",
+        "nenhum": "Nenhum"
       },
       "experience": {
-        "intermediario": "Intermediario"
+        "avancado": "Avancado",
+        "iniciante": "Iniciante",
+        "intermediario": "Intermediario",
+        "profissional": "Profissional"
       },
       "goals": {
-        "performance": "Performance"
+        "condicionamento": "Condicionamento",
+        "ganho_massa": "Ganho de massa",
+        "performance": "Performance",
+        "perda_peso": "Perda de peso",
+        "prevencao_lesao": "Prevencao de lesao"
       },
       "injuries": {
-        "none": "Nao tenho lesao"
+        "customizada": "Outra lesao",
+        "has": "Tenho lesao",
+        "joelho": "Joelho",
+        "lombar": "Lombar",
+        "none": "Sem lesoes",
+        "ombro": "Ombro",
+        "punho": "Punho",
+        "quadril": "Quadril",
+        "tornozelo": "Tornozelo"
       },
       "modalities": {
+        "basquete": "Basquete",
+        "beach_tenis": "Beach tenis",
+        "futebol_futsal": "Futebol e futsal",
         "volei": "Volei"
       },
       "places": {
+        "academia": "Academia",
+        "ar_livre": "Ar livre",
         "casa": "Casa"
       }
     },

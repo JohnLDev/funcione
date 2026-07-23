@@ -45,9 +45,17 @@
     "continue": "Continue",
     "fields": {
       "body": "Physical profile",
+      "customEquipment": "Describe the equipment",
+      "customInjury": "Describe the injury",
+      "duration": "Training duration",
+      "equipment": "Equipment",
       "frequency": "Frequency",
+      "goals": "Goals",
       "height": "Height in cm",
+      "injuries": "Injuries",
+      "injuryObservation": "Injury observation",
       "modality": "Sport",
+      "place": "Training location",
       "routine": "Routine",
       "safety": "Environment and safety",
       "weight": "Weight in kg"
@@ -59,27 +67,66 @@
     "newTitle": "New training plan",
     "options": {
       "availability": {
-        "3x_semana": "3 times per week"
+        "2x_semana": "2 times per week",
+        "3x_semana": "3 times per week",
+        "4x_semana": "4 times per week",
+        "5x_semana": "5 times per week",
+        "6x_semana": "6 times per week",
+        "7x_semana": "7 times per week"
       },
       "duration": {
-        "60": "60 minutes"
+        "30": "30 minutes",
+        "45": "45 minutes",
+        "60": "60 minutes",
+        "75": "75 minutes",
+        "90": "90 minutes"
       },
       "equipment": {
-        "halteres": "Dumbbells"
+        "banco_caixa": "Bench or box",
+        "barra_anilhas": "Barbell and plates",
+        "bola": "Ball",
+        "colchonete": "Mat",
+        "cones": "Cones",
+        "corda": "Jump rope",
+        "customizado": "Other equipment",
+        "elasticos": "Resistance bands",
+        "halteres": "Dumbbells",
+        "maquinas_academia": "Gym machines",
+        "nenhum": "None"
       },
       "experience": {
-        "intermediario": "Intermediate"
+        "avancado": "Advanced",
+        "iniciante": "Beginner",
+        "intermediario": "Intermediate",
+        "profissional": "Professional"
       },
       "goals": {
-        "performance": "Performance"
+        "condicionamento": "Conditioning",
+        "ganho_massa": "Muscle gain",
+        "performance": "Performance",
+        "perda_peso": "Weight loss",
+        "prevencao_lesao": "Injury prevention"
       },
       "injuries": {
-        "none": "I have no injury"
+        "customizada": "Other injury",
+        "has": "I have an injury",
+        "joelho": "Knee",
+        "lombar": "Lower back",
+        "none": "No injuries",
+        "ombro": "Shoulder",
+        "punho": "Wrist",
+        "quadril": "Hip",
+        "tornozelo": "Ankle"
       },
       "modalities": {
+        "basquete": "Basketball",
+        "beach_tenis": "Beach tennis",
+        "futebol_futsal": "Football and futsal",
         "volei": "Volleyball"
       },
       "places": {
+        "academia": "Gym",
+        "ar_livre": "Outdoors",
         "casa": "Home"
       }
     },

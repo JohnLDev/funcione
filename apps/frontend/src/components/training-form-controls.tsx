@@ -17,7 +17,7 @@ export function OptionChip({
     <button
       aria-pressed={active}
       className={cn(
-        'flex min-h-12 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-black transition-colors',
+        'flex min-h-12 w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-black transition-colors',
         active
           ? 'border-primary bg-primary text-primary-foreground'
           : 'border-border bg-card text-foreground',
@@ -44,7 +44,7 @@ export function FieldGroup({
   return (
     <section className="grid gap-3">
       <h2 className="text-lg font-black text-foreground">{title}</h2>
-      <div className="grid gap-2">{children}</div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{children}</div>
     </section>
   );
 }

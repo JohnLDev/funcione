@@ -2,15 +2,68 @@ import { useMemo, useState } from 'react';
 import { Activity, Dumbbell, MapPin, Target, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type {
+  EquipmentType,
+  ExperienceLevel,
+  InjuryType,
   MonthlyTrainingPlanRequest,
   TrainingEquipment,
   TrainingGoal,
   TrainingInjury,
+  TrainingModality,
+  TrainingPlace,
+  WeeklyAvailability,
 } from '@/training/training-plan.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
 import { FieldGroup, OptionChip } from './training-form-controls.js';
 import { Button } from './ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card.js';
+
+const modalities = ['volei', 'basquete', 'futebol_futsal', 'beach_tenis'] as const;
+const goals = [
+  'performance',
+  'condicionamento',
+  'prevencao_lesao',
+  'perda_peso',
+  'ganho_massa',
+] as const;
+const experienceLevels = [
+  'iniciante',
+  'intermediario',
+  'avancado',
+  'profissional',
+] as const;
+const availabilityOptions = [
+  '2x_semana',
+  '3x_semana',
+  '4x_semana',
+  '5x_semana',
+  '6x_semana',
+  '7x_semana',
+] as const;
+const durationOptions = [30, 45, 60, 75, 90] as const;
+const places = ['academia', 'casa', 'ar_livre'] as const;
+const equipmentOptions = [
+  'nenhum',
+  'halteres',
+  'barra_anilhas',
+  'elasticos',
+  'banco_caixa',
+  'colchonete',
+  'cones',
+  'corda',
+  'maquinas_academia',
+  'bola',
+  'customizado',
+] as const;
+const injuryOptions = [
+  'joelho',
+  'tornozelo',
+  'ombro',
+  'lombar',
+  'quadril',
+  'punho',
+  'customizada',
+] as const;
 
 const initialForm: MonthlyTrainingPlanRequest = {
   alturaCm: 180,
@@ -26,6 +79,13 @@ const initialForm: MonthlyTrainingPlanRequest = {
 };
 
 const steps = ['objective', 'body', 'routine', 'safety', 'review'] as const;
+
+function normalizeFreeText(value: string, maxLength: number) {
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, maxLength);
+}
 
 function parsePositiveNumber(value: string): number | null {
   const parsed = Number(value);
@@ -63,12 +123,43 @@ export function TrainingPlanWizard() {
       pesoKg: String(profile?.pesoKg ?? initialForm.pesoKg),
     };
   });
+  const [selectedEquipmentTypes, setSelectedEquipmentTypes] = useState<
+    EquipmentType[]
+  >(() => form.equipamentos.map((equipment) => equipment.tipo));
+  const [customEquipmentDescription, setCustomEquipmentDescription] = useState(
+    () =>
+      form.equipamentos.find((equipment) => equipment.tipo === 'customizado')
+        ?.descricao ?? '',
+  );
+  const [hasInjuries, setHasInjuries] = useState(() => form.lesoes.length > 0);
+  const [selectedInjuryTypes, setSelectedInjuryTypes] = useState<InjuryType[]>(
+    () => form.lesoes.map((injury) => injury.tipo),
+  );
+  const [customInjuryDescription, setCustomInjuryDescription] = useState(
+    () =>
+      form.lesoes.find((injury) => injury.tipo === 'customizada')?.descricao ??
+      '',
+  );
+  const [injuryObservation, setInjuryObservation] = useState(
+    () => form.lesoes[0]?.observacoes ?? '',
+  );
 
   const currentStep = steps[currentStepIndex];
   const progress = Math.round(((currentStepIndex + 1) / steps.length) * 100);
   const alturaCm = parsePositiveNumber(bodyMeasurements.alturaCm);
   const pesoKg = parsePositiveNumber(bodyMeasurements.pesoKg);
   const hasValidBodyMeasurements = alturaCm !== null && pesoKg !== null;
+  const normalizedCustomEquipmentDescription = customEquipmentDescription.trim();
+  const normalizedCustomInjuryDescription = customInjuryDescription.trim();
+  const normalizedInjuryObservation = injuryObservation.trim();
+  const hasCustomEquipment = selectedEquipmentTypes.includes('customizado');
+  const hasCustomInjury = selectedInjuryTypes.includes('customizada');
+  const hasValidSafetyInputs =
+    selectedEquipmentTypes.length > 0 &&
+    (!hasCustomEquipment || normalizedCustomEquipmentDescription.length > 0) &&
+    (!hasInjuries ||
+      (selectedInjuryTypes.length > 0 &&
+        (!hasCustomInjury || normalizedCustomInjuryDescription.length > 0)));
 
   function toggleGoal(goal: TrainingGoal) {
     setForm((current) => ({
@@ -81,24 +172,78 @@ export function TrainingPlanWizard() {
     }));
   }
 
-  function toggleEquipment(equipment: TrainingEquipment) {
-    setForm((current) => {
-      if (equipment.tipo === 'nenhum') {
-        return { ...current, equipamentos: [{ tipo: 'nenhum' }] };
+  function toggleEquipment(equipment: EquipmentType) {
+    setSelectedEquipmentTypes((current) => {
+      if (equipment === 'nenhum') {
+        return ['nenhum'];
       }
 
-      const withoutNone = current.equipamentos.filter(
-        (item) => item.tipo !== 'nenhum',
-      );
-      const exists = withoutNone.some((item) => item.tipo === equipment.tipo);
+      const withoutNone = current.filter((item) => item !== 'nenhum');
 
-      return {
-        ...current,
-        equipamentos: exists
-          ? withoutNone.filter((item) => item.tipo !== equipment.tipo)
-          : [...withoutNone, equipment],
-      };
+      return withoutNone.includes(equipment)
+        ? withoutNone.filter((item) => item !== equipment)
+        : [...withoutNone, equipment];
     });
+  }
+
+  function toggleInjury(injury: InjuryType) {
+    setHasInjuries(true);
+    setSelectedInjuryTypes((current) =>
+      current.includes(injury)
+        ? current.filter((item) => item !== injury)
+        : [...current, injury],
+    );
+  }
+
+  function buildEquipment(): TrainingEquipment[] {
+    const equipment: TrainingEquipment[] = [];
+
+    for (const tipo of selectedEquipmentTypes) {
+      if (tipo === 'customizado') {
+        if (normalizedCustomEquipmentDescription) {
+          equipment.push({
+            descricao: normalizedCustomEquipmentDescription,
+            tipo,
+          });
+        }
+
+        continue;
+      }
+
+      equipment.push({ tipo });
+    }
+
+    return equipment;
+  }
+
+  function buildInjuries(): TrainingInjury[] {
+    if (!hasInjuries) {
+      return [];
+    }
+
+    const injuries: TrainingInjury[] = [];
+
+    for (const tipo of selectedInjuryTypes) {
+      const observation = normalizedInjuryObservation
+        ? { observacoes: normalizedInjuryObservation }
+        : {};
+
+      if (tipo === 'customizada') {
+        if (normalizedCustomInjuryDescription) {
+          injuries.push({
+            descricao: normalizedCustomInjuryDescription,
+            tipo,
+            ...observation,
+          });
+        }
+
+        continue;
+      }
+
+      injuries.push({ tipo, ...observation });
+    }
+
+    return injuries;
   }
 
   const canContinue = useMemo(() => {
@@ -111,14 +256,35 @@ export function TrainingPlanWizard() {
     }
 
     if (currentStep === 'safety') {
-      return form.equipamentos.length > 0;
+      return hasValidSafetyInputs;
     }
 
     return true;
-  }, [currentStep, form.equipamentos.length, form.objetivos.length, hasValidBodyMeasurements]);
+  }, [currentStep, form.objetivos.length, hasValidBodyMeasurements, hasValidSafetyInputs]);
+
+  function continueWizard() {
+    if (currentStep === 'safety') {
+      if (!hasValidSafetyInputs) {
+        return;
+      }
+
+      setForm((current) => ({
+        ...current,
+        equipamentos: buildEquipment(),
+        lesoes: buildInjuries(),
+      }));
+    }
+
+    setCurrentStepIndex((index) => Math.min(steps.length - 1, index + 1));
+  }
 
   async function submit() {
-    if (!hasValidBodyMeasurements || alturaCm === null || pesoKg === null) {
+    if (
+      !hasValidBodyMeasurements ||
+      !hasValidSafetyInputs ||
+      alturaCm === null ||
+      pesoKg === null
+    ) {
       return;
     }
 
@@ -155,30 +321,43 @@ export function TrainingPlanWizard() {
         </CardHeader>
         <CardContent className="grid gap-5 p-4 pt-0">
           {currentStep === 'objective' ? (
-            <FieldGroup title={t('training.fields.modality')}>
-              <OptionChip
-                active={form.modalidade === 'volei'}
-                icon={Target}
-                label={t('training.options.modalities.volei')}
-                onClick={() =>
-                  setForm((current) => ({ ...current, modalidade: 'volei' }))
-                }
-              />
-              <OptionChip
-                active={form.objetivos.includes('performance')}
-                icon={Activity}
-                label={t('training.options.goals.performance')}
-                onClick={() => toggleGoal('performance')}
-              />
-            </FieldGroup>
+            <>
+              <FieldGroup title={t('training.fields.modality')}>
+                {modalities.map((modality) => (
+                  <OptionChip
+                    active={form.modalidade === modality}
+                    icon={Target}
+                    key={modality}
+                    label={t(`training.options.modalities.${modality}`)}
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        modalidade: modality as TrainingModality,
+                      }))
+                    }
+                  />
+                ))}
+              </FieldGroup>
+              <FieldGroup title={t('training.fields.goals')}>
+                {goals.map((goal) => (
+                  <OptionChip
+                    active={form.objetivos.includes(goal)}
+                    icon={Activity}
+                    key={goal}
+                    label={t(`training.options.goals.${goal}`)}
+                    onClick={() => toggleGoal(goal)}
+                  />
+                ))}
+              </FieldGroup>
+            </>
           ) : null}
 
           {currentStep === 'body' ? (
             <FieldGroup title={t('training.fields.body')}>
-              <label className="grid gap-1 text-sm font-bold">
+              <label className="grid min-w-0 gap-1 text-sm font-bold">
                 {t('training.fields.weight')}
                 <input
-                  className="min-h-12 rounded-2xl border border-input bg-background px-4"
+                  className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
                   inputMode="decimal"
                   onChange={(event) =>
                     setBodyMeasurements((current) => ({
@@ -189,10 +368,10 @@ export function TrainingPlanWizard() {
                   value={bodyMeasurements.pesoKg}
                 />
               </label>
-              <label className="grid gap-1 text-sm font-bold">
+              <label className="grid min-w-0 gap-1 text-sm font-bold">
                 {t('training.fields.height')}
                 <input
-                  className="min-h-12 rounded-2xl border border-input bg-background px-4"
+                  className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
                   inputMode="numeric"
                   onChange={(event) =>
                     setBodyMeasurements((current) => ({
@@ -203,84 +382,177 @@ export function TrainingPlanWizard() {
                   value={bodyMeasurements.alturaCm}
                 />
               </label>
-              <OptionChip
-                active={form.nivelExperiencia === 'intermediario'}
-                label={t('training.options.experience.intermediario')}
-                onClick={() =>
-                  setForm((current) => ({
-                    ...current,
-                    nivelExperiencia: 'intermediario',
-                  }))
-                }
-              />
+              {experienceLevels.map((level) => (
+                <OptionChip
+                  active={form.nivelExperiencia === level}
+                  key={level}
+                  label={t(`training.options.experience.${level}`)}
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      nivelExperiencia: level as ExperienceLevel,
+                    }))
+                  }
+                />
+              ))}
             </FieldGroup>
           ) : null}
 
           {currentStep === 'routine' ? (
-            <FieldGroup title={t('training.fields.routine')}>
-              <OptionChip
-                active={form.tempoDisponivel === '3x_semana'}
-                icon={Timer}
-                label={t('training.options.availability.3x_semana')}
-                onClick={() =>
-                  setForm((current) => ({
-                    ...current,
-                    tempoDisponivel: '3x_semana',
-                  }))
-                }
-              />
-              <OptionChip
-                active={form.duracaoTreinoMinutos === 60}
-                label={t('training.options.duration.60')}
-                onClick={() =>
-                  setForm((current) => ({
-                    ...current,
-                    duracaoTreinoMinutos: 60,
-                  }))
-                }
-              />
-            </FieldGroup>
+            <>
+              <FieldGroup title={t('training.fields.frequency')}>
+                {availabilityOptions.map((availability) => (
+                  <OptionChip
+                    active={form.tempoDisponivel === availability}
+                    icon={Timer}
+                    key={availability}
+                    label={t(`training.options.availability.${availability}`)}
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        tempoDisponivel: availability as WeeklyAvailability,
+                      }))
+                    }
+                  />
+                ))}
+              </FieldGroup>
+              <FieldGroup title={t('training.fields.duration')}>
+                {durationOptions.map((duration) => (
+                  <OptionChip
+                    active={form.duracaoTreinoMinutos === duration}
+                    key={duration}
+                    label={t(`training.options.duration.${duration}`)}
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        duracaoTreinoMinutos: duration,
+                      }))
+                    }
+                  />
+                ))}
+              </FieldGroup>
+            </>
           ) : null}
 
           {currentStep === 'safety' ? (
-            <FieldGroup title={t('training.fields.safety')}>
-              <OptionChip
-                active={form.localTreino === 'casa'}
-                icon={MapPin}
-                label={t('training.options.places.casa')}
-                onClick={() =>
-                  setForm((current) => ({ ...current, localTreino: 'casa' }))
-                }
-              />
-              <OptionChip
-                active={form.equipamentos.some((item) => item.tipo === 'halteres')}
-                icon={Dumbbell}
-                label={t('training.options.equipment.halteres')}
-                onClick={() => toggleEquipment({ tipo: 'halteres' })}
-              />
-              <OptionChip
-                active={form.lesoes.length === 0}
-                label={t('training.options.injuries.none')}
-                onClick={() =>
-                  setForm((current) => ({ ...current, lesoes: [] as TrainingInjury[] }))
-                }
-              />
-            </FieldGroup>
+            <>
+              <FieldGroup title={t('training.fields.place')}>
+                {places.map((place) => (
+                  <OptionChip
+                    active={form.localTreino === place}
+                    icon={MapPin}
+                    key={place}
+                    label={t(`training.options.places.${place}`)}
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        localTreino: place as TrainingPlace,
+                      }))
+                    }
+                  />
+                ))}
+              </FieldGroup>
+              <FieldGroup title={t('training.fields.equipment')}>
+                {equipmentOptions.map((equipment) => (
+                  <OptionChip
+                    active={selectedEquipmentTypes.includes(equipment)}
+                    icon={Dumbbell}
+                    key={equipment}
+                    label={t(`training.options.equipment.${equipment}`)}
+                    onClick={() => toggleEquipment(equipment)}
+                  />
+                ))}
+                {hasCustomEquipment ? (
+                  <label className="grid min-w-0 gap-1 text-sm font-bold sm:col-span-2">
+                    {t('training.fields.customEquipment')}
+                    <input
+                      className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
+                      maxLength={80}
+                      onChange={(event) =>
+                        setCustomEquipmentDescription(
+                          normalizeFreeText(event.target.value, 80),
+                        )
+                      }
+                      value={customEquipmentDescription}
+                    />
+                  </label>
+                ) : null}
+              </FieldGroup>
+              <FieldGroup title={t('training.fields.injuries')}>
+                <OptionChip
+                  active={!hasInjuries}
+                  label={t('training.options.injuries.none')}
+                  onClick={() => {
+                    setHasInjuries(false);
+                    setSelectedInjuryTypes([]);
+                  }}
+                />
+                <OptionChip
+                  active={hasInjuries}
+                  label={t('training.options.injuries.has')}
+                  onClick={() => setHasInjuries(true)}
+                />
+                {hasInjuries
+                  ? injuryOptions.map((injury) => (
+                      <OptionChip
+                        active={selectedInjuryTypes.includes(injury)}
+                        key={injury}
+                        label={t(`training.options.injuries.${injury}`)}
+                        onClick={() => toggleInjury(injury)}
+                      />
+                    ))
+                  : null}
+                {hasCustomInjury ? (
+                  <label className="grid min-w-0 gap-1 text-sm font-bold sm:col-span-2">
+                    {t('training.fields.customInjury')}
+                    <input
+                      className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
+                      maxLength={120}
+                      onChange={(event) =>
+                        setCustomInjuryDescription(
+                          normalizeFreeText(event.target.value, 120),
+                        )
+                      }
+                      value={customInjuryDescription}
+                    />
+                  </label>
+                ) : null}
+                {hasInjuries && selectedInjuryTypes.length > 0 ? (
+                  <label className="grid min-w-0 gap-1 text-sm font-bold sm:col-span-2">
+                    {t('training.fields.injuryObservation')}
+                    <input
+                      className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
+                      maxLength={180}
+                      onChange={(event) =>
+                        setInjuryObservation(
+                          normalizeFreeText(event.target.value, 180),
+                        )
+                      }
+                      value={injuryObservation}
+                    />
+                  </label>
+                ) : null}
+              </FieldGroup>
+            </>
           ) : null}
 
           {currentStep === 'review' ? (
             <dl className="grid gap-2 text-sm font-bold">
-              <div className="flex justify-between gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
                 <dt className="text-muted-foreground">
                   {t('training.fields.modality')}
                 </dt>
-                <dd>{t(`training.options.modalities.${form.modalidade}`)}</dd>
+                <dd className="min-w-0 break-words text-right">
+                  {t(`training.options.modalities.${form.modalidade}`)}
+                </dd>
               </div>
-              <div className="flex justify-between gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
                 <dt className="text-muted-foreground">
                   {t('training.fields.frequency')}
                 </dt>
-                <dd>{t(`training.options.availability.${form.tempoDisponivel}`)}</dd>
+                <dd className="min-w-0 break-words text-right">
+                  {t(`training.options.availability.${form.tempoDisponivel}`)}
+                </dd>
               </div>
             </dl>
           ) : null}
@@ -296,20 +568,16 @@ export function TrainingPlanWizard() {
             </Button>
             {currentStep === 'review' ? (
               <Button
-                disabled={isGenerating || !hasValidBodyMeasurements}
+                disabled={
+                  isGenerating || !hasValidBodyMeasurements || !hasValidSafetyInputs
+                }
                 onClick={submit}
                 type="button"
               >
                 {isGenerating ? t('training.generating') : t('training.generate')}
               </Button>
             ) : (
-              <Button
-                disabled={!canContinue}
-                onClick={() =>
-                  setCurrentStepIndex((index) => Math.min(steps.length - 1, index + 1))
-                }
-                type="button"
-              >
+              <Button disabled={!canContinue} onClick={continueWizard} type="button">
                 {t('training.continue')}
               </Button>
             )}
