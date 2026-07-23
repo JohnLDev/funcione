@@ -44,6 +44,7 @@ describe('instructor prompt', () => {
     assert.match(prompt, /Equipamentos disponiveis/i);
     assert.match(prompt, /halteres/i);
     assert.match(prompt, /escada de agilidade/i);
+    assert.match(prompt, /<equipamento_customizado><!\[CDATA\[/);
     assert.match(prompt, /unica fonte/i);
   });
 
