@@ -1,7 +1,8 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { createErrorResponse, errorResponseJsonSchema } from '../../../shared/http/errors.js';
 import {
   extractBearerToken,
+  type AuthenticatedUser,
   type AuthVerifier,
   type UserProfileRepository,
   type UserProfileRepositoryFactory,
@@ -36,6 +37,12 @@ export type TrainingRoutesOptions = {
   userProfileRepositoryFactory?: UserProfileRepositoryFactory;
 };
 
+declare module 'fastify' {
+  interface FastifyRequest {
+    monthlyTrainingUser: AuthenticatedUser | null;
+  }
+}
+
 function serializePublicMonthlyPlan(plan: MonthlyTrainingPlan) {
   return {
     availableForRegenerationAt: plan.availableForRegenerationAt,
@@ -48,6 +55,43 @@ function serializePublicMonthlyPlan(plan: MonthlyTrainingPlan) {
   };
 }
 
+async function authenticateMonthlyRequest(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  authVerifier: AuthVerifier | undefined,
+) {
+  const verification = await authVerifier?.(request.headers.authorization);
+
+  if (!verification?.authenticated) {
+    return reply.status(verification?.statusCode ?? 401).send(
+      createErrorResponse(
+        verification?.code ?? 'AUTH_TOKEN_MISSING',
+        verification?.message ?? 'Authentication token is required.',
+      ),
+    );
+  }
+
+  request.monthlyTrainingUser = verification.user;
+}
+
+function resolveMonthlyRouteDependencies(
+  request: FastifyRequest,
+  options: TrainingRoutesOptions,
+) {
+  const accessToken = extractBearerToken(request.headers.authorization);
+
+  return {
+    repositories:
+      accessToken && options.trainingRepositoryFactory
+        ? options.trainingRepositoryFactory(accessToken)
+        : options.trainingRepositories,
+    userProfileRepository:
+      accessToken && options.userProfileRepositoryFactory
+        ? options.userProfileRepositoryFactory(accessToken)
+        : options.userProfileRepository,
+  };
+}
+
 export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
   app,
   options,
@@ -55,9 +99,13 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
   const trainingPlanGenerator =
     options.trainingPlanGenerator ?? generateTrainingPlan;
 
+  app.decorateRequest('monthlyTrainingUser', null);
+
   app.get(
     '/training-plans/active',
     {
+      onRequest: (request, reply) =>
+        authenticateMonthlyRequest(request, reply, options.authVerifier),
       schema: {
         tags: ['training'],
         summary: 'Get the active monthly training plan',
@@ -70,26 +118,8 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
       },
     },
     async (request, reply) => {
-      const verification = await options.authVerifier?.(request.headers.authorization);
-
-      if (!verification?.authenticated) {
-        return reply.status(verification?.statusCode ?? 401).send(
-          createErrorResponse(
-            verification?.code ?? 'AUTH_TOKEN_MISSING',
-            verification?.message ?? 'Authentication token is required.',
-          ),
-        );
-      }
-
-      const accessToken = extractBearerToken(request.headers.authorization);
-      const repositories =
-        accessToken && options.trainingRepositoryFactory
-          ? options.trainingRepositoryFactory(accessToken)
-          : options.trainingRepositories;
-      const userProfileRepository =
-        accessToken && options.userProfileRepositoryFactory
-          ? options.userProfileRepositoryFactory(accessToken)
-          : options.userProfileRepository;
+      const { repositories, userProfileRepository } =
+        resolveMonthlyRouteDependencies(request, options);
 
       if (!repositories || !userProfileRepository) {
         return reply.status(503).send(
@@ -100,7 +130,7 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
         );
       }
 
-      const state = await getActiveMonthlyTrainingPlan(verification.user, {
+      const state = await getActiveMonthlyTrainingPlan(request.monthlyTrainingUser!, {
         ...repositories,
         trainingPlanGenerator,
         userProfileRepository,
@@ -120,6 +150,8 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
   app.post(
     '/training-plans/monthly',
     {
+      onRequest: (request, reply) =>
+        authenticateMonthlyRequest(request, reply, options.authVerifier),
       schema: {
         tags: ['training'],
         summary: 'Create a monthly training plan',
@@ -135,26 +167,8 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
       },
     },
     async (request, reply) => {
-      const verification = await options.authVerifier?.(request.headers.authorization);
-
-      if (!verification?.authenticated) {
-        return reply.status(verification?.statusCode ?? 401).send(
-          createErrorResponse(
-            verification?.code ?? 'AUTH_TOKEN_MISSING',
-            verification?.message ?? 'Authentication token is required.',
-          ),
-        );
-      }
-
-      const accessToken = extractBearerToken(request.headers.authorization);
-      const repositories =
-        accessToken && options.trainingRepositoryFactory
-          ? options.trainingRepositoryFactory(accessToken)
-          : options.trainingRepositories;
-      const userProfileRepository =
-        accessToken && options.userProfileRepositoryFactory
-          ? options.userProfileRepositoryFactory(accessToken)
-          : options.userProfileRepository;
+      const { repositories, userProfileRepository } =
+        resolveMonthlyRouteDependencies(request, options);
 
       if (!repositories || !userProfileRepository) {
         return reply.status(503).send(
@@ -165,7 +179,7 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
         );
       }
 
-      const result = await createMonthlyTrainingPlan(verification.user, request.body, {
+      const result = await createMonthlyTrainingPlan(request.monthlyTrainingUser!, request.body, {
         ...repositories,
         trainingPlanGenerator,
         userProfileRepository,

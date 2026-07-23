@@ -382,6 +382,59 @@ describe('training routes', () => {
     assert.equal(createResponse.statusCode, 401);
   });
 
+  it('authenticates monthly creation before validating the request body', async () => {
+    let verificationCalls = 0;
+    const app = await buildApp({
+      authVerifier: async () => {
+        verificationCalls += 1;
+
+        return {
+          authenticated: false,
+          code: 'AUTH_TOKEN_MISSING',
+          message: 'Authentication token is required.',
+          statusCode: 401,
+        };
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      payload: {},
+      url: '/api/training-plans/monthly',
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(response.json().error.code, 'AUTH_TOKEN_MISSING');
+    assert.equal(verificationCalls, 1);
+  });
+
+  it('returns auth provider configuration failures from monthly routes', async () => {
+    const providerFailureAuthVerifier: AuthVerifier = async () => ({
+      authenticated: false,
+      code: 'AUTH_PROVIDER_NOT_CONFIGURED',
+      message: 'Authentication provider is not configured.',
+      statusCode: 503,
+    });
+    const app = await buildApp({ authVerifier: providerFailureAuthVerifier });
+
+    const [activeResponse, createResponse] = await Promise.all([
+      app.inject({
+        method: 'GET',
+        url: '/api/training-plans/active',
+      }),
+      app.inject({
+        method: 'POST',
+        payload: {},
+        url: '/api/training-plans/monthly',
+      }),
+    ]);
+
+    assert.equal(activeResponse.statusCode, 503);
+    assert.equal(activeResponse.json().error.code, 'AUTH_PROVIDER_NOT_CONFIGURED');
+    assert.equal(createResponse.statusCode, 503);
+    assert.equal(createResponse.json().error.code, 'AUTH_PROVIDER_NOT_CONFIGURED');
+  });
+
   it('returns the authenticated user active monthly plan state', async () => {
     const userProfileRepository = await createUserProfileRepository();
     const app = await buildApp({
@@ -439,6 +492,40 @@ describe('training routes', () => {
     assert.equal(response.json().plan.userId, authenticatedUser.id);
     assert.equal(response.json().plan.snapshot.idade, 30);
     assert.equal(response.json().plan.metadata, undefined);
+  });
+
+  it('omits metadata from an existing active monthly plan response', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    const app = await buildApp({
+      authVerifier,
+      trainingPlanGenerator: async () => ({
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      }),
+      trainingRepositories: createInMemoryTrainingRepositories(),
+      userProfileRepository,
+    });
+
+    const creationResponse = await app.inject({
+      headers: { authorization: 'Bearer valid-token' },
+      method: 'POST',
+      payload: monthlyPayload,
+      url: '/api/training-plans/monthly',
+    });
+    const activeResponse = await app.inject({
+      headers: { authorization: 'Bearer valid-token' },
+      method: 'GET',
+      url: '/api/training-plans/active',
+    });
+
+    assert.equal(creationResponse.statusCode, 200);
+    assert.equal(activeResponse.statusCode, 200);
+    assert.equal(activeResponse.json().activePlan.userId, authenticatedUser.id);
+    assert.equal(activeResponse.json().activePlan.metadata, undefined);
   });
 
   it('uses request-scoped monthly storage repositories when factories are configured', async () => {
