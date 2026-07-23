@@ -5,19 +5,29 @@ import {
   authRoutes,
   createInMemoryUserProfileRepository,
   createSupabaseAuthVerifier,
+  createSupabaseUserProfileRepository,
   type AuthVerifier,
   type UserProfileRepository,
   type UserProfileRepositoryFactory,
 } from './modules/auth/index.js';
 import { trainingRoutes } from './modules/training/http/training-routes.js';
-import type { TrainingPlanGenerator } from './modules/training/index.js';
+import {
+  createInMemoryTrainingRepositories,
+  createSupabaseTrainingRepositories,
+  type TrainingPlanGenerator,
+  type TrainingRepositories,
+  type TrainingRepositoryFactory,
+} from './modules/training/index.js';
 import { getServerConfig } from './shared/config/env.js';
 import { createErrorResponse } from './shared/http/errors.js';
 
 export type BuildAppOptions = {
   authVerifier?: AuthVerifier;
   logger?: boolean;
+  supabaseFetch?: typeof fetch;
   trainingPlanGenerator?: TrainingPlanGenerator;
+  trainingRepositories?: TrainingRepositories;
+  trainingRepositoryFactory?: TrainingRepositoryFactory;
   userProfileRepository?: UserProfileRepository;
   userProfileRepositoryFactory?: UserProfileRepositoryFactory;
 };
@@ -89,6 +99,35 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   const fallbackUserProfileRepository =
     options.userProfileRepository ?? createInMemoryUserProfileRepository();
+  const fallbackTrainingRepositories =
+    options.trainingRepositories ?? createInMemoryTrainingRepositories();
+  const supabasePersistenceConfig =
+    config.supabasePublishableKey && config.supabaseUrl
+      ? {
+          supabasePublishableKey: config.supabasePublishableKey,
+          supabaseUrl: config.supabaseUrl,
+        }
+      : null;
+  const userProfileRepositoryFactory =
+    options.userProfileRepositoryFactory ??
+    (supabasePersistenceConfig
+      ? ((accessToken: string) =>
+          createSupabaseUserProfileRepository({
+            ...supabasePersistenceConfig,
+            accessToken,
+            fetch: options.supabaseFetch,
+          }))
+      : undefined);
+  const trainingRepositoryFactory =
+    options.trainingRepositoryFactory ??
+    (supabasePersistenceConfig
+      ? ((accessToken: string) =>
+          createSupabaseTrainingRepositories({
+            ...supabasePersistenceConfig,
+            accessToken,
+            fetch: options.supabaseFetch,
+          }))
+      : undefined);
 
   await app.register(authRoutes, {
     prefix: '/api',
@@ -99,12 +138,14 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
         supabaseUrl: config.supabaseUrl,
       }),
     userProfileRepository: fallbackUserProfileRepository,
-    userProfileRepositoryFactory: options.userProfileRepositoryFactory,
+    userProfileRepositoryFactory,
   });
 
   await app.register(trainingRoutes, {
     prefix: '/api',
     trainingPlanGenerator: options.trainingPlanGenerator,
+    trainingRepositories: fallbackTrainingRepositories,
+    trainingRepositoryFactory,
   });
 
   return app;

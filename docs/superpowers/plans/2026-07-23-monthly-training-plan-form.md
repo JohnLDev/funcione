@@ -1622,7 +1622,7 @@ git commit -m "feat: add monthly training plan service"
 - Produces: `createSupabaseTrainingRepositories(config: SupabaseTrainingRepositoriesConfig)`
 - Consumes: `AthleticProfileRepository`, `MonthlyTrainingPlanRepository`, `createSupabaseUserProfileRepository`
 
-- [ ] **Step 1: Create Supabase migration**
+- [x] **Step 1: Create Supabase migration**
 
 Run:
 
@@ -1632,7 +1632,7 @@ supabase migration new create_training_plan_tables
 
 Expected: Supabase CLI creates one file under `supabase/migrations/` whose name ends with `_create_training_plan_tables.sql`.
 
-- [ ] **Step 2: Add migration SQL**
+- [x] **Step 2: Add migration SQL**
 
 Put this SQL in the generated migration file:
 
@@ -1732,7 +1732,7 @@ create policy "Users can update their own monthly plans"
   with check ((select auth.uid()) = user_id);
 ```
 
-- [ ] **Step 3: Add user scoped Supabase client helper**
+- [x] **Step 3: Add user scoped Supabase client helper**
 
 Create `apps/backend/src/modules/training/infra/supabase-user-scoped-client.ts`:
 
@@ -1763,7 +1763,7 @@ export function createUserScopedSupabaseClient(
 }
 ```
 
-- [ ] **Step 4: Add Supabase training repositories**
+- [x] **Step 4: Add Supabase training repositories**
 
 Create `apps/backend/src/modules/training/infra/supabase-training-repositories.ts` with row mappers:
 
@@ -1963,7 +1963,7 @@ export function createSupabaseTrainingRepositories(
 }
 ```
 
-- [ ] **Step 5: Wire repositories in buildApp**
+- [x] **Step 5: Wire repositories in buildApp**
 
 In `apps/backend/src/app.ts`, import Supabase factories. Create fallback in-memory training repos once:
 
@@ -2008,7 +2008,7 @@ For training routes, Task 6 will pass a factory using this shape:
       : undefined;
 ```
 
-- [ ] **Step 6: Export Supabase training factories**
+- [x] **Step 6: Export Supabase training factories**
 
 Update `apps/backend/src/modules/training/index.ts`:
 
@@ -2019,7 +2019,7 @@ export {
 } from './infra/supabase-training-repositories.js';
 ```
 
-- [ ] **Step 7: Run backend build**
+- [x] **Step 7: Run backend build**
 
 Run:
 
@@ -2029,7 +2029,7 @@ npm run build --workspace @langchain-training/backend
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/backend/src apps/backend/src/modules/training/infra supabase

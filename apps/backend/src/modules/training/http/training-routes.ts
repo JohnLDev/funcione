@@ -5,12 +5,18 @@ import {
   type TrainingPlanGenerator,
 } from '../application/generate-training-plan.js';
 import { DadosUsuarioSchema } from '../domain/index.js';
+import type {
+  TrainingRepositories,
+  TrainingRepositoryFactory,
+} from '../application/training-repository-factory.js';
 import {
   dadosUsuarioJsonSchema,
   generateTrainingPlanSuccessJsonSchema,
 } from './training-json-schemas.js';
 
 export type TrainingRoutesOptions = {
+  trainingRepositories?: TrainingRepositories;
+  trainingRepositoryFactory?: TrainingRepositoryFactory;
   trainingPlanGenerator?: TrainingPlanGenerator;
 };
 
