@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildApp } from '../../../app.js';
 import {
+  EquipamentoTreino,
   LocalTreino,
   ModalidadeEsportiva,
   NivelExperiencia,
@@ -23,6 +24,7 @@ const validInput: DadosUsuario = {
   tempoDisponivel: TempoDisponivel.TresVezesPorSemana,
   duracaoTreinoMinutos: 90,
   localTreino: LocalTreino.Academia,
+  equipamentos: [{ tipo: EquipamentoTreino.Halteres }],
   lesoes: [],
 };
 
@@ -98,6 +100,26 @@ describe('training routes', () => {
 
     assert.equal(response.statusCode, 400);
     assert.match(response.json().error.message, /body/i);
+  });
+
+  it('rejects training payloads without equipment information', async () => {
+    const app = await buildApp({
+      trainingPlanGenerator: async () => ({
+        fallbackUsed: false,
+        attempts: [],
+        error: 'not called',
+      }),
+    });
+    const { equipamentos, ...payload } = validInput;
+
+    const response = await app.inject({
+      method: 'POST',
+      payload,
+      url: '/api/training-plans',
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.match(JSON.stringify(response.json()), /equipamentos/);
   });
 
   it('creates a training plan with execution metadata', async () => {

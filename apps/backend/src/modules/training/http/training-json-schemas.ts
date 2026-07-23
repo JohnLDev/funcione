@@ -1,4 +1,5 @@
 import {
+  EquipamentoTreino,
   GravidadeLesao,
   LocalTreino,
   ModalidadeEsportiva,
@@ -7,6 +8,42 @@ import {
   TempoDisponivel,
   TipoLesao,
 } from '../domain/index.js';
+
+const equipamentoUsuarioJsonSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      required: ['tipo'],
+      additionalProperties: false,
+      properties: {
+        tipo: {
+          type: 'string',
+          enum: [
+            EquipamentoTreino.Nenhum,
+            EquipamentoTreino.Halteres,
+            EquipamentoTreino.BarraAnilhas,
+            EquipamentoTreino.Elasticos,
+            EquipamentoTreino.BancoCaixa,
+            EquipamentoTreino.Colchonete,
+            EquipamentoTreino.Cones,
+            EquipamentoTreino.Corda,
+            EquipamentoTreino.MaquinasAcademia,
+            EquipamentoTreino.Bola,
+          ],
+        },
+      },
+    },
+    {
+      type: 'object',
+      required: ['tipo', 'descricao'],
+      additionalProperties: false,
+      properties: {
+        tipo: { type: 'string', enum: [EquipamentoTreino.Customizado] },
+        descricao: { type: 'string', minLength: 1, maxLength: 80 },
+      },
+    },
+  ],
+} as const;
 
 const lesaoUsuarioJsonSchema = {
   oneOf: [
@@ -57,6 +94,7 @@ export const dadosUsuarioJsonSchema = {
     'tempoDisponivel',
     'duracaoTreinoMinutos',
     'localTreino',
+    'equipamentos',
     'lesoes',
   ],
   additionalProperties: false,
@@ -75,6 +113,11 @@ export const dadosUsuarioJsonSchema = {
     tempoDisponivel: { type: 'string', enum: Object.values(TempoDisponivel) },
     duracaoTreinoMinutos: { type: 'number' },
     localTreino: { type: 'string', enum: Object.values(LocalTreino) },
+    equipamentos: {
+      type: 'array',
+      minItems: 1,
+      items: equipamentoUsuarioJsonSchema,
+    },
     lesoes: {
       type: 'array',
       items: lesaoUsuarioJsonSchema,

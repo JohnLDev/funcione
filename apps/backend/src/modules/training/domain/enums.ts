@@ -70,3 +70,22 @@ export enum NivelImpacto {
   Reduzido = 'reduzido',
   Baixo = 'baixo',
 }
+
+export enum EquipamentoTreino {
+  Nenhum = 'nenhum',
+  Halteres = 'halteres',
+  BarraAnilhas = 'barra_anilhas',
+  Elasticos = 'elasticos',
+  BancoCaixa = 'banco_caixa',
+  Colchonete = 'colchonete',
+  Cones = 'cones',
+  Corda = 'corda',
+  MaquinasAcademia = 'maquinas_academia',
+  Bola = 'bola',
+  Customizado = 'customizado',
+}
+
+export enum MonthlyTrainingPlanStatus {
+  Active = 'active',
+  Expired = 'expired',
+}

@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import {
+  EquipamentoTreino,
   GravidadeLesao,
   LocalTreino,
   ModalidadeEsportiva,
@@ -8,6 +9,11 @@ import {
   TempoDisponivel,
   TipoLesao,
 } from './enums.js';
+import { createBoundedPromptTextSchema } from './prompt-text.js';
+
+const LesaoCustomizadaDescricaoSchema = createBoundedPromptTextSchema(120);
+const LesaoObservacaoSchema = createBoundedPromptTextSchema(180).optional();
+const EquipamentoCustomizadoDescricaoSchema = createBoundedPromptTextSchema(80);
 
 export const LesaoUsuarioSchema = z.discriminatedUnion('tipo', [
   z.object({
@@ -20,13 +26,34 @@ export const LesaoUsuarioSchema = z.discriminatedUnion('tipo', [
       TipoLesao.Punho,
     ]),
     gravidade: z.enum(GravidadeLesao).optional(),
-    observacoes: z.string().optional(),
+    observacoes: LesaoObservacaoSchema,
   }),
   z.object({
     tipo: z.literal(TipoLesao.Customizada),
-    descricao: z.string(),
+    descricao: LesaoCustomizadaDescricaoSchema,
     gravidade: z.enum(GravidadeLesao).optional(),
-    observacoes: z.string().optional(),
+    observacoes: LesaoObservacaoSchema,
+  }),
+]);
+
+export const EquipamentoUsuarioSchema = z.discriminatedUnion('tipo', [
+  z.object({
+    tipo: z.enum([
+      EquipamentoTreino.Nenhum,
+      EquipamentoTreino.Halteres,
+      EquipamentoTreino.BarraAnilhas,
+      EquipamentoTreino.Elasticos,
+      EquipamentoTreino.BancoCaixa,
+      EquipamentoTreino.Colchonete,
+      EquipamentoTreino.Cones,
+      EquipamentoTreino.Corda,
+      EquipamentoTreino.MaquinasAcademia,
+      EquipamentoTreino.Bola,
+    ]),
+  }),
+  z.object({
+    tipo: z.literal(EquipamentoTreino.Customizado),
+    descricao: EquipamentoCustomizadoDescricaoSchema,
   }),
 ]);
 
@@ -41,7 +68,24 @@ export const DadosUsuarioSchema = z.object({
   tempoDisponivel: z.enum(TempoDisponivel),
   duracaoTreinoMinutos: z.number(),
   localTreino: z.enum(LocalTreino),
+  equipamentos: z.array(EquipamentoUsuarioSchema).min(1).superRefine((equipamentos, ctx) => {
+    const hasNenhum = equipamentos.some(
+      (equipamento) => equipamento.tipo === EquipamentoTreino.Nenhum,
+    );
+
+    if (hasNenhum && equipamentos.length > 1) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Equipment "nenhum" cannot be combined with other equipment.',
+      });
+    }
+  }),
   lesoes: z.array(LesaoUsuarioSchema),
+});
+
+export const CreateMonthlyTrainingPlanRequestSchema = DadosUsuarioSchema.omit({
+  idade: true,
+  userId: true,
 });
 
 export const AlongamentoSchema = z.object({
@@ -103,6 +147,10 @@ export const PlanoTreinoSchema = z.object({
 });
 
 export type LesaoUsuario = z.infer<typeof LesaoUsuarioSchema>;
+export type EquipamentoUsuario = z.infer<typeof EquipamentoUsuarioSchema>;
+export type CreateMonthlyTrainingPlanRequest = z.infer<
+  typeof CreateMonthlyTrainingPlanRequestSchema
+>;
 export type DadosUsuario = z.infer<typeof DadosUsuarioSchema>;
 export type AlongamentoDTO = z.infer<typeof AlongamentoSchema>;
 export type ExercicioDTO = z.infer<typeof ExercicioSchema>;

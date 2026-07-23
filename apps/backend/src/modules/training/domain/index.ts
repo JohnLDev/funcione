@@ -1,6 +1,7 @@
 export * from './enums.js';
 export * from './labels.js';
 export * from './policies.js';
+export * from './prompt-text.js';
 export * from './schemas.js';
 export * from './entities/Athlete.js';
 export * from './entities/Exercise.js';

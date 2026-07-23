@@ -399,6 +399,7 @@ git commit -m "feat: add request scoped profile repositories"
 - Modify: `apps/backend/src/modules/training/domain/index.ts`
 - Create: `apps/backend/src/modules/training/domain/prompt-text.test.ts`
 - Modify: `apps/backend/src/modules/training/http/training-routes.test.ts`
+- Modify: `apps/backend/src/modules/training/http/training-json-schemas.ts`
 
 **Interfaces:**
 - Produces: `EquipamentoTreino`
@@ -409,7 +410,7 @@ git commit -m "feat: add request scoped profile repositories"
 - Produces: `delimitUserText(label: string, value: string): string`
 - Consumes: existing `DadosUsuarioSchema`, `LesaoUsuarioSchema`, `DadosUsuario`
 
-- [ ] **Step 1: Write failing prompt safety tests**
+- [x] **Step 1: Write failing prompt safety tests**
 
 Create `apps/backend/src/modules/training/domain/prompt-text.test.ts`:
 
@@ -452,7 +453,7 @@ describe('prompt text safety', () => {
 });
 ```
 
-- [ ] **Step 2: Update route test payloads to prove equipment is required**
+- [x] **Step 2: Update route test payloads to prove equipment is required**
 
 In `apps/backend/src/modules/training/http/training-routes.test.ts`, add `EquipamentoTreino` import and include:
 
@@ -490,7 +491,7 @@ Add a validation test:
   });
 ```
 
-- [ ] **Step 3: Run training tests and verify red**
+- [x] **Step 3: Run training tests and verify red**
 
 Run:
 
@@ -501,7 +502,7 @@ node --test apps/backend/dist/modules/training/domain/prompt-text.test.js apps/b
 
 Expected: FAIL because `prompt-text.ts` and `EquipamentoTreino` do not exist.
 
-- [ ] **Step 4: Add equipment and monthly status enums**
+- [x] **Step 4: Add equipment and monthly status enums**
 
 Append to `apps/backend/src/modules/training/domain/enums.ts`:
 
@@ -526,7 +527,7 @@ export enum MonthlyTrainingPlanStatus {
 }
 ```
 
-- [ ] **Step 5: Add labels**
+- [x] **Step 5: Add labels**
 
 In `apps/backend/src/modules/training/domain/labels.ts`, import `EquipamentoTreino` and `MonthlyTrainingPlanStatus`, then add:
 
@@ -551,7 +552,7 @@ export const monthlyTrainingPlanStatusLabel: Record<MonthlyTrainingPlanStatus, s
 };
 ```
 
-- [ ] **Step 6: Add prompt text utilities**
+- [x] **Step 6: Add prompt text utilities**
 
 Create `apps/backend/src/modules/training/domain/prompt-text.ts`:
 
@@ -579,7 +580,7 @@ export function delimitUserText(label: string, value: string): string {
 }
 ```
 
-- [ ] **Step 7: Extend training schemas**
+- [x] **Step 7: Extend training schemas**
 
 In `apps/backend/src/modules/training/domain/schemas.ts`, import `EquipamentoTreino` and `createBoundedPromptTextSchema`. Replace free strings in injury schemas:
 
@@ -662,7 +663,15 @@ export type CreateMonthlyTrainingPlanRequest = z.infer<
 >;
 ```
 
-- [ ] **Step 8: Run domain and route tests**
+- [x] **Step 8: Update the HTTP JSON/OpenAPI equipment schema**
+
+In `apps/backend/src/modules/training/http/training-json-schemas.ts`, add an
+equipment `oneOf` schema, require `equipamentos` in `dadosUsuarioJsonSchema`,
+and expose it in the body properties. Predefined equipment objects require only
+`tipo`; custom equipment additionally requires a `descricao` limited to 80
+characters.
+
+- [x] **Step 9: Run domain and route tests**
 
 Run:
 
@@ -673,7 +682,7 @@ node --test apps/backend/dist/modules/training/domain/prompt-text.test.js apps/b
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add apps/backend/src/modules/training/domain apps/backend/src/modules/training/http/training-routes.test.ts
