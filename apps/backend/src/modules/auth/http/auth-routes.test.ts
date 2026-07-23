@@ -84,6 +84,34 @@ describe('auth routes', () => {
     ]);
   });
 
+  it('uses a request scoped user profile repository when a factory is provided', async () => {
+    const calls: string[] = [];
+    const app = await buildApp({
+      authVerifier: async () => ({
+        authenticated: true,
+        user: {
+          email: 'athlete@funcione.app',
+          id: 'user-123',
+          provider: 'password',
+        },
+      }),
+      userProfileRepositoryFactory: (accessToken) => {
+        calls.push(accessToken);
+
+        return createInMemoryUserProfileRepository();
+      },
+    });
+
+    const response = await app.inject({
+      headers: { authorization: 'Bearer scoped-token' },
+      method: 'GET',
+      url: '/api/auth/profile',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(calls, ['scoped-token']);
+  });
+
   it('rejects invalid registration profile payloads', async () => {
     const app = await buildApp({
       authVerifier: authenticatedAuthVerifier,

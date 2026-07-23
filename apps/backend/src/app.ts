@@ -7,6 +7,7 @@ import {
   createSupabaseAuthVerifier,
   type AuthVerifier,
   type UserProfileRepository,
+  type UserProfileRepositoryFactory,
 } from './modules/auth/index.js';
 import { trainingRoutes } from './modules/training/http/training-routes.js';
 import type { TrainingPlanGenerator } from './modules/training/index.js';
@@ -18,6 +19,7 @@ export type BuildAppOptions = {
   logger?: boolean;
   trainingPlanGenerator?: TrainingPlanGenerator;
   userProfileRepository?: UserProfileRepository;
+  userProfileRepositoryFactory?: UserProfileRepositoryFactory;
 };
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -80,6 +82,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     routePrefix: '/documentation',
   });
 
+  const fallbackUserProfileRepository =
+    options.userProfileRepository ?? createInMemoryUserProfileRepository();
+
   await app.register(authRoutes, {
     prefix: '/api',
     authVerifier:
@@ -88,8 +93,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
         supabasePublishableKey: config.supabasePublishableKey,
         supabaseUrl: config.supabaseUrl,
       }),
-    userProfileRepository:
-      options.userProfileRepository ?? createInMemoryUserProfileRepository(),
+    userProfileRepository: fallbackUserProfileRepository,
+    userProfileRepositoryFactory: options.userProfileRepositoryFactory,
   });
 
   await app.register(trainingRoutes, {
