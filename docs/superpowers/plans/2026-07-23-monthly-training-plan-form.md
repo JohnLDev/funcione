@@ -1535,7 +1535,7 @@ node --test apps/backend/dist/modules/training/application/monthly-training-plan
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/backend/src/modules/training
