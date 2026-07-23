@@ -35,7 +35,7 @@ export function createInMemoryTrainingRepositories(): {
       },
     },
     monthlyTrainingPlanRepository: {
-      completeActiveGeneration: async (reservationId, planInput) => {
+      completeActiveGeneration: async (reservationId, planInput, profileInput) => {
         const reservation = reservations.get(reservationId);
 
         if (!reservation || reservation.userId !== planInput.userId) {
@@ -43,6 +43,13 @@ export function createInMemoryTrainingRepositories(): {
         }
 
         const now = new Date().toISOString();
+        const existingProfile = athleticProfiles.get(reservation.userId);
+        const profile: AthleticProfile = {
+          ...profileInput,
+          createdAt: existingProfile?.createdAt ?? now,
+          updatedAt: now,
+          userId: reservation.userId,
+        };
         const plan: MonthlyTrainingPlan = {
           ...planInput,
           createdAt: now,
@@ -51,6 +58,7 @@ export function createInMemoryTrainingRepositories(): {
         };
 
         monthlyPlans.set(plan.id, plan);
+        athleticProfiles.set(reservation.userId, profile);
         reservations.delete(reservationId);
 
         return { ok: true, plan };
@@ -66,16 +74,16 @@ export function createInMemoryTrainingRepositories(): {
           }
         }
       },
-      findActiveByUserId: async (userId) =>
-        Array.from(monthlyPlans.values()).find(
+      findActiveGenerationStateByUserId: async (userId) => ({
+        activePlan: Array.from(monthlyPlans.values()).find(
           (plan) =>
             plan.userId === userId &&
             plan.status === MonthlyTrainingPlanStatus.Active,
         ) ?? null,
-      hasPendingGenerationByUserId: async (userId) =>
-        Array.from(reservations.values()).some(
+        hasPendingGeneration: Array.from(reservations.values()).some(
           (reservation) => reservation.userId === userId,
         ),
+      }),
       releaseActiveGeneration: async (reservationId) => {
         reservations.delete(reservationId);
       },

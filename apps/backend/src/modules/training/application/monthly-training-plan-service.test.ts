@@ -112,6 +112,44 @@ describe('monthly training plan service', () => {
     assert.equal(profile?.pesoKg, 82);
   });
 
+  it('completes the active plan and athletic profile through one repository operation', async () => {
+    const dependencies = await createDependencies();
+    dependencies.athleticProfileRepository.upsert = async () => {
+      throw new Error('separate profile upsert should not run');
+    };
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, true);
+    const profile = await dependencies.athleticProfileRepository.findByUserId(user.id);
+    assert.equal(profile?.pesoKg, payload.pesoKg);
+  });
+
+  it('releases a reservation when transactional completion fails', async () => {
+    const dependencies = await createDependencies();
+    const completeActiveGeneration =
+      dependencies.monthlyTrainingPlanRepository.completeActiveGeneration;
+    let completionProfile: { pesoKg: number } | undefined;
+    dependencies.monthlyTrainingPlanRepository.completeActiveGeneration = async (...args) => {
+      completionProfile = (args as unknown[])[2] as { pesoKg: number } | undefined;
+      return { ok: false, reason: 'RESERVATION_NOT_FOUND' };
+    };
+
+    const failedResult = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(failedResult.ok, false);
+    assert.equal(completionProfile?.pesoKg, payload.pesoKg);
+    const stateAfterFailure = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(stateAfterFailure.activePlan, null);
+    assert.equal(stateAfterFailure.athleticProfile, null);
+    assert.equal(stateAfterFailure.canGenerate, true);
+
+    dependencies.monthlyTrainingPlanRepository.completeActiveGeneration =
+      completeActiveGeneration;
+    const retryResult = await createMonthlyTrainingPlan(user, payload, dependencies);
+    assert.equal(retryResult.ok, true);
+  });
+
   it('blocks a second generation before 30 days', async () => {
     const dependencies = await createDependencies();
 
@@ -196,6 +234,23 @@ describe('monthly training plan service', () => {
     resolveGeneration?.();
     const result = await pendingGeneration;
     assert.equal(result.ok, true);
+  });
+
+  it('reads active and pending generation state atomically', async () => {
+    const dependencies = await createDependencies();
+    let atomicStateReads = 0;
+    Object.assign(dependencies.monthlyTrainingPlanRepository, {
+      findActiveGenerationStateByUserId: async () => {
+        atomicStateReads += 1;
+        return { activePlan: null, hasPendingGeneration: true };
+      },
+    });
+
+    const state = await getActiveMonthlyTrainingPlan(user, dependencies);
+
+    assert.equal(atomicStateReads, 1);
+    assert.equal(state.activePlan, null);
+    assert.equal(state.canGenerate, false);
   });
 
   it('blocks regeneration one millisecond before 30 days', async () => {
@@ -293,6 +348,43 @@ describe('monthly training plan service', () => {
           error: 'test generation failure',
           fallbackUsed: false,
         };
+      }
+
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const failedResult = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(failedResult.ok, false);
+    if (failedResult.ok) {
+      return;
+    }
+    assert.equal(failedResult.error.code, 'TRAINING_PLAN_GENERATION_FAILED');
+    const stateAfterFailure = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(stateAfterFailure.canGenerate, true);
+    assert.equal(stateAfterFailure.athleticProfile, null);
+
+    const retryResult = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(retryResult.ok, true);
+    assert.equal(generationCalls, 2);
+  });
+
+  it('releases a reservation when the generator throws and permits retry', async () => {
+    const dependencies = await createDependencies();
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+
+      if (generationCalls === 1) {
+        throw new Error('thrown test generation failure');
       }
 
       return {

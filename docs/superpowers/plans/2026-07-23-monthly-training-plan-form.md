@@ -1585,6 +1585,27 @@ git commit -m "feat: add monthly training plan service"
 - [x] **Step 23: Run focused, backend, and repository verification**
 - [x] **Step 24: Append local report evidence and commit fixes**
 
+### Task 4 Transactional Repository Review Fixes
+
+**Goal:** Complete the monthly plan and reusable athletic profile atomically and read active/pending generation state from one repository snapshot.
+
+**Approach:** Pass `AthleticProfileInput` into reservation completion, write plan/profile/remove-reservation in one in-memory execution segment, and replace split active/pending reads with `findActiveGenerationStateByUserId`. Release completion failures for retry and retain explicit thrown-generator release behavior.
+
+**Files:**
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-repository.ts`
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-service.ts`
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-service.test.ts`
+- Modify: `apps/backend/src/modules/training/infra/in-memory-training-repositories.ts`
+- Update locally: `.superpowers/sdd/task-4-report.md` (ignored and untracked)
+
+- [x] **Step 25: Add transactional completion, atomic state, and thrown-generator tests**
+- [x] **Step 26: Run focused tests and verify RED**
+- [x] **Step 27: Add transactional plan/profile completion contract**
+- [x] **Step 28: Replace split active/pending reads with atomic state**
+- [x] **Step 29: Release reservations after completion failure**
+- [x] **Step 30: Run focused, backend, and repository verification**
+- [x] **Step 31: Append local report evidence and commit fixes**
+
 ---
 
 ### Task 5: Supabase Training Persistence And Migration

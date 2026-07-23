@@ -1,4 +1,7 @@
-import type { MonthlyTrainingPlan } from '../domain/monthly-plan.js';
+import type {
+  AthleticProfileInput,
+  MonthlyTrainingPlan,
+} from '../domain/monthly-plan.js';
 
 export type MonthlyTrainingPlanInput = Omit<
   MonthlyTrainingPlan,
@@ -13,14 +16,21 @@ export type CompleteActiveGenerationResult =
   | { ok: true; plan: MonthlyTrainingPlan }
   | { ok: false; reason: 'RESERVATION_NOT_FOUND' };
 
+export type ActiveGenerationState = {
+  activePlan: MonthlyTrainingPlan | null;
+  hasPendingGeneration: boolean;
+};
+
 export type MonthlyTrainingPlanRepository = {
   completeActiveGeneration: (
     reservationId: string,
     plan: MonthlyTrainingPlanInput,
+    athleticProfile: AthleticProfileInput,
   ) => Promise<CompleteActiveGenerationResult>;
   expireActiveByUserId: (userId: string, expiredAt: string) => Promise<void>;
-  findActiveByUserId: (userId: string) => Promise<MonthlyTrainingPlan | null>;
-  hasPendingGenerationByUserId: (userId: string) => Promise<boolean>;
+  findActiveGenerationStateByUserId: (
+    userId: string,
+  ) => Promise<ActiveGenerationState>;
   releaseActiveGeneration: (
     reservationId: string,
     releasedAt: string,

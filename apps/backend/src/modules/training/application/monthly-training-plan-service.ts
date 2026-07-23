@@ -15,7 +15,10 @@ import type {
   GenerateTrainingPlanResult,
   TrainingPlanGenerator,
 } from './generate-training-plan.js';
-import type { MonthlyTrainingPlanRepository } from './monthly-training-plan-repository.js';
+import type {
+  ActiveGenerationState,
+  MonthlyTrainingPlanRepository,
+} from './monthly-training-plan-repository.js';
 
 export type MonthlyTrainingPlanServiceDependencies = {
   athleticProfileRepository: AthleticProfileRepository;
@@ -56,24 +59,24 @@ function hasPlanExpired(plan: MonthlyTrainingPlan, now: Date): boolean {
   return new Date(plan.availableForRegenerationAt).getTime() <= now.getTime();
 }
 
-async function getFreshActivePlan(
+async function getFreshActiveGenerationState(
   userId: string,
   now: Date,
   repository: MonthlyTrainingPlanRepository,
-): Promise<MonthlyTrainingPlan | null> {
-  const activePlan = await repository.findActiveByUserId(userId);
+): Promise<ActiveGenerationState> {
+  const state = await repository.findActiveGenerationStateByUserId(userId);
 
-  if (!activePlan) {
-    return null;
+  if (!state.activePlan) {
+    return state;
   }
 
-  if (!hasPlanExpired(activePlan, now)) {
-    return activePlan;
+  if (!hasPlanExpired(state.activePlan, now)) {
+    return state;
   }
 
   await repository.expireActiveByUserId(userId, now.toISOString());
 
-  return null;
+  return repository.findActiveGenerationStateByUserId(userId);
 }
 
 export async function getActiveMonthlyTrainingPlan(
@@ -81,20 +84,20 @@ export async function getActiveMonthlyTrainingPlan(
   dependencies: MonthlyTrainingPlanServiceDependencies,
 ): Promise<MonthlyTrainingPlanState> {
   const now = dependencies.now?.() ?? new Date();
-  const activePlan = await getFreshActivePlan(
+  const generationState = await getFreshActiveGenerationState(
     user.id,
     now,
     dependencies.monthlyTrainingPlanRepository,
   );
-  const hasPendingGeneration = await dependencies.monthlyTrainingPlanRepository
-    .hasPendingGenerationByUserId(user.id);
   const athleticProfile = await dependencies.athleticProfileRepository.findByUserId(user.id);
 
   return {
-    activePlan,
+    activePlan: generationState.activePlan,
     athleticProfile,
-    canGenerate: !activePlan && !hasPendingGeneration,
-    nextGenerationAvailableAt: activePlan?.availableForRegenerationAt ?? null,
+    canGenerate:
+      !generationState.activePlan && !generationState.hasPendingGeneration,
+    nextGenerationAvailableAt:
+      generationState.activePlan?.availableForRegenerationAt ?? null,
   };
 }
 
@@ -135,13 +138,13 @@ export async function createMonthlyTrainingPlan(
   }
 
   const now = dependencies.now?.() ?? new Date();
-  const activePlan = await getFreshActivePlan(
+  const generationState = await getFreshActiveGenerationState(
     user.id,
     now,
     dependencies.monthlyTrainingPlanRepository,
   );
 
-  if (activePlan) {
+  if (generationState.activePlan || generationState.hasPendingGeneration) {
     return toActivePlanConflict();
   }
 
@@ -243,9 +246,23 @@ export async function createMonthlyTrainingPlan(
       status: MonthlyTrainingPlanStatus.Active,
       userId: user.id,
     },
+    {
+      alturaCm: snapshot.alturaCm,
+      equipamentosDisponiveis: snapshot.equipamentos,
+      lesoesRecorrentes: snapshot.lesoes,
+      localTreinoComum: snapshot.localTreino,
+      modalidadePreferida: snapshot.modalidade,
+      nivelExperiencia: snapshot.nivelExperiencia,
+      pesoKg: snapshot.pesoKg,
+    },
   );
 
   if (!completion.ok) {
+    await dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration(
+      reservation.reservationId,
+      now.toISOString(),
+    );
+
     return {
       error: {
         code: 'TRAINING_PLAN_GENERATION_FAILED',
@@ -255,16 +272,6 @@ export async function createMonthlyTrainingPlan(
       ok: false,
     };
   }
-
-  await dependencies.athleticProfileRepository.upsert(user.id, {
-    alturaCm: snapshot.alturaCm,
-    equipamentosDisponiveis: snapshot.equipamentos,
-    lesoesRecorrentes: snapshot.lesoes,
-    localTreinoComum: snapshot.localTreino,
-    modalidadePreferida: snapshot.modalidade,
-    nivelExperiencia: snapshot.nivelExperiencia,
-    pesoKg: snapshot.pesoKg,
-  });
 
   return { ok: true, plan: completion.plan };
 }
