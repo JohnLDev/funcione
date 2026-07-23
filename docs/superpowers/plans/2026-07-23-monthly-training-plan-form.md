@@ -689,6 +689,13 @@ git add apps/backend/src/modules/training/domain apps/backend/src/modules/traini
 git commit -m "feat: add safe training input contract"
 ```
 
+- [x] **Review fixes: Align OpenAPI free-text documentation**
+
+Update the training request OpenAPI schema and route tests so normalized
+free-text constraints are documented without applying conflicting raw string
+length validation. Verify custom equipment with whitespace that normalizes to
+80 characters reaches the generator.
+
 ---
 
 ### Task 3: AI Prompt Uses Equipment And Delimited User Text

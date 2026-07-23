@@ -9,8 +9,24 @@ import {
   TipoLesao,
 } from '../domain/index.js';
 
+function normalizedTextDescription(maxLength: number): string {
+  return `Normalized server-side: must contain 1 to ${maxLength} characters after control-character removal and whitespace collapsing.`;
+}
+
 const equipamentoUsuarioJsonSchema = {
-  oneOf: [
+  anyOf: [
+    {
+      type: 'object',
+      required: ['tipo', 'descricao'],
+      additionalProperties: false,
+      properties: {
+        tipo: { type: 'string', enum: [EquipamentoTreino.Customizado] },
+        descricao: {
+          type: 'string',
+          description: normalizedTextDescription(80),
+        },
+      },
+    },
     {
       type: 'object',
       required: ['tipo'],
@@ -31,15 +47,6 @@ const equipamentoUsuarioJsonSchema = {
             EquipamentoTreino.Bola,
           ],
         },
-      },
-    },
-    {
-      type: 'object',
-      required: ['tipo', 'descricao'],
-      additionalProperties: false,
-      properties: {
-        tipo: { type: 'string', enum: [EquipamentoTreino.Customizado] },
-        descricao: { type: 'string', minLength: 1, maxLength: 80 },
       },
     },
   ],
@@ -64,7 +71,10 @@ const lesaoUsuarioJsonSchema = {
           ],
         },
         gravidade: { type: 'string', enum: Object.values(GravidadeLesao) },
-        observacoes: { type: 'string' },
+        observacoes: {
+          type: 'string',
+          description: normalizedTextDescription(180),
+        },
       },
     },
     {
@@ -73,9 +83,15 @@ const lesaoUsuarioJsonSchema = {
       additionalProperties: false,
       properties: {
         tipo: { type: 'string', enum: [TipoLesao.Customizada] },
-        descricao: { type: 'string' },
+        descricao: {
+          type: 'string',
+          description: normalizedTextDescription(120),
+        },
         gravidade: { type: 'string', enum: Object.values(GravidadeLesao) },
-        observacoes: { type: 'string' },
+        observacoes: {
+          type: 'string',
+          description: normalizedTextDescription(180),
+        },
       },
     },
   ],

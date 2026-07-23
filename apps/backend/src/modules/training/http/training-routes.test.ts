@@ -122,6 +122,45 @@ describe('training routes', () => {
     assert.match(JSON.stringify(response.json()), /equipamentos/);
   });
 
+  it('accepts custom equipment text that normalizes to 80 characters', async () => {
+    let receivedInput: DadosUsuario | undefined;
+    const normalizedDescription = 'a'.repeat(80);
+    const app = await buildApp({
+      trainingPlanGenerator: async (input) => {
+        receivedInput = input;
+
+        return {
+          fallbackUsed: false,
+          attempts: [],
+          error: 'not called',
+        };
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      payload: {
+        ...validInput,
+        equipamentos: [
+          {
+            tipo: EquipamentoTreino.Customizado,
+            descricao: `  ${normalizedDescription}  `,
+          },
+        ],
+      },
+      url: '/api/training-plans',
+    });
+
+    assert.equal(response.statusCode, 503);
+    assert.ok(receivedInput);
+    const equipamento = receivedInput.equipamentos[0];
+    assert.ok(equipamento);
+    assert.equal(equipamento.tipo, EquipamentoTreino.Customizado);
+    if (equipamento.tipo === EquipamentoTreino.Customizado) {
+      assert.equal(equipamento.descricao, normalizedDescription);
+    }
+  });
+
   it('creates a training plan with execution metadata', async () => {
     const successfulResult: GenerateTrainingPlanResult = {
       provider: 'test',
@@ -202,6 +241,48 @@ describe('training routes', () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().openapi, '3.0.3');
-    assert.ok(response.json().paths['/api/training-plans'].post);
+    const schema = response.json().paths['/api/training-plans'].post.requestBody.content[
+      'application/json'
+    ].schema;
+
+    assert.ok(schema.required.includes('equipamentos'));
+    assert.equal(schema.properties.equipamentos.minItems, 1);
+    assert.deepEqual(schema.properties.equipamentos.items.anyOf[1].properties.tipo.enum, [
+      EquipamentoTreino.Nenhum,
+      EquipamentoTreino.Halteres,
+      EquipamentoTreino.BarraAnilhas,
+      EquipamentoTreino.Elasticos,
+      EquipamentoTreino.BancoCaixa,
+      EquipamentoTreino.Colchonete,
+      EquipamentoTreino.Cones,
+      EquipamentoTreino.Corda,
+      EquipamentoTreino.MaquinasAcademia,
+      EquipamentoTreino.Bola,
+    ]);
+    assert.deepEqual(schema.properties.equipamentos.items.anyOf[0], {
+      type: 'object',
+      required: ['tipo', 'descricao'],
+      additionalProperties: false,
+      properties: {
+        tipo: { type: 'string', enum: [EquipamentoTreino.Customizado] },
+        descricao: {
+          type: 'string',
+          description:
+            'Normalized server-side: must contain 1 to 80 characters after control-character removal and whitespace collapsing.',
+        },
+      },
+    });
+    assert.equal(
+      schema.properties.lesoes.items.oneOf[0].properties.observacoes.description,
+      'Normalized server-side: must contain 1 to 180 characters after control-character removal and whitespace collapsing.',
+    );
+    assert.equal(
+      schema.properties.lesoes.items.oneOf[1].properties.descricao.description,
+      'Normalized server-side: must contain 1 to 120 characters after control-character removal and whitespace collapsing.',
+    );
+    assert.equal(
+      schema.properties.lesoes.items.oneOf[1].properties.observacoes.description,
+      'Normalized server-side: must contain 1 to 180 characters after control-character removal and whitespace collapsing.',
+    );
   });
 });
