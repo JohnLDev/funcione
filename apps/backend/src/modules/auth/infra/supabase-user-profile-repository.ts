@@ -7,6 +7,7 @@ import type {
 
 export type SupabaseUserProfileRepositoryConfig = {
   accessToken: string;
+  fetch?: typeof fetch;
   supabasePublishableKey: string;
   supabaseUrl: string;
 };
@@ -33,6 +34,7 @@ function createUserScopedClient(
       persistSession: false,
     },
     global: {
+      fetch: config.fetch,
       headers: {
         Authorization: `Bearer ${config.accessToken}`,
       },

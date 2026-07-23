@@ -96,7 +96,7 @@
 - Produces: `createSupabaseUserProfileRepository(config: SupabaseUserProfileRepositoryConfig): UserProfileRepository`
 - Consumes: existing `UserProfileRepository`, `createInMemoryUserProfileRepository`, `AuthVerifier`
 
-- [ ] **Step 1: Write failing auth route regression test for repository factory**
+- [x] **Step 1: Write failing auth route regression test for repository factory**
 
 Add this test to `apps/backend/src/modules/auth/http/auth-routes.test.ts`:
 
@@ -130,7 +130,7 @@ it('uses a request scoped user profile repository when a factory is provided', a
 });
 ```
 
-- [ ] **Step 2: Run auth tests and verify red**
+- [x] **Step 2: Run auth tests and verify red**
 
 Run:
 
@@ -141,7 +141,7 @@ node --test apps/backend/dist/modules/auth/http/auth-routes.test.js
 
 Expected: FAIL because `userProfileRepositoryFactory` is not accepted by `buildApp`.
 
-- [ ] **Step 3: Add shared bearer token helper**
+- [x] **Step 3: Add shared bearer token helper**
 
 Create `apps/backend/src/modules/auth/application/bearer-token.ts`:
 
@@ -163,7 +163,7 @@ export function extractBearerToken(
 }
 ```
 
-- [ ] **Step 4: Add repository factory type**
+- [x] **Step 4: Add repository factory type**
 
 Create `apps/backend/src/modules/auth/application/user-profile-repository-factory.ts`:
 
@@ -175,7 +175,7 @@ export type UserProfileRepositoryFactory = (
 ) => UserProfileRepository;
 ```
 
-- [ ] **Step 5: Refactor Supabase verifier to use shared helper**
+- [x] **Step 5: Refactor Supabase verifier to use shared helper**
 
 In `apps/backend/src/modules/auth/infra/supabase-auth-verifier.ts`, remove the local `extractBearerToken` function and import:
 
@@ -183,7 +183,7 @@ In `apps/backend/src/modules/auth/infra/supabase-auth-verifier.ts`, remove the l
 import { extractBearerToken } from '../application/bearer-token.js';
 ```
 
-- [ ] **Step 6: Add Supabase profile repository**
+- [x] **Step 6: Add Supabase profile repository**
 
 Create `apps/backend/src/modules/auth/infra/supabase-user-profile-repository.ts`:
 
@@ -293,7 +293,7 @@ export function createSupabaseUserProfileRepository(
 }
 ```
 
-- [ ] **Step 7: Wire request scoped repository in auth routes**
+- [x] **Step 7: Wire request scoped repository in auth routes**
 
 In `apps/backend/src/modules/auth/http/auth-routes.ts`, extend options:
 
@@ -334,7 +334,7 @@ Replace each direct `options.userProfileRepository` call with:
 
 Pass `userProfileRepository` to `getUserProfileState` and `completeUserProfile`.
 
-- [ ] **Step 8: Wire factory in buildApp**
+- [x] **Step 8: Wire factory in buildApp**
 
 In `apps/backend/src/app.ts`, extend `BuildAppOptions`:
 
@@ -356,7 +356,7 @@ Pass to auth routes:
     userProfileRepositoryFactory: options.userProfileRepositoryFactory,
 ```
 
-- [ ] **Step 9: Export new auth utilities**
+- [x] **Step 9: Export new auth utilities**
 
 Update `apps/backend/src/modules/auth/index.ts`:
 
@@ -369,7 +369,7 @@ export {
 } from './infra/supabase-user-profile-repository.js';
 ```
 
-- [ ] **Step 10: Run auth tests and commit**
+- [x] **Step 10: Run auth tests and commit**
 
 Run:
 

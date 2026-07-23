@@ -68,3 +68,49 @@ No defects found in the Task 1 diff. The factory is only called after successful
 ## Concerns
 
 Current Supabase JS documentation also mentions `auth.hasCustomAuthorizationHeader: true` when supplying a custom global `Authorization` header. The task brief supplied an exact repository snippet without that option, so this implementation follows the brief verbatim. Confirm whether the project wants that extra configuration in a follow-up, particularly if later repository operations call Supabase Auth methods in addition to database operations.
+
+## Review Fixes
+
+### Added Coverage
+
+- Added PUT `/api/auth/profile` coverage proving the factory receives the bearer token and the profile persists in the factory-created request-scoped repository.
+- Added an isolated Supabase repository test using an injected `fetch` double. It validates the caller JWT `Authorization` header, `findByUserId` row-to-domain mapping, and `upsert` domain-to-row mapping with `on_conflict=user_id` and the Supabase upsert preference.
+
+### RED/GREEN Evidence
+
+RED command:
+
+```bash
+rtk npm run build --workspace @langchain-training/backend
+```
+
+Result: failed as expected with `TS2353` because `fetch` was not accepted by `SupabaseUserProfileRepositoryConfig`; the test could not yet inject a network double.
+
+GREEN command:
+
+```bash
+rtk npm run build --workspace @langchain-training/backend && rtk node --test apps/backend/dist/modules/auth/http/auth-routes.test.js apps/backend/dist/modules/auth/infra/supabase-user-profile-repository.test.js
+```
+
+Result: build passed and focused suites passed 10/10 (9 auth route tests and 1 Supabase repository test).
+
+### Commands And Results
+
+```bash
+rtk npm run build --workspace @langchain-training/backend
+rtk node --test apps/backend/dist/modules/auth/http/auth-routes.test.js apps/backend/dist/modules/auth/infra/supabase-user-profile-repository.test.js
+```
+
+Result: both commands passed; no external network calls were made.
+
+### Files Changed
+
+- `apps/backend/src/modules/auth/http/auth-routes.test.ts`
+- `apps/backend/src/modules/auth/infra/supabase-user-profile-repository.test.ts`
+- `apps/backend/src/modules/auth/infra/supabase-user-profile-repository.ts`
+- `docs/superpowers/plans/2026-07-23-monthly-training-plan-form.md`
+- `.superpowers/sdd/task-1-report.md`
+
+### Self-Review
+
+The injected `fetch` is optional and preserves production client creation. The focused test exercises the real Supabase JS request builder and asserts its outgoing headers, URL, query parameters, and payload mapping. The PUT test verifies persistence through the repository instance returned by the factory, not merely that the factory was invoked.

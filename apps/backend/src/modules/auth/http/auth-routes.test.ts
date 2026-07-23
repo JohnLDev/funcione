@@ -112,6 +112,49 @@ describe('auth routes', () => {
     assert.deepEqual(calls, ['scoped-token']);
   });
 
+  it('persists a profile through the request scoped repository on PUT', async () => {
+    const requestScopedRepository = createInMemoryUserProfileRepository();
+    const factoryTokens: string[] = [];
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepositoryFactory: (accessToken) => {
+        factoryTokens.push(accessToken);
+
+        return requestScopedRepository;
+      },
+    });
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer scoped-put-token',
+      },
+      payload: {
+        firstName: 'Joao',
+        lastName: 'Silva',
+        cpf: '52998224725',
+        birthDate: '1994-08-20',
+        phoneNumber: '11999999999',
+        email: 'athlete@funcione.app',
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(factoryTokens, ['scoped-put-token']);
+    assert.deepEqual(await requestScopedRepository.findByUserId('user-123'), {
+      birthDate: '1994-08-20',
+      cpf: '52998224725',
+      createdAt: response.json().profile.createdAt,
+      email: 'athlete@funcione.app',
+      firstName: 'Joao',
+      lastName: 'Silva',
+      phoneNumber: '11999999999',
+      updatedAt: response.json().profile.updatedAt,
+      userId: 'user-123',
+    });
+  });
+
   it('rejects invalid registration profile payloads', async () => {
     const app = await buildApp({
       authVerifier: authenticatedAuthVerifier,
