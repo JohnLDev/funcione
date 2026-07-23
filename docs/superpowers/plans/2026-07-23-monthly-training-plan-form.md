@@ -3170,7 +3170,7 @@ git commit -m "feat: add training route state"
 - Consumes: `MonthlyTrainingPlanRequest`
 - Produces: visible 5-step wizard with mobile progress and desktop summary
 
-- [ ] **Step 1: Extend E2E with mobile wizard completion**
+- [x] **Step 1: Extend E2E with mobile wizard completion**
 
 Add to `apps/frontend/e2e/training-plan.spec.ts`:
 
@@ -3216,7 +3216,7 @@ test('fills the mobile wizard and generates an active plan', async ({ page }) =>
 });
 ```
 
-- [ ] **Step 2: Run E2E and verify red**
+- [x] **Step 2: Run E2E and verify red**
 
 Run:
 
@@ -3226,7 +3226,7 @@ npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.
 
 Expected: FAIL because wizard controls do not exist.
 
-- [ ] **Step 3: Add reusable form controls**
+- [x] **Step 3: Add reusable form controls**
 
 Create `apps/frontend/src/components/training-form-controls.tsx`:
 
@@ -3283,7 +3283,7 @@ export function FieldGroup({
 }
 ```
 
-- [ ] **Step 4: Add wizard component**
+- [x] **Step 4: Add wizard component**
 
 Create `apps/frontend/src/components/training-plan-wizard.tsx` with:
 
@@ -3577,7 +3577,7 @@ export function TrainingPlanWizard() {
 
 Task 8 renders the option values exercised by its E2E: `volei`, `performance`, `intermediario`, `3x_semana`, `60`, `casa`, `halteres` and no injury. Task 10 replaces this subset with full arrays for every approved modality, goal, experience level, availability value, duration, place, equipment and injury.
 
-- [ ] **Step 5: Render wizard in training screen**
+- [x] **Step 5: Render wizard in training screen**
 
 In `apps/frontend/src/components/training-screen.tsx`, replace the temporary card body for no active plan with:
 
@@ -3597,7 +3597,7 @@ import { TrainingPlanWizard } from './training-plan-wizard.js';
 
 Task 9 replaces the active-plan heading from this step with the full `TrainingActivePlan` component.
 
-- [ ] **Step 6: Add i18n keys**
+- [x] **Step 6: Add i18n keys**
 
 Add `training` keys for labels used by the wizard in both locale files. Portuguese values:
 
@@ -3662,7 +3662,7 @@ Add `training` keys for labels used by the wizard in both locale files. Portugue
 
 English values must mirror the same keys with English labels.
 
-- [ ] **Step 7: Run E2E mobile wizard**
+- [x] **Step 7: Run E2E mobile wizard**
 
 Run:
 
@@ -3673,7 +3673,7 @@ npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/frontend/src apps/frontend/e2e/training-plan.spec.ts
