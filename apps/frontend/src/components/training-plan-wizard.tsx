@@ -295,7 +295,11 @@ export function TrainingPlanWizard() {
               {t('training.back')}
             </Button>
             {currentStep === 'review' ? (
-              <Button disabled={isGenerating} onClick={submit} type="button">
+              <Button
+                disabled={isGenerating || !hasValidBodyMeasurements}
+                onClick={submit}
+                type="button"
+              >
                 {isGenerating ? t('training.generating') : t('training.generate')}
               </Button>
             ) : (

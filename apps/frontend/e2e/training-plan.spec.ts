@@ -99,6 +99,9 @@ test.describe('monthly training plan route', () => {
     await heightInput.fill('nao e numero');
     await expect(continueButton).toBeDisabled();
 
+    await heightInput.fill('Infinity');
+    await expect(continueButton).toBeDisabled();
+
     await heightInput.fill('180');
     await expect(continueButton).toBeEnabled();
     await continueButton.click();
