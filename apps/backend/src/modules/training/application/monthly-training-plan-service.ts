@@ -86,12 +86,14 @@ export async function getActiveMonthlyTrainingPlan(
     now,
     dependencies.monthlyTrainingPlanRepository,
   );
+  const hasPendingGeneration = await dependencies.monthlyTrainingPlanRepository
+    .hasPendingGenerationByUserId(user.id);
   const athleticProfile = await dependencies.athleticProfileRepository.findByUserId(user.id);
 
   return {
     activePlan,
     athleticProfile,
-    canGenerate: !activePlan,
+    canGenerate: !activePlan && !hasPendingGeneration,
     nextGenerationAvailableAt: activePlan?.availableForRegenerationAt ?? null,
   };
 }
@@ -188,10 +190,70 @@ export async function createMonthlyTrainingPlan(
 
   const snapshot = parsedSnapshot.data;
 
-  const generatedPlan = await dependencies.trainingPlanGenerator(snapshot);
+  const reservation = await dependencies.monthlyTrainingPlanRepository
+    .reserveActiveGeneration(user.id, now.toISOString());
+
+  if (!reservation.ok) {
+    return toActivePlanConflict();
+  }
+
+  let generatedPlan: GenerateTrainingPlanResult;
+
+  try {
+    generatedPlan = await dependencies.trainingPlanGenerator(snapshot);
+  } catch (error) {
+    await dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration(
+      reservation.reservationId,
+      now.toISOString(),
+    );
+
+    return {
+      error: {
+        code: 'TRAINING_PLAN_GENERATION_FAILED',
+        message: error instanceof Error ? error.message : String(error),
+        statusCode: 503,
+      },
+      ok: false,
+    };
+  }
 
   if (!('result' in generatedPlan)) {
+    await dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration(
+      reservation.reservationId,
+      now.toISOString(),
+    );
+
     return toFailureFromGeneration(generatedPlan);
+  }
+
+  const completion = await dependencies.monthlyTrainingPlanRepository.completeActiveGeneration(
+    reservation.reservationId,
+    {
+      availableForRegenerationAt: addDays(now, 30).toISOString(),
+      generatedAt: now.toISOString(),
+      metadata: {
+        attempts: generatedPlan.attempts,
+        durationMs: generatedPlan.durationMs,
+        fallbackUsed: generatedPlan.fallbackUsed,
+        model: generatedPlan.model,
+        provider: generatedPlan.provider,
+      },
+      result: generatedPlan.result,
+      snapshot,
+      status: MonthlyTrainingPlanStatus.Active,
+      userId: user.id,
+    },
+  );
+
+  if (!completion.ok) {
+    return {
+      error: {
+        code: 'TRAINING_PLAN_GENERATION_FAILED',
+        message: 'Monthly training plan reservation could not be completed.',
+        statusCode: 503,
+      },
+      ok: false,
+    };
   }
 
   await dependencies.athleticProfileRepository.upsert(user.id, {
@@ -204,25 +266,5 @@ export async function createMonthlyTrainingPlan(
     pesoKg: snapshot.pesoKg,
   });
 
-  const saveResult = await dependencies.monthlyTrainingPlanRepository.saveActive({
-    availableForRegenerationAt: addDays(now, 30).toISOString(),
-    generatedAt: now.toISOString(),
-    metadata: {
-      attempts: generatedPlan.attempts,
-      durationMs: generatedPlan.durationMs,
-      fallbackUsed: generatedPlan.fallbackUsed,
-      model: generatedPlan.model,
-      provider: generatedPlan.provider,
-    },
-    result: generatedPlan.result,
-    snapshot,
-    status: MonthlyTrainingPlanStatus.Active,
-    userId: user.id,
-  });
-
-  if (!saveResult.ok) {
-    return toActivePlanConflict();
-  }
-
-  return { ok: true, plan: saveResult.plan };
+  return { ok: true, plan: completion.plan };
 }

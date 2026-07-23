@@ -14,6 +14,7 @@ import { createInMemoryTrainingRepositories } from '../infra/in-memory-training-
 import {
   createMonthlyTrainingPlan,
   getActiveMonthlyTrainingPlan,
+  type MonthlyTrainingPlanServiceDependencies,
 } from './monthly-training-plan-service.js';
 
 const user = {
@@ -55,7 +56,9 @@ const payload = {
   tempoDisponivel: TempoDisponivel.TresVezesPorSemana,
 };
 
-async function createDependencies(nowIso = '2026-07-23T12:00:00.000Z') {
+async function createDependencies(
+  nowIso = '2026-07-23T12:00:00.000Z',
+): Promise<MonthlyTrainingPlanServiceDependencies> {
   const userProfileRepository = createInMemoryUserProfileRepository();
   await userProfileRepository.upsert(user.id, {
     birthDate: '1996-07-20',
@@ -125,12 +128,26 @@ describe('monthly training plan service', () => {
 
   it('allows only one active plan when generations run concurrently', async () => {
     const dependencies = await createDependencies();
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+    const rejectedPayload = { ...payload, pesoKg: 99 };
 
     const results = await Promise.all([
       createMonthlyTrainingPlan(user, payload, dependencies),
-      createMonthlyTrainingPlan(user, payload, dependencies),
+      createMonthlyTrainingPlan(user, rejectedPayload, dependencies),
     ]);
 
+    assert.equal(generationCalls, 1);
     assert.equal(results.filter((result) => result.ok).length, 1);
     const conflict = results.find((result) => !result.ok);
     assert.equal(conflict?.ok, false);
@@ -139,6 +156,46 @@ describe('monthly training plan service', () => {
     }
     assert.equal(conflict.error.code, 'MONTHLY_PLAN_ALREADY_ACTIVE');
     assert.equal(conflict.error.statusCode, 409);
+
+    const state = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(state.activePlan?.snapshot.pesoKg, payload.pesoKg);
+    assert.equal(state.athleticProfile?.pesoKg, payload.pesoKg);
+  });
+
+  it('blocks generation availability while a reservation is pending', async () => {
+    const dependencies = await createDependencies();
+    let resolveGeneration: (() => void) | undefined;
+    let markGenerationStarted: (() => void) | undefined;
+    const generationStarted = new Promise<void>((resolve) => {
+      markGenerationStarted = resolve;
+    });
+    const generationBlocked = new Promise<void>((resolve) => {
+      resolveGeneration = resolve;
+    });
+    dependencies.trainingPlanGenerator = async () => {
+      markGenerationStarted?.();
+      await generationBlocked;
+
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const pendingGeneration = createMonthlyTrainingPlan(user, payload, dependencies);
+    await generationStarted;
+
+    const pendingState = await getActiveMonthlyTrainingPlan(user, dependencies);
+
+    assert.equal(pendingState.activePlan, null);
+    assert.equal(pendingState.canGenerate, false);
+    resolveGeneration?.();
+    const result = await pendingGeneration;
+    assert.equal(result.ok, true);
   });
 
   it('blocks regeneration one millisecond before 30 days', async () => {
@@ -222,5 +279,46 @@ describe('monthly training plan service', () => {
     assert.equal(result.error.code, 'PROFILE_BIRTH_DATE_INVALID');
     assert.equal(result.error.statusCode, 400);
     assert.equal(generationCalls, 0);
+  });
+
+  it('releases a failed generation reservation and permits retry', async () => {
+    const dependencies = await createDependencies();
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+
+      if (generationCalls === 1) {
+        return {
+          attempts: [],
+          error: 'test generation failure',
+          fallbackUsed: false,
+        };
+      }
+
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const failedResult = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(failedResult.ok, false);
+    if (failedResult.ok) {
+      return;
+    }
+    assert.equal(failedResult.error.code, 'TRAINING_PLAN_GENERATION_FAILED');
+    const stateAfterFailure = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(stateAfterFailure.canGenerate, true);
+    assert.equal(stateAfterFailure.athleticProfile, null);
+
+    const retryResult = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(retryResult.ok, true);
+    assert.equal(generationCalls, 2);
   });
 });

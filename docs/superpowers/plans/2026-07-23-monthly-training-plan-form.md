@@ -1563,6 +1563,28 @@ git commit -m "feat: add monthly training plan service"
 - [x] **Step 15: Untrack and update the local Task 4 report**
 - [x] **Step 16: Commit review fixes**
 
+### Task 4 Reservation Review Fixes
+
+**Goal:** Claim the monthly generation slot atomically before AI work and release failed claims for retry.
+
+**Approach:** Replace post-generation `saveActive` contention with storage-agnostic reserve, complete, and release repository operations. Pending reservations block generation availability; only a reservation winner invokes the generator and persists its plan/profile.
+
+**Files:**
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-repository.ts`
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-service.ts`
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-service.test.ts`
+- Modify: `apps/backend/src/modules/training/infra/in-memory-training-repositories.ts`
+- Update locally: `.superpowers/sdd/task-4-report.md` (ignored and untracked)
+
+- [x] **Step 17: Strengthen concurrent generation and loser profile tests**
+- [x] **Step 18: Run focused tests and verify reservation RED**
+- [x] **Step 19: Add repository reservation and completion contracts**
+- [x] **Step 20: Reserve before generation and complete before profile persistence**
+- [x] **Step 21: Add failing generator-release retry test**
+- [x] **Step 22: Release reservations after generator failure**
+- [x] **Step 23: Run focused, backend, and repository verification**
+- [x] **Step 24: Append local report evidence and commit fixes**
+
 ---
 
 ### Task 5: Supabase Training Persistence And Migration

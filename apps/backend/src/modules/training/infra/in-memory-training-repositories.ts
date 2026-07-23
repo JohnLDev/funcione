@@ -14,6 +14,7 @@ export function createInMemoryTrainingRepositories(): {
 } {
   const athleticProfiles = new Map<string, AthleticProfile>();
   const monthlyPlans = new Map<string, MonthlyTrainingPlan>();
+  const reservations = new Map<string, { reservedAt: string; userId: string }>();
 
   return {
     athleticProfileRepository: {
@@ -34,6 +35,26 @@ export function createInMemoryTrainingRepositories(): {
       },
     },
     monthlyTrainingPlanRepository: {
+      completeActiveGeneration: async (reservationId, planInput) => {
+        const reservation = reservations.get(reservationId);
+
+        if (!reservation || reservation.userId !== planInput.userId) {
+          return { ok: false, reason: 'RESERVATION_NOT_FOUND' };
+        }
+
+        const now = new Date().toISOString();
+        const plan: MonthlyTrainingPlan = {
+          ...planInput,
+          createdAt: now,
+          id: randomUUID(),
+          updatedAt: now,
+        };
+
+        monthlyPlans.set(plan.id, plan);
+        reservations.delete(reservationId);
+
+        return { ok: true, plan };
+      },
       expireActiveByUserId: async (userId, expiredAt) => {
         for (const [id, plan] of monthlyPlans.entries()) {
           if (plan.userId === userId && plan.status === MonthlyTrainingPlanStatus.Active) {
@@ -51,28 +72,32 @@ export function createInMemoryTrainingRepositories(): {
             plan.userId === userId &&
             plan.status === MonthlyTrainingPlanStatus.Active,
         ) ?? null,
-      saveActive: async (planInput) => {
+      hasPendingGenerationByUserId: async (userId) =>
+        Array.from(reservations.values()).some(
+          (reservation) => reservation.userId === userId,
+        ),
+      releaseActiveGeneration: async (reservationId) => {
+        reservations.delete(reservationId);
+      },
+      reserveActiveGeneration: async (userId, reservedAt) => {
         const hasActivePlan = Array.from(monthlyPlans.values()).some(
           (plan) =>
-            plan.userId === planInput.userId &&
+            plan.userId === userId &&
             plan.status === MonthlyTrainingPlanStatus.Active,
         );
+        const hasPendingGeneration = Array.from(reservations.values()).some(
+          (reservation) => reservation.userId === userId,
+        );
 
-        if (hasActivePlan) {
+        if (hasActivePlan || hasPendingGeneration) {
           return { ok: false, reason: 'ACTIVE_PLAN_CONFLICT' };
         }
 
-        const now = new Date().toISOString();
-        const plan: MonthlyTrainingPlan = {
-          ...planInput,
-          createdAt: now,
-          id: randomUUID(),
-          updatedAt: now,
-        };
+        const reservationId = randomUUID();
 
-        monthlyPlans.set(plan.id, plan);
+        reservations.set(reservationId, { reservedAt, userId });
 
-        return { ok: true, plan };
+        return { ok: true, reservationId };
       },
     },
   };
