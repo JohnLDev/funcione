@@ -29,11 +29,14 @@
   },
   "training": {
     "active": {
+      "emptyExercises": "Nenhum exercicio principal para esta sessao",
+      "emptyStretches": "Nenhum alongamento ou mobilidade para esta sessao",
       "exercises": "Exercicios principais",
       "generated": "Gerado em {{date}}",
       "minutes": "min",
       "nextGeneration": "Proxima geracao disponivel em {{date}}",
       "openDetails": "Abrir detalhes",
+      "openDetailsLabel": "Abrir detalhes de {{session}}",
       "stretches": "Alongamentos e mobilidade",
       "summary": "Resumo do plano"
     },

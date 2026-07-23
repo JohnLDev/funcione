@@ -69,3 +69,51 @@ The mock auth gateway intentionally clears the session on page startup, so a
 reload cannot remain authenticated. The persistence assertion re-authenticates
 after reload and verifies the same persisted active plan with no generation
 button, preserving meaningful coverage without external calls.
+
+## Review Fix: Empty Details And Accessible Controls
+
+### RED
+
+Command:
+
+```bash
+rtk npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.ts
+```
+
+Result: failed as expected. Both desktop and mobile active-plan tests timed out
+when targeting the first session by its unique accessible name, because every
+detail button still exposed only `Abrir detalhes`. The test also adds coverage
+for opening the mock plan's second session, which has empty detail arrays.
+
+### GREEN
+
+Commands and results:
+
+```bash
+rtk npm run typecheck --workspace @langchain-training/frontend
+# PASS: tsc -b
+
+rtk npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.ts
+# PASS: 8 tests across desktop-chromium and mobile-chrome
+```
+
+### Files Changed
+
+- `apps/frontend/e2e/training-plan.spec.ts`
+- `apps/frontend/src/components/training-active-plan.tsx`
+- `apps/frontend/src/i18n/locales/pt-BR/common.json`
+- `apps/frontend/src/i18n/locales/en-US/common.json`
+- `.superpowers/sdd/task-9-report.md`
+
+### Self-Review
+
+- Empty mobility and exercise groups now render localized explanatory content
+  instead of headings without detail.
+- Detail buttons retain their visible command text while i18n-backed
+  `aria-label` values include the session day and focus.
+- E2E opens both populated and empty mock sessions without positional
+  `.first()` selection.
+
+### Concerns
+
+None beyond the existing mock-auth reload behavior documented above.

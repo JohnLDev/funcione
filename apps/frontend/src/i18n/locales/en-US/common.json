@@ -29,11 +29,14 @@
   },
   "training": {
     "active": {
+      "emptyExercises": "No main exercises for this session",
+      "emptyStretches": "No stretches or mobility work for this session",
       "exercises": "Main exercises",
       "generated": "Generated on {{date}}",
       "minutes": "min",
       "nextGeneration": "Next generation available on {{date}}",
       "openDetails": "Open details",
+      "openDetailsLabel": "Open details for {{session}}",
       "stretches": "Stretches and mobility",
       "summary": "Plan summary"
     },

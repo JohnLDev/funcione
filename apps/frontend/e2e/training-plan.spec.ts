@@ -117,9 +117,24 @@ test.describe('monthly training plan route', () => {
       ),
     ).toBeVisible();
 
-    await page.getByRole('button', { name: /abrir detalhes/i }).first().click();
+    await page
+      .getByRole('button', {
+        name: /abrir detalhes de segunda-feira.*potencia e aterrissagem/i,
+      })
+      .click();
     await expect(page.getByText(/mobilidade de tornozelo/i)).toBeVisible();
     await expect(page.getByText(/agachamento com salto/i)).toBeVisible();
+    await page
+      .getByRole('button', {
+        name: /abrir detalhes de quarta-feira.*agilidade lateral/i,
+      })
+      .click();
+    await expect(
+      page.getByText(/nenhum alongamento ou mobilidade para esta sessao/i),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/nenhum exercicio principal para esta sessao/i),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: /gerar plano/i })).toHaveCount(0);
 
     await page.reload();

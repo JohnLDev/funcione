@@ -24,30 +24,42 @@ function TrainingSessionDetail({ session }: { session: TrainingSession }) {
     <div className="grid gap-4 border-t border-border pt-4">
       <section className="grid gap-2">
         <h3 className="text-sm font-black">{t('training.active.stretches')}</h3>
-        {session.alongamentos.map((item) => (
-          <article className="grid gap-1 rounded-2xl bg-secondary p-3" key={item.nome}>
-            <p className="break-words font-black">{item.nome}</p>
-            <p className="text-xs font-bold text-muted-foreground">
-              {item.motivoEscolha}
-            </p>
-            <p className="text-sm text-foreground">{item.instrucoesExecucao}</p>
-          </article>
-        ))}
+        {session.alongamentos.length === 0 ? (
+          <p className="rounded-2xl bg-secondary p-3 text-sm font-semibold text-muted-foreground">
+            {t('training.active.emptyStretches')}
+          </p>
+        ) : (
+          session.alongamentos.map((item) => (
+            <article className="grid gap-1 rounded-2xl bg-secondary p-3" key={item.nome}>
+              <p className="break-words font-black">{item.nome}</p>
+              <p className="text-xs font-bold text-muted-foreground">
+                {item.motivoEscolha}
+              </p>
+              <p className="text-sm text-foreground">{item.instrucoesExecucao}</p>
+            </article>
+          ))
+        )}
       </section>
       <section className="grid gap-2">
         <h3 className="text-sm font-black">{t('training.active.exercises')}</h3>
-        {session.exercicios.map((item) => (
-          <article className="grid gap-1 rounded-2xl bg-secondary p-3" key={item.nome}>
-            <p className="break-words font-black">{item.nome}</p>
-            <p className="text-xs font-bold text-muted-foreground">
-              {item.series} x {item.repeticoes}
-            </p>
-            <p className="text-xs font-bold text-muted-foreground">
-              {item.motivoEscolha}
-            </p>
-            <p className="text-sm text-foreground">{item.instrucoesExecucao}</p>
-          </article>
-        ))}
+        {session.exercicios.length === 0 ? (
+          <p className="rounded-2xl bg-secondary p-3 text-sm font-semibold text-muted-foreground">
+            {t('training.active.emptyExercises')}
+          </p>
+        ) : (
+          session.exercicios.map((item) => (
+            <article className="grid gap-1 rounded-2xl bg-secondary p-3" key={item.nome}>
+              <p className="break-words font-black">{item.nome}</p>
+              <p className="text-xs font-bold text-muted-foreground">
+                {item.series} x {item.repeticoes}
+              </p>
+              <p className="text-xs font-bold text-muted-foreground">
+                {item.motivoEscolha}
+              </p>
+              <p className="text-sm text-foreground">{item.instrucoesExecucao}</p>
+            </article>
+          ))
+        )}
       </section>
     </div>
   );
@@ -120,6 +132,9 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
                     </p>
                   </div>
                   <Button
+                    aria-label={t('training.active.openDetailsLabel', {
+                      session: `${session.dia}: ${session.foco}`,
+                    })}
                     aria-expanded={isOpen}
                     className="shrink-0"
                     onClick={() => setOpenSessionIndex(isOpen ? -1 : index)}
