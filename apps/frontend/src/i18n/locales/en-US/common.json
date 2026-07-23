@@ -28,6 +28,15 @@
     "startWorkout": "Start workout"
   },
   "training": {
+    "active": {
+      "exercises": "Main exercises",
+      "generated": "Generated on {{date}}",
+      "minutes": "min",
+      "nextGeneration": "Next generation available on {{date}}",
+      "openDetails": "Open details",
+      "stretches": "Stretches and mobility",
+      "summary": "Plan summary"
+    },
     "activeTitle": "Active plan",
     "back": "Back",
     "continue": "Continue",

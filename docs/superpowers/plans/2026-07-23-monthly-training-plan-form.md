@@ -3695,7 +3695,7 @@ git commit -m "feat: add mobile training wizard"
 - Consumes: `MonthlyTrainingPlan`
 - Produces: active plan summary, workout cards and detail sections
 
-- [ ] **Step 1: Add E2E active plan detail and monthly block assertions**
+- [x] **Step 1: Add E2E active plan detail and monthly block assertions**
 
 Append to `training-plan.spec.ts`:
 
@@ -3766,7 +3766,7 @@ test('shows active plan summary, detail and blocks another generation', async ({
 });
 ```
 
-- [ ] **Step 2: Run E2E and verify red**
+- [x] **Step 2: Run E2E and verify red**
 
 Run:
 
@@ -3776,7 +3776,7 @@ npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.
 
 Expected: FAIL because active plan details are not rendered.
 
-- [ ] **Step 3: Add active plan UI**
+- [x] **Step 3: Add active plan UI**
 
 Create `apps/frontend/src/components/training-active-plan.tsx`:
 
@@ -3923,7 +3923,7 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
 }
 ```
 
-- [ ] **Step 4: Render active plan**
+- [x] **Step 4: Render active plan**
 
 In `apps/frontend/src/components/training-screen.tsx`, import `TrainingActivePlan` and render:
 
@@ -3935,7 +3935,7 @@ In `apps/frontend/src/components/training-screen.tsx`, import `TrainingActivePla
 )}
 ```
 
-- [ ] **Step 5: Add active plan i18n**
+- [x] **Step 5: Add active plan i18n**
 
 Add keys:
 
@@ -3951,7 +3951,7 @@ Add keys:
 
 Use equivalent English values in `en-US`.
 
-- [ ] **Step 6: Run E2E desktop and mobile**
+- [x] **Step 6: Run E2E desktop and mobile**
 
 Run:
 
@@ -3962,7 +3962,7 @@ npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.
 
 Expected: PASS in `desktop-chromium` and `mobile-chrome`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/frontend/src apps/frontend/e2e/training-plan.spec.ts

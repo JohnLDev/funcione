@@ -28,6 +28,15 @@
     "startWorkout": "Iniciar treino"
   },
   "training": {
+    "active": {
+      "exercises": "Exercicios principais",
+      "generated": "Gerado em {{date}}",
+      "minutes": "min",
+      "nextGeneration": "Proxima geracao disponivel em {{date}}",
+      "openDetails": "Abrir detalhes",
+      "stretches": "Alongamentos e mobilidade",
+      "summary": "Resumo do plano"
+    },
     "activeTitle": "Plano ativo",
     "back": "Voltar",
     "continue": "Continuar",

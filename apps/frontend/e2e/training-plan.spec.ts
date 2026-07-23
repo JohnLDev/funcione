@@ -66,6 +66,73 @@ test.describe('monthly training plan route', () => {
     expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
   });
 
+  test('shows active plan summary, detail and blocks another generation', async ({
+    page,
+  }) => {
+    const email = 'active@funcione.app';
+    const password = 'StrongPass123!';
+
+    await page.goto('/signup');
+    await page.getByLabel(/^nome$/i).fill('Active');
+    await page.getByLabel(/sobrenome/i).fill('Athlete');
+    await page.getByLabel(/cpf/i).fill('52998224725');
+    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
+    await page.getByLabel(/telefone/i).fill('11999999999');
+    await page.getByLabel(/e-mail/i).fill(email);
+    await page.getByLabel(/senha/i).fill(password);
+    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('link', { name: /treino/i }).click();
+
+    await page.getByRole('button', { name: /volei/i }).click();
+    await page.getByRole('button', { name: /performance/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByLabel(/peso/i).fill('82');
+    await page.getByLabel(/altura/i).fill('180');
+    await page.getByRole('button', { name: /intermediario/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByRole('button', { name: /3x por semana/i }).click();
+    await page.getByRole('button', { name: /60 minutos/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByRole('button', { name: /casa/i }).click();
+    await page.getByRole('button', { name: /halteres/i }).click();
+    await page.getByRole('button', { name: /nao tenho lesao/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByRole('button', { name: /gerar plano/i }).click();
+
+    await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
+    const nextGenerationDate = new Date();
+    nextGenerationDate.setUTCDate(nextGenerationDate.getUTCDate() + 30);
+    const formattedNextGenerationDate = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(nextGenerationDate);
+    await expect(
+      page.getByText(
+        new RegExp(
+          `proxima geracao disponivel em ${formattedNextGenerationDate}`,
+          'i',
+        ),
+      ),
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: /abrir detalhes/i }).first().click();
+    await expect(page.getByText(/mobilidade de tornozelo/i)).toBeVisible();
+    await expect(page.getByText(/agachamento com salto/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /gerar plano/i })).toHaveCount(0);
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByLabel(/e-mail/i).fill(email);
+    await page.getByLabel(/senha/i).fill(password);
+    await page.getByRole('button', { name: /^entrar$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('link', { name: /treino/i }).click();
+    await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /gerar plano/i })).toHaveCount(0);
+  });
+
   test('requires positive numeric body measurements before continuing', async ({ page }) => {
     await page.goto('/signup');
     await page.getByLabel(/^nome$/i).fill('Joao');

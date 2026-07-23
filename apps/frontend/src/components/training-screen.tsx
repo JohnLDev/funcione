@@ -2,8 +2,8 @@ import { Dumbbell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
+import { TrainingActivePlan } from './training-active-plan.js';
 import { TrainingPlanWizard } from './training-plan-wizard.js';
-import { Card, CardContent } from './ui/card.js';
 
 function TrainingScreenContent() {
   const { t } = useTranslation();
@@ -32,11 +32,7 @@ function TrainingScreenContent() {
           </div>
         </div>
         {state?.activePlan ? (
-          <Card className="rounded-2xl">
-            <CardContent className="p-4">
-              <p className="text-xl font-black">{t('training.activeTitle')}</p>
-            </CardContent>
-          </Card>
+          <TrainingActivePlan plan={state.activePlan} />
         ) : (
           <TrainingPlanWizard />
         )}
