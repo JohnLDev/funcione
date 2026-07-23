@@ -52,6 +52,16 @@ export function createInMemoryTrainingRepositories(): {
             plan.status === MonthlyTrainingPlanStatus.Active,
         ) ?? null,
       saveActive: async (planInput) => {
+        const hasActivePlan = Array.from(monthlyPlans.values()).some(
+          (plan) =>
+            plan.userId === planInput.userId &&
+            plan.status === MonthlyTrainingPlanStatus.Active,
+        );
+
+        if (hasActivePlan) {
+          return { ok: false, reason: 'ACTIVE_PLAN_CONFLICT' };
+        }
+
         const now = new Date().toISOString();
         const plan: MonthlyTrainingPlan = {
           ...planInput,
@@ -62,7 +72,7 @@ export function createInMemoryTrainingRepositories(): {
 
         monthlyPlans.set(plan.id, plan);
 
-        return plan;
+        return { ok: true, plan };
       },
     },
   };

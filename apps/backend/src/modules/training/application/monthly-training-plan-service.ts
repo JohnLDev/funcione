@@ -8,7 +8,7 @@ import {
 } from '../domain/monthly-plan.js';
 import {
   CreateMonthlyTrainingPlanRequestSchema,
-  type DadosUsuario,
+  DadosUsuarioSchema,
 } from '../domain/schemas.js';
 import type { AthleticProfileRepository } from './athletic-profile-repository.js';
 import type {
@@ -40,6 +40,17 @@ export type CreateMonthlyTrainingPlanError = {
 export type CreateMonthlyTrainingPlanResult =
   | { ok: true; plan: MonthlyTrainingPlan }
   | { error: CreateMonthlyTrainingPlanError; ok: false };
+
+function toActivePlanConflict(): CreateMonthlyTrainingPlanResult {
+  return {
+    error: {
+      code: 'MONTHLY_PLAN_ALREADY_ACTIVE',
+      message: 'A monthly training plan is already active.',
+      statusCode: 409,
+    },
+    ok: false,
+  };
+}
 
 function hasPlanExpired(plan: MonthlyTrainingPlan, now: Date): boolean {
   return new Date(plan.availableForRegenerationAt).getTime() <= now.getTime();
@@ -129,14 +140,7 @@ export async function createMonthlyTrainingPlan(
   );
 
   if (activePlan) {
-    return {
-      error: {
-        code: 'MONTHLY_PLAN_ALREADY_ACTIVE',
-        message: 'A monthly training plan is already active.',
-        statusCode: 409,
-      },
-      ok: false,
-    };
+    return toActivePlanConflict();
   }
 
   const userProfile = await dependencies.userProfileRepository.findByUserId(user.id);
@@ -165,11 +169,24 @@ export async function createMonthlyTrainingPlan(
     };
   }
 
-  const snapshot: DadosUsuario = {
+  const parsedSnapshot = DadosUsuarioSchema.safeParse({
     ...parsedPayload.data,
     idade,
     userId: user.id,
-  };
+  });
+
+  if (!parsedSnapshot.success) {
+    return {
+      error: {
+        code: 'PROFILE_BIRTH_DATE_INVALID',
+        message: 'Registration profile birth date is invalid.',
+        statusCode: 400,
+      },
+      ok: false,
+    };
+  }
+
+  const snapshot = parsedSnapshot.data;
 
   const generatedPlan = await dependencies.trainingPlanGenerator(snapshot);
 
@@ -187,7 +204,7 @@ export async function createMonthlyTrainingPlan(
     pesoKg: snapshot.pesoKg,
   });
 
-  const plan = await dependencies.monthlyTrainingPlanRepository.saveActive({
+  const saveResult = await dependencies.monthlyTrainingPlanRepository.saveActive({
     availableForRegenerationAt: addDays(now, 30).toISOString(),
     generatedAt: now.toISOString(),
     metadata: {
@@ -203,5 +220,9 @@ export async function createMonthlyTrainingPlan(
     userId: user.id,
   });
 
-  return { ok: true, plan };
+  if (!saveResult.ok) {
+    return toActivePlanConflict();
+  }
+
+  return { ok: true, plan: saveResult.plan };
 }

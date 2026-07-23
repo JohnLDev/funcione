@@ -123,17 +123,50 @@ describe('monthly training plan service', () => {
     assert.equal(result.error.statusCode, 409);
   });
 
-  it('allows a new generation after 30 days by expiring the old active plan', async () => {
+  it('allows only one active plan when generations run concurrently', async () => {
+    const dependencies = await createDependencies();
+
+    const results = await Promise.all([
+      createMonthlyTrainingPlan(user, payload, dependencies),
+      createMonthlyTrainingPlan(user, payload, dependencies),
+    ]);
+
+    assert.equal(results.filter((result) => result.ok).length, 1);
+    const conflict = results.find((result) => !result.ok);
+    assert.equal(conflict?.ok, false);
+    if (!conflict || conflict.ok) {
+      return;
+    }
+    assert.equal(conflict.error.code, 'MONTHLY_PLAN_ALREADY_ACTIVE');
+    assert.equal(conflict.error.statusCode, 409);
+  });
+
+  it('blocks regeneration one millisecond before 30 days', async () => {
     const dependencies = await createDependencies('2026-07-01T10:00:00.000Z');
 
     await createMonthlyTrainingPlan(user, payload, dependencies);
-    dependencies.now = () => new Date('2026-08-01T10:00:00.000Z');
+    dependencies.now = () => new Date('2026-07-31T09:59:59.999Z');
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+    assert.equal(result.error.code, 'MONTHLY_PLAN_ALREADY_ACTIVE');
+  });
+
+  it('allows regeneration exactly 30 days after generation', async () => {
+    const dependencies = await createDependencies('2026-07-01T10:00:00.000Z');
+
+    await createMonthlyTrainingPlan(user, payload, dependencies);
+    dependencies.now = () => new Date('2026-07-31T10:00:00.000Z');
 
     const result = await createMonthlyTrainingPlan(user, payload, dependencies);
 
     assert.equal(result.ok, true);
     const state = await getActiveMonthlyTrainingPlan(user, dependencies);
-    assert.equal(state.activePlan?.generatedAt, '2026-08-01T10:00:00.000Z');
+    assert.equal(state.activePlan?.generatedAt, '2026-07-31T10:00:00.000Z');
   });
 
   it('rejects generation when registration birth date is invalid', async () => {
@@ -155,5 +188,39 @@ describe('monthly training plan service', () => {
     }
     assert.equal(result.error.code, 'PROFILE_BIRTH_DATE_INVALID');
     assert.equal(result.error.statusCode, 400);
+  });
+
+  it('rejects a derived age outside the training schema before generation', async () => {
+    const dependencies = await createDependencies();
+    await dependencies.userProfileRepository.upsert(user.id, {
+      birthDate: '2011-07-23',
+      cpf: '52998224725',
+      email: 'athlete@funcione.app',
+      firstName: 'Joao',
+      lastName: 'Silva',
+      phoneNumber: '11999999999',
+    });
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+    assert.equal(result.error.code, 'PROFILE_BIRTH_DATE_INVALID');
+    assert.equal(result.error.statusCode, 400);
+    assert.equal(generationCalls, 0);
   });
 });

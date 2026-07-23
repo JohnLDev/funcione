@@ -1542,6 +1542,27 @@ git add apps/backend/src/modules/training
 git commit -m "feat: add monthly training plan service"
 ```
 
+### Task 4 Review Fixes
+
+**Goal:** Make active-plan persistence authoritative under contention and validate the complete derived snapshot at runtime.
+
+**Approach:** Keep the service precheck for fast feedback, add a reusable repository conflict result for atomic active-plan creation, and map that conflict to the existing 409 application error. Parse the derived snapshot with `DadosUsuarioSchema` before generation and cover the exact 30-day boundary.
+
+**Files:**
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-repository.ts`
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-service.ts`
+- Modify: `apps/backend/src/modules/training/application/monthly-training-plan-service.test.ts`
+- Modify: `apps/backend/src/modules/training/infra/in-memory-training-repositories.ts`
+- Untrack: `.superpowers/sdd/task-4-report.md` while preserving the local ignored file
+
+- [x] **Step 10: Add concurrent creation, derived age, and 30-day boundary tests**
+- [x] **Step 11: Run focused tests and verify RED**
+- [x] **Step 12: Add atomic repository conflict result and service mapping**
+- [x] **Step 13: Parse the complete derived snapshot before generation**
+- [x] **Step 14: Run focused and backend verification tests**
+- [x] **Step 15: Untrack and update the local Task 4 report**
+- [x] **Step 16: Commit review fixes**
+
 ---
 
 ### Task 5: Supabase Training Persistence And Migration
