@@ -111,3 +111,67 @@ Results:
 ## Concerns
 
 None.
+
+## Review Fix: Respect Monthly Mock Training Window
+
+### RED
+
+Command:
+
+```bash
+rtk npm run test:e2e --workspace @langchain-training/frontend -- mock-training-plan-gateway.spec.ts training-plan.spec.ts --project=mobile-chrome
+```
+
+Result: exit code `1`.
+
+Relevant output:
+
+```text
+mock training plan gateway › treats expired plans as regenerable and creates a current monthly plan
+Expected: null
+Received: {"status":"expired", ...}
+
+monthly training plan route › opens the training route from dashboard navigation
+Expected: 1
+Received: 3
+2 failed
+```
+
+This proved that expired records remained active in the mock gateway and that all three `/dashboard` navigation entries received `aria-current="page"`.
+
+### GREEN
+
+All commands completed with exit code `0`:
+
+```bash
+rtk npm run test:e2e --workspace @langchain-training/frontend -- mock-training-plan-gateway.spec.ts --project=mobile-chrome
+rtk npm run typecheck --workspace @langchain-training/frontend
+rtk npm run test:e2e --workspace @langchain-training/frontend -- training-plan.spec.ts --project=mobile-chrome
+```
+
+Results:
+
+- Focused mock-gateway test passed: 1 test, 0 failures.
+- Frontend typecheck passed.
+- Task 7 mobile route test passed: 1 test, 0 failures.
+
+### Files Changed
+
+- `apps/frontend/e2e/mock-training-plan-gateway.spec.ts`
+- `apps/frontend/e2e/training-plan.spec.ts`
+- `apps/frontend/src/components/app-shell.tsx`
+- `apps/frontend/src/training/mock-training-plan-gateway.ts`
+- `docs/superpowers/plans/2026-07-23-training-route-state.md`
+- `.superpowers/sdd/task-7-report.md`
+
+### Fix Summary And Self-Review
+
+- Mock plan generation now uses the current time and retains the 30-day UTC regeneration window.
+- A stored plan is active only when it has `status: 'active'` and a regeneration timestamp in the future. Expired/non-active records allow a new monthly plan to replace the stored record.
+- The focused Playwright test imports the Vite-served mock gateway directly in the browser and uses only `localStorage`; it makes no backend or Supabase call.
+- Home and Treino remain `NavLink` route destinations. History and Profile remain real `Link` controls to their current dashboard placeholder without active styling or `aria-current` until distinct routes exist.
+- `git diff --check` passed after the fix.
+
+### Concerns
+
+None.

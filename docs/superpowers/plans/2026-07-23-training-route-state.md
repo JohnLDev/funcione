@@ -42,3 +42,18 @@
 - [x] Add translations in both locales.
 - [x] Run frontend typecheck and the targeted mobile E2E test.
 - [x] Self-review the diff and commit `feat: add training route state`.
+
+### Task 2: Respect the Mock Monthly Generation Window
+
+**Files:**
+- Create: `apps/frontend/e2e/mock-training-plan-gateway.spec.ts`
+- Modify: `apps/frontend/e2e/training-plan.spec.ts`
+- Modify: `apps/frontend/src/training/mock-training-plan-gateway.ts`
+- Modify: `apps/frontend/src/components/app-shell.tsx`
+
+- [x] Write focused mock-gateway coverage for active and regenerable stored plans, plus a mobile navigation assertion for a single active destination.
+- [x] Run the focused tests in red.
+- [x] Derive mock plan activity from its status and generation cutoff, and create timestamps from the current time.
+- [x] Keep History and Profile as neutral links until they have distinct destinations, so only actual route destinations can be active.
+- [x] Run focused tests, frontend typecheck, and the Task 7 mobile route test.
+- [x] Append TDD evidence to the Task 7 report and commit `fix: respect monthly mock training window`.

@@ -13,6 +13,13 @@ test.describe('monthly training plan route', () => {
     await page.getByRole('button', { name: /^criar conta$/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
+    const mobileNavigation = page.getByRole('navigation', {
+      name: 'Mobile navigation',
+    });
+    await expect(mobileNavigation.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(
+      mobileNavigation.getByRole('link', { name: /inicio/i }),
+    ).toHaveAttribute('aria-current', 'page');
     await page.getByRole('link', { name: /treino/i }).click();
 
     await expect(page).toHaveURL(/\/training$/);

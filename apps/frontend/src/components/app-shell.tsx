@@ -10,7 +10,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { NavLink } from 'react-router';
+import { Link, NavLink } from 'react-router';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 import {
@@ -28,11 +28,60 @@ import { cn } from '@/lib/utils.js';
 import type { AuthUser } from '@/auth/types.js';
 
 const navigationItems = [
-  { icon: Home, labelKey: 'dashboard.bottomNav.home', to: '/dashboard' },
-  { icon: Dumbbell, labelKey: 'dashboard.bottomNav.workout', to: '/training' },
-  { icon: BarChart3, labelKey: 'dashboard.bottomNav.history', to: '/dashboard' },
-  { icon: UserRound, labelKey: 'dashboard.bottomNav.profile', to: '/dashboard' },
+  {
+    icon: Home,
+    isRouteDestination: true,
+    labelKey: 'dashboard.bottomNav.home',
+    to: '/dashboard',
+  },
+  {
+    icon: Dumbbell,
+    isRouteDestination: true,
+    labelKey: 'dashboard.bottomNav.workout',
+    to: '/training',
+  },
+  {
+    icon: BarChart3,
+    isRouteDestination: false,
+    labelKey: 'dashboard.bottomNav.history',
+    to: '/dashboard',
+  },
+  {
+    icon: UserRound,
+    isRouteDestination: false,
+    labelKey: 'dashboard.bottomNav.profile',
+    to: '/dashboard',
+  },
 ] as const;
+
+function DashboardNavigationLink({
+  children,
+  className,
+  item,
+}: {
+  children: React.ReactNode;
+  className: string;
+  item: (typeof navigationItems)[number];
+}) {
+  if (!item.isRouteDestination) {
+    return (
+      <Link className={className} to={item.to}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <NavLink
+      className={({ isActive }) =>
+        cn(className, isActive && 'bg-primary text-primary-foreground')
+      }
+      to={item.to}
+    >
+      {children}
+    </NavLink>
+  );
+}
 
 function MetricCard({
   icon: Icon,
@@ -83,19 +132,14 @@ export function AppShell({
           </div>
           <nav className="mt-8 grid gap-2">
             {navigationItems.map((item) => (
-              <NavLink
+              <DashboardNavigationLink
+                className="flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-muted-foreground transition-colors"
                 key={item.labelKey}
-                className={({ isActive }) =>
-                  cn(
-                    'flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-muted-foreground transition-colors',
-                    isActive && 'bg-primary text-primary-foreground',
-                  )
-                }
-                to={item.to}
+                item={item}
               >
                 <item.icon aria-hidden="true" size={18} />
                 {t(item.labelKey)}
-              </NavLink>
+              </DashboardNavigationLink>
             ))}
           </nav>
           <div className="mt-8 rounded-2xl border border-border bg-background/50 p-3">
@@ -219,19 +263,14 @@ export function AppShell({
         className="fixed inset-x-3 bottom-3 z-10 grid grid-cols-4 rounded-[1.5rem] border border-border bg-card/92 p-2 shadow-2xl backdrop-blur md:hidden"
       >
         {navigationItems.map((item) => (
-          <NavLink
+          <DashboardNavigationLink
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[0.7rem] font-bold text-muted-foreground"
             key={item.labelKey}
-            className={({ isActive }) =>
-              cn(
-                'flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[0.7rem] font-bold text-muted-foreground',
-                isActive && 'bg-primary text-primary-foreground',
-              )
-            }
-            to={item.to}
+            item={item}
           >
             <item.icon aria-hidden="true" size={18} />
             <span>{t(item.labelKey)}</span>
-          </NavLink>
+          </DashboardNavigationLink>
         ))}
       </nav>
     </div>

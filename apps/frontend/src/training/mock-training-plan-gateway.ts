@@ -18,11 +18,18 @@ function writePlans(plans: Record<string, MonthlyTrainingPlan>) {
   window.localStorage.setItem(storageKey, JSON.stringify(plans));
 }
 
+function isActivePlan(plan: MonthlyTrainingPlan, now: Date): boolean {
+  return (
+    plan.status === 'active' &&
+    new Date(plan.availableForRegenerationAt).getTime() > now.getTime()
+  );
+}
+
 function createMockPlan(
   accessToken: string,
   payload: MonthlyTrainingPlanRequest,
 ): MonthlyTrainingPlan {
-  const generatedAt = new Date('2026-07-23T12:00:00.000Z');
+  const generatedAt = new Date();
   const availableForRegenerationAt = new Date(generatedAt);
   availableForRegenerationAt.setUTCDate(generatedAt.getUTCDate() + 30);
 
@@ -82,7 +89,7 @@ export function createMockTrainingPlanGateway(): TrainingPlanGateway {
       const plans = readPlans();
       const existingPlan = plans[accessToken];
 
-      if (existingPlan) {
+      if (existingPlan && isActivePlan(existingPlan, new Date())) {
         return {
           message: 'A monthly training plan is already active.',
           ok: false,
@@ -95,7 +102,9 @@ export function createMockTrainingPlanGateway(): TrainingPlanGateway {
       return { ok: true, plan };
     },
     getActivePlan: async (accessToken): Promise<MonthlyTrainingPlanState> => {
-      const activePlan = readPlans()[accessToken] ?? null;
+      const storedPlan = readPlans()[accessToken] ?? null;
+      const activePlan =
+        storedPlan && isActivePlan(storedPlan, new Date()) ? storedPlan : null;
 
       return {
         activePlan,
