@@ -27,6 +27,11 @@
   "actions": {
     "startWorkout": "Start workout"
   },
+  "training": {
+    "activeTitle": "Active plan",
+    "loading": "Loading training plan",
+    "newTitle": "New training plan"
+  },
   "auth": {
     "continueWithGoogle": "Continue with Google",
     "email": "Email",

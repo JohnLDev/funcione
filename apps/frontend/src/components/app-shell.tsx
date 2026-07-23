@@ -10,6 +10,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { NavLink } from 'react-router';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 import {
@@ -27,10 +28,10 @@ import { cn } from '@/lib/utils.js';
 import type { AuthUser } from '@/auth/types.js';
 
 const navigationItems = [
-  { icon: Home, labelKey: 'dashboard.bottomNav.home', active: true },
-  { icon: Dumbbell, labelKey: 'dashboard.bottomNav.workout', active: false },
-  { icon: BarChart3, labelKey: 'dashboard.bottomNav.history', active: false },
-  { icon: UserRound, labelKey: 'dashboard.bottomNav.profile', active: false },
+  { icon: Home, labelKey: 'dashboard.bottomNav.home', to: '/dashboard' },
+  { icon: Dumbbell, labelKey: 'dashboard.bottomNav.workout', to: '/training' },
+  { icon: BarChart3, labelKey: 'dashboard.bottomNav.history', to: '/dashboard' },
+  { icon: UserRound, labelKey: 'dashboard.bottomNav.profile', to: '/dashboard' },
 ] as const;
 
 function MetricCard({
@@ -82,17 +83,19 @@ export function AppShell({
           </div>
           <nav className="mt-8 grid gap-2">
             {navigationItems.map((item) => (
-              <button
+              <NavLink
                 key={item.labelKey}
-                className={cn(
-                  'flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-muted-foreground transition-colors',
-                  item.active && 'bg-primary text-primary-foreground',
-                )}
-                type="button"
+                className={({ isActive }) =>
+                  cn(
+                    'flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-muted-foreground transition-colors',
+                    isActive && 'bg-primary text-primary-foreground',
+                  )
+                }
+                to={item.to}
               >
                 <item.icon aria-hidden="true" size={18} />
                 {t(item.labelKey)}
-              </button>
+              </NavLink>
             ))}
           </nav>
           <div className="mt-8 rounded-2xl border border-border bg-background/50 p-3">
@@ -216,17 +219,19 @@ export function AppShell({
         className="fixed inset-x-3 bottom-3 z-10 grid grid-cols-4 rounded-[1.5rem] border border-border bg-card/92 p-2 shadow-2xl backdrop-blur md:hidden"
       >
         {navigationItems.map((item) => (
-          <button
+          <NavLink
             key={item.labelKey}
-            className={cn(
-              'flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[0.7rem] font-bold text-muted-foreground',
-              item.active && 'bg-primary text-primary-foreground',
-            )}
-            type="button"
+            className={({ isActive }) =>
+              cn(
+                'flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[0.7rem] font-bold text-muted-foreground',
+                isActive && 'bg-primary text-primary-foreground',
+              )
+            }
+            to={item.to}
           >
             <item.icon aria-hidden="true" size={18} />
             <span>{t(item.labelKey)}</span>
-          </button>
+          </NavLink>
         ))}
       </nav>
     </div>

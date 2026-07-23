@@ -11,6 +11,7 @@ import { AuthScreen } from './components/auth-screen.js';
 import { AppShell } from './components/app-shell.js';
 import { useTranslation } from 'react-i18next';
 import { ProfileCompletionScreen } from './components/profile-completion-screen.js';
+import { TrainingScreen } from './components/training-screen.js';
 import { ThemeProvider } from './theme/theme-provider.js';
 
 function LoadingScreen() {
@@ -110,6 +111,18 @@ function AppRoutes() {
           )
         }
         path="/dashboard"
+      />
+      <Route
+        element={
+          !session ? (
+            <Navigate replace to="/login" />
+          ) : !hasCompletedProfile ? (
+            <Navigate replace to="/complete-profile" />
+          ) : (
+            <TrainingScreen />
+          )
+        }
+        path="/training"
       />
       <Route element={<Navigate replace to="/" />} path="*" />
     </Routes>
