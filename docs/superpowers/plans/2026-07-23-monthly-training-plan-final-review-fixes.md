@@ -126,4 +126,8 @@
 - [x] Add failing backend migration tests for enum allowlists, null-safe mirrors, nested `alongamentos`/`exercicios` contracts, text field types, and free-text bounds in both base and forward migrations.
 - [x] Strengthen base and forward SQL validation for snapshot/profile allowlists, required scalar types, `is distinct from` mirror comparisons, objective/equipment/injury values, custom text bounds, and nested workout result item fields.
 - [x] Run focused backend tests and the full root verification commands again after the second follow-up.
-- [ ] Re-review the final diff after the second follow-up commit.
+- [x] Re-review found a remaining metadata-shape gap for model/provider types and `metadata.attempts` item contracts.
+- [x] Add failing backend migration tests for metadata strings and model-attempt item contracts in both migrations.
+- [x] Strengthen base and forward SQL validation for metadata model/provider strings, attempt object shape, attempt role/status allowlists, duration, and optional error text.
+- [x] Run the full root verification commands again after metadata hardening.
+- [ ] Re-review the final diff after the metadata hardening commit.

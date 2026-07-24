@@ -328,4 +328,59 @@ describe('training plan Supabase migration security', () => {
       );
     }
   });
+
+  it('validates completion RPC metadata and model-attempt item contracts', async () => {
+    for (const { fileName, sql } of await readMonthlySecurityMigrationTargets()) {
+      const validationDefinition = getFunctionDefinition(
+        sql,
+        'validate_training_monthly_plan_completion_payload',
+      );
+
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(p_plan #> '\{metadata,model\}'\) is distinct from 'string'/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(p_plan #> '\{metadata,provider\}'\) is distinct from 'string'/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_array_elements\(p_plan #> '\{metadata,attempts\}'\) as attempt\(value\)/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(attempt\.value\) is distinct from 'object'/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(attempt\.value -> 'provider'\) is distinct from 'string'/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /attempt\.value ->> 'role'[\s\S]*not in \('primary', 'fallback'\)/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /attempt\.value ->> 'status'[\s\S]*not in \('success', 'error'\)/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(attempt\.value -> 'durationMs'\) is distinct from 'number'/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(attempt\.value -> 'error'\) is distinct from 'string'/i,
+        fileName,
+      );
+    }
+  });
 });

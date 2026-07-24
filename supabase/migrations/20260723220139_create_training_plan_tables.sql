@@ -329,9 +329,37 @@ begin
   if jsonb_typeof(p_plan #> '{metadata,attempts}') is distinct from 'array'
     or jsonb_typeof(p_plan #> '{metadata,durationMs}') is distinct from 'number'
     or jsonb_typeof(p_plan #> '{metadata,fallbackUsed}') is distinct from 'boolean'
+    or jsonb_typeof(p_plan #> '{metadata,model}') is distinct from 'string'
+    or jsonb_typeof(p_plan #> '{metadata,provider}') is distinct from 'string'
     or coalesce(trim(p_plan #>> '{metadata,model}'), '') = ''
     or coalesce(trim(p_plan #>> '{metadata,provider}'), '') = '' then
     raise exception 'Training plan metadata is invalid.'
+      using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_plan #> '{metadata,attempts}') as attempt(value)
+    where jsonb_typeof(attempt.value) is distinct from 'object'
+      or jsonb_typeof(attempt.value -> 'provider') is distinct from 'string'
+      or coalesce(trim(attempt.value ->> 'provider'), '') = ''
+      or jsonb_typeof(attempt.value -> 'model') is distinct from 'string'
+      or coalesce(trim(attempt.value ->> 'model'), '') = ''
+      or jsonb_typeof(attempt.value -> 'role') is distinct from 'string'
+      or attempt.value ->> 'role' not in ('primary', 'fallback')
+      or jsonb_typeof(attempt.value -> 'status') is distinct from 'string'
+      or attempt.value ->> 'status' not in ('success', 'error')
+      or jsonb_typeof(attempt.value -> 'durationMs') is distinct from 'number'
+      or (attempt.value ->> 'durationMs')::numeric < 0
+      or (
+        attempt.value ? 'error'
+        and (
+          jsonb_typeof(attempt.value -> 'error') is distinct from 'string'
+          or coalesce(trim(attempt.value ->> 'error'), '') = ''
+        )
+      )
+  ) then
+    raise exception 'Training plan metadata attempts are invalid.'
       using errcode = '22023';
   end if;
 
