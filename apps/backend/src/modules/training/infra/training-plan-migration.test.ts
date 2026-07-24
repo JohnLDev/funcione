@@ -1,14 +1,30 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 
-const migrationUrl = new URL(
-  '../../../../../../supabase/migrations/20260723220139_create_training_plan_tables.sql',
+const migrationsUrl = new URL(
+  '../../../../../../supabase/migrations/',
   import.meta.url,
 );
+const baseMigrationName = '20260723220139_create_training_plan_tables.sql';
+const migrationUrl = new URL(baseMigrationName, migrationsUrl);
 
 async function readMigration() {
   return readFile(migrationUrl, 'utf8');
+}
+
+async function readForwardMigrations() {
+  const fileNames = (await readdir(migrationsUrl))
+    .filter((fileName) => fileName.endsWith('.sql'))
+    .filter((fileName) => fileName > baseMigrationName)
+    .sort();
+
+  return Promise.all(
+    fileNames.map(async (fileName) => ({
+      fileName,
+      sql: await readFile(new URL(fileName, migrationsUrl), 'utf8'),
+    })),
+  );
 }
 
 function getFunctionDefinition(sql: string, functionName: string) {
@@ -25,6 +41,21 @@ function getFunctionDefinition(sql: string, functionName: string) {
 }
 
 describe('training plan Supabase migration security', () => {
+  it('adds a forward migration for existing Supabase deployments', async () => {
+    const forwardMigrations = await readForwardMigrations();
+    const securityMigration = forwardMigrations.find(({ sql }) =>
+      /lease_expires_at\s+timestamptz/i.test(sql) &&
+      /revoke\s+insert,\s*update,\s*delete/i.test(sql) &&
+      /release_training_monthly_plan_generation/i.test(sql) &&
+      /validate_training_monthly_plan_completion_payload/i.test(sql),
+    );
+
+    assert.ok(
+      securityMigration,
+      'Missing forward migration for existing monthly training plan deployments.',
+    );
+  });
+
   it('keeps monthly plan and reservation tables read-only for Data API roles', async () => {
     const sql = await readMigration();
 
@@ -94,5 +125,27 @@ describe('training plan Supabase migration security', () => {
         ),
       );
     }
+  });
+
+  it('validates completion RPC payload before writing untrusted JSON', async () => {
+    const sql = await readMigration();
+    const completeDefinition = getFunctionDefinition(
+      sql,
+      'complete_training_monthly_plan_generation',
+    );
+    const validationDefinition = getFunctionDefinition(
+      sql,
+      'validate_training_monthly_plan_completion_payload',
+    );
+
+    assert.match(
+      completeDefinition,
+      /validate_training_monthly_plan_completion_payload\(/i,
+    );
+    assert.match(validationDefinition, /jsonb_typeof\(p_plan -> 'result'\)/i);
+    assert.match(validationDefinition, /jsonb_array_length/i);
+    assert.match(validationDefinition, /duracaoTreinoMinutos/i);
+    assert.match(validationDefinition, /gravidade/i);
+    assert.match(validationDefinition, /p_athletic_profile/i);
   });
 });

@@ -213,7 +213,7 @@ test.describe('monthly training plan route', () => {
       /performance/i,
       /82 kg/i,
       /180 cm/i,
-      /30 anos/i,
+      /calculada pelo cadastro/i,
       /intermediario/i,
       /3x por semana/i,
       /60 minutos/i,

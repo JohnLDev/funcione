@@ -25,6 +25,7 @@ import {
   createMonthlyTrainingPlanBodyJsonSchema,
   createMonthlyTrainingPlanResponseJsonSchema,
 } from './training-json-schemas.js';
+import { normalizePromptText } from '../domain/prompt-text.js';
 
 export type TrainingRoutesOptions = {
   authVerifier?: AuthVerifier;
@@ -90,6 +91,64 @@ function resolveMonthlyRouteDependencies(
   };
 }
 
+function normalizeTextValue(value: unknown): unknown {
+  return typeof value === 'string' ? normalizePromptText(value) : value;
+}
+
+async function normalizeMonthlyPayloadForValidation(request: FastifyRequest) {
+  if (!request.body || typeof request.body !== 'object') {
+    return;
+  }
+
+  const payload = request.body as Record<string, unknown>;
+
+  if (Array.isArray(payload.equipamentos)) {
+    payload.equipamentos = payload.equipamentos.map((item) => {
+      if (!item || typeof item !== 'object') {
+        return item;
+      }
+
+      const equipment = item as Record<string, unknown>;
+
+      const normalizedEquipment = { ...equipment };
+
+      if ('descricao' in normalizedEquipment) {
+        normalizedEquipment.descricao = normalizeTextValue(
+          normalizedEquipment.descricao,
+        );
+      }
+
+      return normalizedEquipment;
+    });
+  }
+
+  if (Array.isArray(payload.lesoes)) {
+    payload.lesoes = payload.lesoes.map((item) => {
+      if (!item || typeof item !== 'object') {
+        return item;
+      }
+
+      const injury = item as Record<string, unknown>;
+
+      const normalizedInjury = { ...injury };
+
+      if ('descricao' in normalizedInjury) {
+        normalizedInjury.descricao = normalizeTextValue(
+          normalizedInjury.descricao,
+        );
+      }
+
+      if ('observacoes' in normalizedInjury) {
+        normalizedInjury.observacoes = normalizeTextValue(
+          normalizedInjury.observacoes,
+        );
+      }
+
+      return normalizedInjury;
+    });
+  }
+}
+
 export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
   app,
   options,
@@ -151,6 +210,7 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
     {
       onRequest: (request, reply) =>
         authenticateMonthlyRequest(request, reply, options.authVerifier),
+      preValidation: normalizeMonthlyPayloadForValidation,
       schema: {
         tags: ['training'],
         summary: 'Create a monthly training plan',

@@ -570,6 +570,14 @@ describe('training routes', () => {
     assert.equal(bodySchema.properties.equipamentos.uniqueItems, true);
     assert.equal(bodySchema.properties.equipamentos['x-uniqueBy'], 'tipo');
     assert.equal(
+      bodySchema.properties.equipamentos.items.anyOf[0].properties.descricao.minLength,
+      1,
+    );
+    assert.equal(
+      bodySchema.properties.equipamentos.items.anyOf[0].properties.descricao.maxLength,
+      80,
+    );
+    assert.equal(
       bodySchema.properties.lesoes.maxItems,
       Object.values(TipoLesao).length,
     );
@@ -580,6 +588,30 @@ describe('training routes', () => {
     );
     assert.ok(
       bodySchema.properties.lesoes.items.oneOf[1].required.includes('gravidade'),
+    );
+    assert.equal(
+      bodySchema.properties.lesoes.items.oneOf[0].properties.observacoes.minLength,
+      1,
+    );
+    assert.equal(
+      bodySchema.properties.lesoes.items.oneOf[0].properties.observacoes.maxLength,
+      180,
+    );
+    assert.equal(
+      bodySchema.properties.lesoes.items.oneOf[1].properties.descricao.minLength,
+      1,
+    );
+    assert.equal(
+      bodySchema.properties.lesoes.items.oneOf[1].properties.descricao.maxLength,
+      120,
+    );
+    assert.equal(
+      bodySchema.properties.lesoes.items.oneOf[1].properties.observacoes.minLength,
+      1,
+    );
+    assert.equal(
+      bodySchema.properties.lesoes.items.oneOf[1].properties.observacoes.maxLength,
+      180,
     );
     assert.equal(monthlyPlanSchema.properties.metadata, undefined);
     assert.ok(activeRoute.responses['401']);

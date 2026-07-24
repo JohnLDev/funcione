@@ -1,7 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Activity, Dumbbell, MapPin, Target, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/auth/use-auth.js';
 import type {
   EquipmentType,
   ExperienceLevel,
@@ -185,28 +184,6 @@ function parsePositiveNumber(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function calculateAge(birthDate: string | null, now: Date): number | null {
-  if (!birthDate) {
-    return null;
-  }
-
-  const parsedBirthDate = new Date(`${birthDate}T00:00:00.000Z`);
-
-  if (Number.isNaN(parsedBirthDate.getTime()) || parsedBirthDate >= now) {
-    return null;
-  }
-
-  let age = now.getUTCFullYear() - parsedBirthDate.getUTCFullYear();
-  const monthDifference = now.getUTCMonth() - parsedBirthDate.getUTCMonth();
-  const dayDifference = now.getUTCDate() - parsedBirthDate.getUTCDate();
-
-  if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
-    age -= 1;
-  }
-
-  return age;
-}
-
 function ReviewRow({ children, label }: { children: ReactNode; label: string }) {
   return (
     <div className="grid min-w-0 gap-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-3">
@@ -218,7 +195,6 @@ function ReviewRow({ children, label }: { children: ReactNode; label: string }) 
 
 export function TrainingPlanWizard() {
   const { t } = useTranslation();
-  const { profileState } = useAuth();
   const { createMonthlyPlan, isGenerating, state } = useTrainingPlan();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [form, setForm] = useState<MonthlyTrainingPlanRequest>(() => {
@@ -309,10 +285,6 @@ export function TrainingPlanWizard() {
       (selectedInjuryTypes.length > 0 &&
         hasCompleteInjuryDrafts &&
         (!hasCustomInjury || normalizedCustomInjuryDescription.length > 0)));
-  const calculatedAge = calculateAge(
-    profileState?.profile?.birthDate ?? null,
-    new Date(),
-  );
   const reviewEquipment = form.equipamentos
     .map((equipment) =>
       equipment.tipo === 'customizado'
@@ -808,9 +780,7 @@ export function TrainingPlanWizard() {
                 {alturaCm} cm
               </ReviewRow>
               <ReviewRow label={t('training.fields.age')}>
-                {calculatedAge === null
-                  ? t('training.review.backendCalculated')
-                  : `${calculatedAge} ${t('training.review.years')}`}
+                {t('training.review.backendCalculated')}
               </ReviewRow>
               <ReviewRow label={t('training.fields.experience')}>
                 {t(`training.options.experience.${form.nivelExperiencia}`)}

@@ -1,71 +1,37 @@
-create table if not exists public.user_profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  first_name text not null,
-  last_name text not null,
-  cpf text not null,
-  birth_date date not null,
-  phone_number text not null,
-  email text not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.training_athletic_profiles (
-  user_id uuid primary key references auth.users(id) on delete cascade,
-  modalidade_preferida text not null,
-  peso_kg numeric not null,
-  altura_cm numeric not null,
-  nivel_experiencia text not null,
-  local_treino_comum text not null,
-  equipamentos_disponiveis jsonb not null default '[]'::jsonb,
-  lesoes_recorrentes jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.training_monthly_plans (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  status text not null check (status in ('active', 'expired')),
-  generated_at timestamptz not null,
-  available_for_regeneration_at timestamptz not null,
-  snapshot jsonb not null,
-  result jsonb not null,
-  metadata jsonb not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.training_monthly_plan_generation_reservations (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  reserved_at timestamptz not null,
-  lease_expires_at timestamptz not null,
-  released_at timestamptz,
-  completed_at timestamptz,
-  created_at timestamptz not null default now(),
-  constraint training_monthly_plan_generation_reservations_valid_lease
-    check (lease_expires_at > reserved_at),
-  constraint training_monthly_plan_generation_reservations_terminal_state
-    check (released_at is null or completed_at is null)
-);
-
-create unique index if not exists training_monthly_plans_one_active_per_user
-  on public.training_monthly_plans (user_id)
-  where status = 'active';
-
-create unique index if not exists training_monthly_plan_reservations_one_pending_per_user
-  on public.training_monthly_plan_generation_reservations (user_id)
-  where released_at is null and completed_at is null;
-
-alter table public.user_profiles enable row level security;
-alter table public.training_athletic_profiles enable row level security;
-alter table public.training_monthly_plans enable row level security;
 alter table public.training_monthly_plan_generation_reservations
-  enable row level security;
+  add column if not exists lease_expires_at timestamptz;
 
-grant select, insert, update on public.user_profiles to authenticated;
-grant select, insert, update on public.training_athletic_profiles to authenticated;
+update public.training_monthly_plan_generation_reservations
+set lease_expires_at = reserved_at + interval '15 minutes'
+where lease_expires_at is null;
+
+alter table public.training_monthly_plan_generation_reservations
+  alter column lease_expires_at set not null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_catalog.pg_constraint
+    where conname = 'training_monthly_plan_generation_reservations_valid_lease'
+      and conrelid = 'public.training_monthly_plan_generation_reservations'::regclass
+  ) then
+    alter table public.training_monthly_plan_generation_reservations
+      add constraint training_monthly_plan_generation_reservations_valid_lease
+        check (lease_expires_at > reserved_at);
+  end if;
+end;
+$$;
+
+drop policy if exists "Users can insert their own monthly plans"
+  on public.training_monthly_plans;
+drop policy if exists "Users can update their own monthly plans"
+  on public.training_monthly_plans;
+drop policy if exists "Users can insert their own monthly plan reservations"
+  on public.training_monthly_plan_generation_reservations;
+drop policy if exists "Users can update their own monthly plan reservations"
+  on public.training_monthly_plan_generation_reservations;
+
 grant select on public.training_monthly_plans to authenticated;
 grant select on public.training_monthly_plan_generation_reservations to authenticated;
 
@@ -75,48 +41,6 @@ revoke insert, update, delete
 revoke insert, update, delete
   on table public.training_monthly_plan_generation_reservations
   from public, anon, authenticated;
-
-create policy "Users can select their own registration profile"
-  on public.user_profiles for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "Users can insert their own registration profile"
-  on public.user_profiles for insert
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can update their own registration profile"
-  on public.user_profiles for update
-  to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can select their own athletic profile"
-  on public.training_athletic_profiles for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "Users can insert their own athletic profile"
-  on public.training_athletic_profiles for insert
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can update their own athletic profile"
-  on public.training_athletic_profiles for update
-  to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can select their own monthly plans"
-  on public.training_monthly_plans for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
-
-create policy "Users can select their own monthly plan reservations"
-  on public.training_monthly_plan_generation_reservations for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
 
 create or replace function public.get_training_monthly_plan_generation_state(
   p_user_id uuid

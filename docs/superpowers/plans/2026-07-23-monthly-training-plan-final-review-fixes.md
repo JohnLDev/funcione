@@ -98,3 +98,28 @@
 - [x] Run `rtk npm run typecheck`, `rtk npm test`, `rtk npm run test:e2e`, and `rtk npm run build` from the root.
 - [x] Inspect `git diff --check`, the complete diff, and worktree status; perform a final review against every brief item.
 - [x] Write the required final-review report and create a focused commit.
+
+### Task 5: Re-review Follow-up
+
+**Files:**
+- Modify: `supabase/migrations/20260723220139_create_training_plan_tables.sql`
+- Create: `supabase/migrations/20260724093529_secure_monthly_training_plan_rpc.sql`
+- Modify: `apps/backend/src/modules/training/infra/training-plan-migration.test.ts`
+- Modify: `apps/backend/src/modules/training/http/training-routes.ts`
+- Modify: `apps/backend/src/modules/training/http/training-routes.test.ts`
+- Modify: `apps/backend/src/modules/training/http/training-json-schemas.ts`
+- Modify: `apps/frontend/src/components/training-plan-wizard.tsx`
+- Modify: `apps/frontend/e2e/training-plan.spec.ts`
+
+**Interfaces:**
+- Existing Supabase deployments receive a forward migration instead of relying only on edits to the original migration.
+- `complete_training_monthly_plan_generation` validates the plan JSON, snapshot, metadata, and athletic-profile mirror before writing untrusted completion payloads.
+- Free-text OpenAPI fields declare min/max length and the route normalizes prompt-bound strings before JSON Schema validation.
+- The wizard review does not display a client-derived age value; it identifies age as calculated from the authenticated registration profile.
+
+- [x] Add failing backend tests for the missing forward migration, DB completion-payload validation, and OpenAPI free-text min/max bounds.
+- [x] Add failing mobile E2E expectation for backend-derived age wording in the review step.
+- [x] Implement the forward migration, completion validation helper, route pre-validation normalizer, OpenAPI bounds, and review copy update.
+- [x] Re-run focused backend and mobile E2E tests and confirm they pass.
+- [x] Run the full root verification commands again after the follow-up changes.
+- [ ] Re-review the final diff after the follow-up commit.

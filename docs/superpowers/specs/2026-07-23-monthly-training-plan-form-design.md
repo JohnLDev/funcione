@@ -414,7 +414,11 @@ regra mensal. O frontend em `/training` usa exclusivamente
 
 A persistencia usa Supabase Postgres e a migration
 `supabase/migrations/20260723220139_create_training_plan_tables.sql` deve ser
-aplicada com `supabase db push`.
+aplicada com `supabase db push`. Ambientes que ja aplicaram a migration base
+recebem a migration avancada
+`supabase/migrations/20260724093529_secure_monthly_training_plan_rpc.sql`, que
+reforca grants, leases e RPCs sem depender apenas de edicao retroativa da
+migration original.
 
 Modelo recomendado:
 
@@ -439,6 +443,13 @@ revogado de `public` e `anon` e concedido explicitamente somente a
 `authenticated`. O banco usa `statement_timestamp()` para criar o lease de 15
 minutos, expirar reservas pendentes e calcular a janela de 30 dias; timestamps
 fornecidos pelo cliente nao controlam elegibilidade.
+
+O RPC de conclusao tambem valida o payload antes de gravar: `plan`, `result`,
+`snapshot`, `metadata` e o espelho de `athletic_profile` precisam ter a
+estrutura esperada, pertencer ao usuario autenticado, respeitar os limites de
+treinos e refletir modalidade, nivel, local, duracao, objetivos, equipamentos e
+lesoes usados na geracao. Isso evita que um usuario autenticado reserve uma
+geracao e conclua diretamente com JSON fabricado fora do contrato do backend.
 
 Toda tabela exposta no Supabase deve ter RLS habilitado e policies por
 propriedade do usuario.
