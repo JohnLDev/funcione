@@ -122,4 +122,8 @@
 - [x] Implement the forward migration, completion validation helper, route pre-validation normalizer, OpenAPI bounds, and review copy update.
 - [x] Re-run focused backend and mobile E2E tests and confirm they pass.
 - [x] Run the full root verification commands again after the follow-up changes.
-- [ ] Re-review the final diff after the follow-up commit.
+- [x] Re-review found remaining DB completion validation gaps for mirrored enum data, nullable comparisons, and nested workout result item contracts.
+- [x] Add failing backend migration tests for enum allowlists, null-safe mirrors, nested `alongamentos`/`exercicios` contracts, text field types, and free-text bounds in both base and forward migrations.
+- [x] Strengthen base and forward SQL validation for snapshot/profile allowlists, required scalar types, `is distinct from` mirror comparisons, objective/equipment/injury values, custom text bounds, and nested workout result item fields.
+- [x] Run focused backend tests and the full root verification commands again after the second follow-up.
+- [ ] Re-review the final diff after the second follow-up commit.

@@ -243,9 +243,9 @@ begin
       using errcode = '22023';
   end if;
 
-  if (p_plan ->> 'user_id')::uuid <> p_user_id
-    or p_plan ->> 'status' <> 'active'
-    or p_plan #>> '{snapshot,userId}' <> p_user_id::text then
+  if (p_plan ->> 'user_id')::uuid is distinct from p_user_id
+    or p_plan ->> 'status' is distinct from 'active'
+    or p_plan #>> '{snapshot,userId}' is distinct from p_user_id::text then
     raise exception 'Training plan does not match its reservation.'
       using errcode = '22023';
   end if;
@@ -259,7 +259,8 @@ begin
       using errcode = '22023';
   end if;
 
-  if coalesce(trim(p_plan #>> '{result,resumo}'), '') = ''
+  if jsonb_typeof(p_plan #> '{result,resumo}') is distinct from 'string'
+    or coalesce(trim(p_plan #>> '{result,resumo}'), '') = ''
     or jsonb_typeof(p_plan #> '{result,treinos}') is distinct from 'array' then
     raise exception 'Training plan result is invalid.'
       using errcode = '22023';
@@ -275,7 +276,9 @@ begin
   if exists (
     select 1
     from jsonb_array_elements(p_plan #> '{result,treinos}') as treino(value)
-    where coalesce(trim(treino.value ->> 'dia'), '') = ''
+    where jsonb_typeof(treino.value -> 'dia') is distinct from 'string'
+      or coalesce(trim(treino.value ->> 'dia'), '') = ''
+      or jsonb_typeof(treino.value -> 'foco') is distinct from 'string'
       or coalesce(trim(treino.value ->> 'foco'), '') = ''
       or jsonb_typeof(treino.value -> 'duracaoMinutos') is distinct from 'number'
       or jsonb_typeof(treino.value -> 'alongamentos') is distinct from 'array'
@@ -285,25 +288,102 @@ begin
       using errcode = '22023';
   end if;
 
+  if exists (
+    select 1
+    from jsonb_array_elements(p_plan #> '{result,treinos}') as treino(value)
+    cross join lateral jsonb_array_elements(treino.value -> 'alongamentos') as alongamento(value)
+    where jsonb_typeof(alongamento.value) is distinct from 'object'
+      or jsonb_typeof(alongamento.value -> 'nome') is distinct from 'string'
+      or coalesce(trim(alongamento.value ->> 'nome'), '') = ''
+      or jsonb_typeof(alongamento.value -> 'duracaoSegundos') is distinct from 'number'
+      or (alongamento.value ->> 'duracaoSegundos')::numeric <= 0
+      or jsonb_typeof(alongamento.value -> 'motivoEscolha') is distinct from 'string'
+      or coalesce(trim(alongamento.value ->> 'motivoEscolha'), '') = ''
+      or jsonb_typeof(alongamento.value -> 'instrucoesExecucao') is distinct from 'string'
+      or coalesce(trim(alongamento.value ->> 'instrucoesExecucao'), '') = ''
+      or (
+        alongamento.value ? 'observacoes'
+        and (
+          jsonb_typeof(alongamento.value -> 'observacoes') is distinct from 'string'
+          or coalesce(trim(alongamento.value ->> 'observacoes'), '') = ''
+        )
+      )
+  ) then
+    raise exception 'Training plan stretches are invalid.'
+      using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_plan #> '{result,treinos}') as treino(value)
+    cross join lateral jsonb_array_elements(treino.value -> 'exercicios') as exercicio(value)
+    where jsonb_typeof(exercicio.value) is distinct from 'object'
+      or jsonb_typeof(exercicio.value -> 'nome') is distinct from 'string'
+      or coalesce(trim(exercicio.value ->> 'nome'), '') = ''
+      or jsonb_typeof(exercicio.value -> 'series') is distinct from 'number'
+      or (exercicio.value ->> 'series')::numeric <= 0
+      or jsonb_typeof(exercicio.value -> 'repeticoes') is distinct from 'string'
+      or coalesce(trim(exercicio.value ->> 'repeticoes'), '') = ''
+      or jsonb_typeof(exercicio.value -> 'motivoEscolha') is distinct from 'string'
+      or coalesce(trim(exercicio.value ->> 'motivoEscolha'), '') = ''
+      or jsonb_typeof(exercicio.value -> 'instrucoesExecucao') is distinct from 'string'
+      or coalesce(trim(exercicio.value ->> 'instrucoesExecucao'), '') = ''
+      or (
+        exercicio.value ? 'observacoes'
+        and (
+          jsonb_typeof(exercicio.value -> 'observacoes') is distinct from 'string'
+          or coalesce(trim(exercicio.value ->> 'observacoes'), '') = ''
+        )
+      )
+  ) then
+    raise exception 'Training plan exercises are invalid.'
+      using errcode = '22023';
+  end if;
+
   if jsonb_typeof(p_plan #> '{snapshot,objetivos}') is distinct from 'array'
     or jsonb_typeof(p_plan #> '{snapshot,equipamentos}') is distinct from 'array'
     or jsonb_typeof(p_plan #> '{snapshot,lesoes}') is distinct from 'array'
+    or jsonb_typeof(p_plan #> '{snapshot,idade}') is distinct from 'number'
+    or jsonb_typeof(p_plan #> '{snapshot,pesoKg}') is distinct from 'number'
+    or jsonb_typeof(p_plan #> '{snapshot,alturaCm}') is distinct from 'number'
+    or jsonb_typeof(p_plan #> '{snapshot,duracaoTreinoMinutos}') is distinct from 'number'
+    or jsonb_typeof(p_athletic_profile -> 'peso_kg') is distinct from 'number'
+    or jsonb_typeof(p_athletic_profile -> 'altura_cm') is distinct from 'number'
+    or jsonb_typeof(p_athletic_profile -> 'equipamentos_disponiveis') is distinct from 'array'
+    or jsonb_typeof(p_athletic_profile -> 'lesoes_recorrentes') is distinct from 'array'
+    or coalesce(p_plan #>> '{snapshot,modalidade}', '')
+      not in ('volei', 'basquete', 'futebol_futsal', 'beach_tenis')
+    or coalesce(p_athletic_profile ->> 'modalidade_preferida', '')
+      not in ('volei', 'basquete', 'futebol_futsal', 'beach_tenis')
+    or coalesce(p_plan #>> '{snapshot,nivelExperiencia}', '')
+      not in ('iniciante', 'intermediario', 'avancado', 'profissional')
+    or coalesce(p_athletic_profile ->> 'nivel_experiencia', '')
+      not in ('iniciante', 'intermediario', 'avancado', 'profissional')
+    or coalesce(p_plan #>> '{snapshot,tempoDisponivel}', '')
+      not in ('2x_semana', '3x_semana', '4x_semana', '5x_semana', '6x_semana', '7x_semana')
+    or coalesce(p_plan #>> '{snapshot,localTreino}', '')
+      not in ('academia', 'casa', 'ar_livre')
+    or coalesce(p_athletic_profile ->> 'local_treino_comum', '')
+      not in ('academia', 'casa', 'ar_livre')
+    or (p_plan #>> '{snapshot,idade}')::integer not between 16 and 100
+    or (p_plan #>> '{snapshot,pesoKg}')::numeric <= 0
+    or (p_plan #>> '{snapshot,alturaCm}')::numeric <= 0
     or (p_plan #>> '{snapshot,duracaoTreinoMinutos}')::integer
       not in (30, 45, 60, 75, 90)
     or (p_plan #>> '{snapshot,pesoKg}')::numeric
-      <> (p_athletic_profile ->> 'peso_kg')::numeric
+      is distinct from (p_athletic_profile ->> 'peso_kg')::numeric
     or (p_plan #>> '{snapshot,alturaCm}')::numeric
-      <> (p_athletic_profile ->> 'altura_cm')::numeric
+      is distinct from (p_athletic_profile ->> 'altura_cm')::numeric
     or p_plan #>> '{snapshot,modalidade}'
-      <> p_athletic_profile ->> 'modalidade_preferida'
+      is distinct from p_athletic_profile ->> 'modalidade_preferida'
     or p_plan #>> '{snapshot,nivelExperiencia}'
-      <> p_athletic_profile ->> 'nivel_experiencia'
+      is distinct from p_athletic_profile ->> 'nivel_experiencia'
     or p_plan #>> '{snapshot,localTreino}'
-      <> p_athletic_profile ->> 'local_treino_comum'
+      is distinct from p_athletic_profile ->> 'local_treino_comum'
     or p_plan #> '{snapshot,equipamentos}'
-      <> p_athletic_profile -> 'equipamentos_disponiveis'
+      is distinct from p_athletic_profile -> 'equipamentos_disponiveis'
     or p_plan #> '{snapshot,lesoes}'
-      <> p_athletic_profile -> 'lesoes_recorrentes' then
+      is distinct from p_athletic_profile -> 'lesoes_recorrentes' then
     raise exception 'Training plan snapshot is invalid.'
       using errcode = '22023';
   end if;
@@ -316,6 +396,16 @@ begin
     or equipamento_count < 1 or equipamento_count > 11
     or lesao_count > 7 then
     raise exception 'Training plan snapshot collections are invalid.'
+      using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements_text(p_plan #> '{snapshot,objetivos}') as objetivo(value)
+    where coalesce(objetivo.value, '')
+      not in ('performance', 'condicionamento', 'prevencao_lesao', 'perda_peso', 'ganho_massa')
+  ) then
+    raise exception 'Training plan objectives are invalid.'
       using errcode = '22023';
   end if;
 
@@ -342,10 +432,28 @@ begin
   if exists (
     select 1
     from jsonb_array_elements(p_plan #> '{snapshot,equipamentos}') as equipamento(value)
-    where coalesce(equipamento.value ->> 'tipo', '') = ''
+    where jsonb_typeof(equipamento.value) is distinct from 'object'
+      or coalesce(equipamento.value ->> 'tipo', '')
+        not in (
+          'nenhum',
+          'halteres',
+          'barra_anilhas',
+          'elasticos',
+          'banco_caixa',
+          'colchonete',
+          'cones',
+          'corda',
+          'maquinas_academia',
+          'bola',
+          'customizado'
+        )
       or (
         equipamento.value ->> 'tipo' = 'customizado'
-        and coalesce(trim(equipamento.value ->> 'descricao'), '') = ''
+        and (
+          jsonb_typeof(equipamento.value -> 'descricao') is distinct from 'string'
+          or coalesce(trim(equipamento.value ->> 'descricao'), '') = ''
+          or length(coalesce(trim(equipamento.value ->> 'descricao'), '')) > 80
+        )
       )
   ) or (
     equipamento_count > 1
@@ -362,11 +470,25 @@ begin
   if exists (
     select 1
     from jsonb_array_elements(p_plan #> '{snapshot,lesoes}') as lesao(value)
-    where lesao.value ->> 'gravidade' not in ('leve', 'moderada', 'alta')
-      or coalesce(lesao.value ->> 'tipo', '') = ''
+    where jsonb_typeof(lesao.value) is distinct from 'object'
+      or coalesce(lesao.value ->> 'tipo', '')
+        not in ('joelho', 'tornozelo', 'ombro', 'lombar', 'quadril', 'punho', 'customizada')
+      or coalesce(lesao.value ->> 'gravidade', '') not in ('leve', 'moderada', 'alta')
       or (
         lesao.value ->> 'tipo' = 'customizada'
-        and coalesce(trim(lesao.value ->> 'descricao'), '') = ''
+        and (
+          jsonb_typeof(lesao.value -> 'descricao') is distinct from 'string'
+          or coalesce(trim(lesao.value ->> 'descricao'), '') = ''
+          or length(coalesce(trim(lesao.value ->> 'descricao'), '')) > 120
+        )
+      )
+      or (
+        lesao.value ? 'observacoes'
+        and (
+          jsonb_typeof(lesao.value -> 'observacoes') is distinct from 'string'
+          or coalesce(trim(lesao.value ->> 'observacoes'), '') = ''
+          or length(coalesce(trim(lesao.value ->> 'observacoes'), '')) > 180
+        )
       )
   ) then
     raise exception 'Training plan injuries are invalid.'

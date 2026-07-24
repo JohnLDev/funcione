@@ -448,8 +448,12 @@ O RPC de conclusao tambem valida o payload antes de gravar: `plan`, `result`,
 `snapshot`, `metadata` e o espelho de `athletic_profile` precisam ter a
 estrutura esperada, pertencer ao usuario autenticado, respeitar os limites de
 treinos e refletir modalidade, nivel, local, duracao, objetivos, equipamentos e
-lesoes usados na geracao. Isso evita que um usuario autenticado reserve uma
-geracao e conclua diretamente com JSON fabricado fora do contrato do backend.
+lesoes usados na geracao. A validacao do banco deve usar allowlists para enums,
+comparacoes null-safe entre snapshot e perfil atletico, tipos textuais
+explicitos, limites dos campos livres e o contrato basico de cada item em
+`alongamentos` e `exercicios`. Isso evita que um usuario autenticado reserve
+uma geracao e conclua diretamente com JSON fabricado fora do contrato do
+backend.
 
 Toda tabela exposta no Supabase deve ter RLS habilitado e policies por
 propriedade do usuario.
