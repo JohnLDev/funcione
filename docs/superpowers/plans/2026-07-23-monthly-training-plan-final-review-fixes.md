@@ -132,4 +132,4 @@
 - [x] Run the full root verification commands again after metadata hardening.
 - [x] Re-review confirmed SQL metadata hardening and requested stronger regression assertions for `attempt.model`.
 - [x] Add `attempt.model` and nonblank provider/model assertions, verify RED by temporarily removing the SQL guard, restore it, and re-run the full verification commands.
-- [ ] Re-review the final test coverage diff after the regression assertion commit.
+- [x] Re-review the final test coverage diff after the regression assertion commit.
