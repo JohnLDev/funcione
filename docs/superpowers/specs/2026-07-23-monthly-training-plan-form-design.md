@@ -2,32 +2,33 @@
 
 ## Contexto
 
-O Funcione ja possui autenticacao com Supabase Auth, frontend Vite/React com
-rotas reais, i18n, tema claro/escuro e um endpoint REST inicial para geracao de
-plano de treino por IA:
+O Funcione possui autenticacao com Supabase Auth, frontend Vite/React com rotas
+reais, i18n, tema claro/escuro e o endpoint REST inicial para geracao de plano
+de treino por IA:
 
 ```txt
 POST /api/training-plans
 ```
 
 Esse endpoint recebe `DadosUsuario` e gera um plano semanal com 2 a 7 sessoes,
-conforme frequencia semanal. A nova etapa transforma essa capacidade em uma
-experiencia de produto: o aluno gera um plano ativo mensal, limitado a uma
-geracao a cada 30 dias.
+conforme frequencia semanal. A experiencia mensal usa essa capacidade para que
+o aluno gere e consulte um unico plano ativo, limitado a uma geracao a cada 30
+dias.
 
 ## Objetivo
 
-Criar o desenho funcional e tecnico do formulario de criacao de treino mensal,
-mapeando todos os campos que a IA precisa, mantendo excelente usabilidade mobile
-e preparando persistencia em Supabase Postgres.
+Documentar o comportamento final do formulario de criacao de treino mensal,
+com todos os campos necessarios para a IA, usabilidade mobile-first e
+persistencia em Supabase Postgres.
 
 ## Decisoes Aprovadas
 
-- O formulario segue abordagem hibrida:
+- O formulario implementa abordagem hibrida:
   - mobile: wizard progressivo;
   - desktop: secoes com resumo lateral.
 - A organizacao visual aprovada e a opcao A: wizard progressivo em 5 etapas.
-- O usuario gera um plano semanal base que fica ativo por 30 dias.
+- O usuario gera um plano semanal base que fica ativo por 30 dias; somente um
+  plano com status `active` pode existir por usuario.
 - O usuario pode gerar no maximo um plano a cada 30 dias corridos.
 - Enquanto houver plano ativo, a tela mostra plano atual, data de geracao e
   proxima data disponivel para nova geracao.
@@ -35,8 +36,8 @@ e preparando persistencia em Supabase Postgres.
 - A interface desta etapa mostra apenas o plano ativo; historico fica fora do
   escopo visual.
 - O backend sera a autoridade da regra de 30 dias.
-- A persistencia sera em Supabase Postgres.
-- A idade sera calculada pelo backend a partir da data de nascimento do perfil
+- A persistencia usa Supabase Postgres.
+- A idade e calculada pelo backend a partir da data de nascimento do perfil
   interno.
 - Nao havera escolha de dias preferidos da semana nesta versao.
 - Nao havera campo de observacoes gerais nesta versao.
@@ -94,6 +95,15 @@ Fora do escopo desta etapa:
 4. O usuario nao pode gerar outro plano ate completar 30 dias corridos.
 
 ## Campos Do Formulario
+
+O wizard implementado oferece todas as opcoes aprovadas em cinco etapas e uma
+revisao final. As selecoes estruturadas sao modalidade (volei, basquete,
+futebol/futsal e beach tennis), objetivos (performance, condicionamento,
+prevencao de lesao, perda de peso e ganho de massa), nivel (iniciante,
+intermediario, avancado e profissional), frequencia (2 a 7 vezes por semana),
+duracao (30, 45, 60, 75 ou 90 minutos), local (academia, casa ou ar livre),
+equipamentos e lesoes/restricoes. Equipamentos e lesoes aceitam selecao
+multipla; as opcoes customizadas revelam os campos livres abaixo.
 
 ### Etapa 1: Objetivo Esportivo
 
@@ -258,7 +268,11 @@ perfil atletico reutilizavel.
 
 ## Plano Mensal Ativo
 
-O plano mensal ativo representa o plano semanal base valido por 30 dias.
+O plano mensal ativo representa o plano semanal base valido por 30 dias. A
+regra e autoritativa no backend: a reserva de geracao e atomica, uma criacao
+concorrente perde com conflito, e a persistencia garante um unico plano ativo
+por usuario. Planos anteriores expiram para permitir o proximo ciclo, mas nao
+ha historico visual nesta etapa.
 
 Campos conceituais:
 
@@ -326,7 +340,7 @@ Ao abrir um treino, a tela mostra:
 
 ## Contratos REST
 
-Novos endpoints propostos:
+Endpoints implementados:
 
 ```txt
 GET /api/training-plans/active
@@ -341,7 +355,8 @@ Responsabilidades:
 - retornar plano ativo, se existir;
 - retornar elegibilidade de nova geracao;
 - retornar perfil atletico para prefill quando nao houver plano ativo ou quando
-  for permitido gerar novamente.
+  for permitido gerar novamente;
+- nunca expor os metadados internos de execucao do gerador.
 
 Resposta conceitual:
 
@@ -369,8 +384,8 @@ Responsabilidades:
 
 - autenticar usuario;
 - validar payload;
-- calcular idade;
-- normalizar e sanitizar campos livres;
+- calcular idade exclusivamente do perfil autenticado;
+- normalizar e sanitizar campos livres antes de montar o snapshot;
 - validar regra de 30 dias;
 - atualizar perfil atletico;
 - montar snapshot;
@@ -387,12 +402,16 @@ Erros esperados:
 - `503`: falha de geracao por providers indisponiveis;
 - `500`: erro inesperado.
 
-O endpoint antigo `POST /api/training-plans` pode permanecer para compatibilidade
-e testes internos, mas o frontend novo deve usar `POST /api/training-plans/monthly`.
+O endpoint antigo `POST /api/training-plans` permanece para compatibilidade e
+testes internos. O frontend em `/training` usa exclusivamente
+`POST /api/training-plans/monthly` e consulta primeiro
+`GET /api/training-plans/active`.
 
 ## Persistencia Supabase
 
-A persistencia sera em Supabase Postgres.
+A persistencia usa Supabase Postgres e a migration
+`supabase/migrations/20260723220139_create_training_plan_tables.sql` deve ser
+aplicada com `supabase db push`.
 
 Modelo recomendado:
 
@@ -403,10 +422,13 @@ O frontend nao escreve diretamente nessas tabelas. A aplicacao usa o backend
 como porta principal para validar autenticacao, regra de negocio, sanitizacao,
 OpenAPI e chamadas de IA.
 
-Para preservar RLS, o backend deve preferir acesso ao Supabase com contexto do
-usuario autenticado quando consultar/escrever dados do usuario. Chaves
-privilegiadas, se usadas em operacoes administrativas futuras, devem ficar
-somente no backend e nunca no frontend.
+Para preservar RLS, o backend cria os repositorios Supabase no escopo de cada
+request autenticado, com o bearer token do usuario. Assim, as consultas,
+upserts e RPCs executam no contexto do dono da linha; as policies de leitura,
+insercao e atualizacao validam `auth.uid() = user_id`. As funcoes de reserva e
+conclusao usam `security invoker` e conferem a identidade do chamador. Chaves
+privilegiadas, se usadas em operacoes administrativas futuras, ficam somente no
+backend e nunca no frontend.
 
 Toda tabela exposta no Supabase deve ter RLS habilitado e policies por
 propriedade do usuario.
@@ -429,12 +451,12 @@ Limites iniciais:
 - observacao de lesao: ate 180 caracteres;
 - equipamento "outro": ate 80 caracteres.
 
-Regras:
+Regras implementadas:
 
-- frontend valida tamanho e obrigatoriedade;
+- frontend limita a entrada e exige descricoes customizadas nao vazias;
 - backend valida novamente por schema;
-- backend normaliza whitespace;
-- backend remove caracteres de controle;
+- backend remove caracteres de controle, normaliza whitespace e aplica os
+  limites de 120, 180 e 80 caracteres antes de persistir;
 - backend rejeita strings vazias apos normalizacao;
 - backend delimita textos do usuario no prompt como dados;
 - system prompt deve declarar que textos do usuario nao podem alterar regras,
@@ -471,7 +493,7 @@ O prompt deve reforcar:
 
 ## Frontend
 
-Nova rota sugerida:
+Rota implementada:
 
 ```txt
 /training
@@ -502,7 +524,9 @@ Desktop:
 - plano ativo em layout mais amplo;
 - cards de treino com detalhe acessivel.
 
-Todos os textos visiveis devem usar i18n.
+Todos os textos visiveis usam i18n. O dashboard oferece a entrada para
+`/training`; a rota de treino e uma tela autenticada independente que concentra
+o wizard e a visualizacao do plano ativo.
 
 ## Testes
 
@@ -515,9 +539,13 @@ Regras obrigatorias:
   Supabase real; devem usar doubles/injecao no nivel de aplicacao;
 - toda rota HTTP nova ou alterada deve ter teste para payload invalido, sucesso,
   erro esperado e presenca/atualizacao no OpenAPI;
-- todo fluxo de usuario novo no frontend deve ter E2E cobrindo comportamento
-  principal e estados criticos;
-- fluxos que impactem mobile devem ser cobertos por viewport mobile no
+- o fluxo principal e os estados criticos do frontend possuem E2E Playwright em
+  `desktop-chromium` e `mobile-chrome`: navegacao para `/training`, wizard,
+  validacao de medidas e textos livres, geracao, plano ativo, detalhes e
+  bloqueio mensal;
+- o fluxo mobile verifica ausencia de overflow horizontal e o desktop verifica
+  a navegacao e o plano ativo em layout amplo;
+- fluxos que impactem mobile sao cobertos por viewport mobile no
   Playwright ou verificacao automatizada equivalente;
 - mudancas visuais devem ser verificadas em pelo menos um viewport mobile e um
   desktop antes de concluir;

@@ -170,6 +170,8 @@ GET /api/auth/me
 GET /api/auth/profile
 PUT /api/auth/profile
 POST /api/training-plans
+GET /api/training-plans/active
+POST /api/training-plans/monthly
 ```
 
 Regras obrigatorias para API:
@@ -204,6 +206,7 @@ Rotas atuais:
 /signup
 /complete-profile
 /dashboard
+/training
 ```
 
 Regras obrigatorias para frontend:
@@ -228,6 +231,24 @@ O backend nao armazena senha nem hash. Senhas e segredos OAuth ficam sob
 responsabilidade do Supabase Auth.
 
 Mais detalhes: `docs/authentication.md`.
+
+## Monthly Training Plans
+
+- `GET /api/training-plans/active` retorna o plano mensal ativo atual e a
+  elegibilidade para uma nova geracao.
+- `POST /api/training-plans/monthly` cria um plano mensal quando o usuario esta
+  elegivel.
+- Cada plano gerado armazena o snapshot normalizado dos dados enviados a IA e
+  bloqueia uma nova geracao por 30 dias.
+- Execute as migrations do Supabase antes de usar perfis autenticados ou planos
+  de treino persistidos:
+
+```bash
+supabase db push
+```
+
+O frontend usa `/training` como fluxo autenticado para criar e consultar o
+plano mensal.
 
 ## Plugins Necessarios Para Desenvolvimento
 

@@ -4183,7 +4183,7 @@ git commit -m "feat: complete training form inputs"
 - Consumes: all implemented contracts
 - Produces: updated project docs and final verification evidence
 
-- [ ] **Step 1: Update README with monthly plan endpoints and Supabase migration**
+- [x] **Step 1: Update README with monthly plan endpoints and Supabase migration**
 
 Add a section:
 
@@ -4202,11 +4202,11 @@ supabase db push
 The frontend uses `/training` for the authenticated monthly training flow.
 ```
 
-- [ ] **Step 2: Mark plan tasks as completed during execution**
+- [x] **Step 2: Mark plan tasks as completed during execution**
 
 As implementation completes, update each checkbox from `- [ ]` to `- [x]` in this plan. Do this with the task commit that completes the work.
 
-- [ ] **Step 3: Run backend full test suite**
+- [x] **Step 3: Run backend full test suite**
 
 Run:
 
@@ -4216,7 +4216,7 @@ npm test --workspace @langchain-training/backend
 
 Expected: PASS.
 
-- [ ] **Step 4: Run frontend E2E full suite**
+- [x] **Step 4: Run frontend E2E full suite**
 
 Run:
 
@@ -4226,7 +4226,7 @@ npm run test:e2e --workspace @langchain-training/frontend
 
 Expected: PASS in `desktop-chromium` and `mobile-chrome`.
 
-- [ ] **Step 5: Run root verification**
+- [x] **Step 5: Run root verification**
 
 Run from repository root:
 
@@ -4256,7 +4256,7 @@ Desktop Chrome:
 - side and bottom navigation active states are correct.
 ```
 
-- [ ] **Step 7: Commit docs and verification note**
+- [x] **Step 7: Commit docs and verification note**
 
 ```bash
 git add README.md docs/superpowers/specs/2026-07-23-monthly-training-plan-form-design.md docs/superpowers/plans/2026-07-23-monthly-training-plan-form.md
