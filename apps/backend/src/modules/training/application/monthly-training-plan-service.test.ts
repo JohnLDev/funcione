@@ -167,6 +167,43 @@ describe('monthly training plan service', () => {
     assert.equal(retryResult.ok, true);
   });
 
+  it('returns a controlled failure when completion and cleanup transports throw', async () => {
+    const dependencies = await createDependencies();
+    dependencies.monthlyTrainingPlanRepository.completeActiveGeneration = async () => {
+      throw new Error('completion network failure');
+    };
+    dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration = async () => {
+      throw new Error('release network failure');
+    };
+
+    const result = await createMonthlyTrainingPlan(user, payload, dependencies);
+
+    assert.equal(result.ok, false);
+    if (result.ok) {
+      return;
+    }
+    assert.equal(result.error.code, 'TRAINING_PLAN_GENERATION_FAILED');
+    assert.equal(result.error.statusCode, 503);
+    assert.equal(
+      result.error.message,
+      'Monthly training plan could not be persisted.',
+    );
+  });
+
+  it('recovers an abandoned pending reservation after its 15 minute lease', async () => {
+    const dependencies = await createDependencies('2026-07-23T12:00:00.000Z');
+
+    const reservation = await dependencies.monthlyTrainingPlanRepository
+      .reserveActiveGeneration(user.id, '2026-07-23T12:00:00.000Z');
+    assert.equal(reservation.ok, true);
+
+    dependencies.now = () => new Date('2026-07-23T12:15:00.001Z');
+    const recoveredState = await getActiveMonthlyTrainingPlan(user, dependencies);
+
+    assert.equal(recoveredState.activePlan, null);
+    assert.equal(recoveredState.canGenerate, true);
+  });
+
   it('blocks a second generation before 30 days', async () => {
     const dependencies = await createDependencies();
 

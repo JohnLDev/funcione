@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Activity, Dumbbell, MapPin, Target, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/auth/use-auth.js';
 import type {
   EquipmentType,
   ExperienceLevel,
+  InjurySeverity,
   InjuryType,
   MonthlyTrainingPlanRequest,
   TrainingEquipment,
@@ -64,6 +66,12 @@ const injuryOptions = [
   'punho',
   'customizada',
 ] as const;
+const injurySeverities = ['leve', 'moderada', 'alta'] as const;
+
+type InjuryDraft = {
+  gravidade: InjurySeverity | '';
+  observacoes: string;
+};
 
 const initialForm: MonthlyTrainingPlanRequest = {
   alturaCm: 180,
@@ -82,14 +90,14 @@ const steps = ['objective', 'body', 'routine', 'safety', 'review'] as const;
 
 export function normalizeFreeText(value: string, maxLength: number) {
   return value
-    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
     .replace(/\s+/g, ' ')
     .slice(0, maxLength);
 }
 
 export function finalizeFreeText(value: string, maxLength: number) {
   return value
-    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLength);
@@ -152,6 +160,7 @@ function normalizeInjuries(injuries: TrainingInjury[]): TrainingInjury[] {
 
       normalizedInjuries.push({
         descricao,
+        gravidade: injury.gravidade,
         tipo: injury.tipo,
         ...observation,
       });
@@ -159,7 +168,11 @@ function normalizeInjuries(injuries: TrainingInjury[]): TrainingInjury[] {
       continue;
     }
 
-    normalizedInjuries.push({ tipo: injury.tipo, ...observation });
+    normalizedInjuries.push({
+      gravidade: injury.gravidade,
+      tipo: injury.tipo,
+      ...observation,
+    });
     types.add(injury.tipo);
   }
 
@@ -172,8 +185,40 @@ function parsePositiveNumber(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+function calculateAge(birthDate: string | null, now: Date): number | null {
+  if (!birthDate) {
+    return null;
+  }
+
+  const parsedBirthDate = new Date(`${birthDate}T00:00:00.000Z`);
+
+  if (Number.isNaN(parsedBirthDate.getTime()) || parsedBirthDate >= now) {
+    return null;
+  }
+
+  let age = now.getUTCFullYear() - parsedBirthDate.getUTCFullYear();
+  const monthDifference = now.getUTCMonth() - parsedBirthDate.getUTCMonth();
+  const dayDifference = now.getUTCDate() - parsedBirthDate.getUTCDate();
+
+  if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
+    age -= 1;
+  }
+
+  return age;
+}
+
+function ReviewRow({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <div className="grid min-w-0 gap-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words sm:text-right">{children}</dd>
+    </div>
+  );
+}
+
 export function TrainingPlanWizard() {
   const { t } = useTranslation();
+  const { profileState } = useAuth();
   const { createMonthlyPlan, isGenerating, state } = useTrainingPlan();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [form, setForm] = useState<MonthlyTrainingPlanRequest>(() => {
@@ -225,13 +270,18 @@ export function TrainingPlanWizard() {
         120,
       ),
   );
-  const [injuryObservation, setInjuryObservation] = useState(
-    () =>
-      finalizeFreeText(
-        form.lesoes.find((injury) => injury.tipo === 'customizada')
-          ?.observacoes ?? form.lesoes[0]?.observacoes ?? '',
-        180,
-      ),
+  const [injuryDrafts, setInjuryDrafts] = useState<
+    Partial<Record<InjuryType, InjuryDraft>>
+  >(() =>
+    Object.fromEntries(
+      form.lesoes.map((injury) => [
+        injury.tipo,
+        {
+          gravidade: injury.gravidade,
+          observacoes: finalizeFreeText(injury.observacoes ?? '', 180),
+        },
+      ]),
+    ),
   );
 
   const currentStep = steps[currentStepIndex];
@@ -247,15 +297,42 @@ export function TrainingPlanWizard() {
     customInjuryDescription,
     120,
   );
-  const normalizedInjuryObservation = finalizeFreeText(injuryObservation, 180);
   const hasCustomEquipment = selectedEquipmentTypes.includes('customizado');
   const hasCustomInjury = selectedInjuryTypes.includes('customizada');
+  const hasCompleteInjuryDrafts = selectedInjuryTypes.every(
+    (injury) => Boolean(injuryDrafts[injury]?.gravidade),
+  );
   const hasValidSafetyInputs =
     selectedEquipmentTypes.length > 0 &&
     (!hasCustomEquipment || normalizedCustomEquipmentDescription.length > 0) &&
     (!hasInjuries ||
       (selectedInjuryTypes.length > 0 &&
+        hasCompleteInjuryDrafts &&
         (!hasCustomInjury || normalizedCustomInjuryDescription.length > 0)));
+  const calculatedAge = calculateAge(
+    profileState?.profile?.birthDate ?? null,
+    new Date(),
+  );
+  const reviewEquipment = form.equipamentos
+    .map((equipment) =>
+      equipment.tipo === 'customizado'
+        ? `${t('training.options.equipment.customizado')}: ${equipment.descricao}`
+        : t(`training.options.equipment.${equipment.tipo}`),
+    )
+    .join(', ');
+  const reviewInjuries = form.lesoes.map((injury) => {
+    const injuryName =
+      injury.tipo === 'customizada'
+        ? `${t('training.options.injuries.customizada')}: ${injury.descricao}`
+        : t(`training.options.injuries.${injury.tipo}`);
+    const severity = t(
+      `training.options.injurySeverity.${injury.gravidade}`,
+    );
+
+    return [injuryName, severity, injury.observacoes]
+      .filter(Boolean)
+      .join(' - ');
+  });
 
   function toggleGoal(goal: TrainingGoal) {
     setForm((current) => ({
@@ -284,11 +361,33 @@ export function TrainingPlanWizard() {
 
   function toggleInjury(injury: InjuryType) {
     setHasInjuries(true);
-    setSelectedInjuryTypes((current) =>
-      current.includes(injury)
-        ? current.filter((item) => item !== injury)
-        : [...current, injury],
-    );
+    setSelectedInjuryTypes((current) => {
+      if (current.includes(injury)) {
+        return current.filter((item) => item !== injury);
+      }
+
+      setInjuryDrafts((drafts) => ({
+        ...drafts,
+        [injury]: drafts[injury] ?? { gravidade: '', observacoes: '' },
+      }));
+
+      return [...current, injury];
+    });
+  }
+
+  function updateInjuryDraft(
+    injury: InjuryType,
+    update: Partial<InjuryDraft>,
+  ) {
+    setInjuryDrafts((drafts) => ({
+      ...drafts,
+      [injury]: {
+        gravidade: '',
+        observacoes: '',
+        ...drafts[injury],
+        ...update,
+      },
+    }));
   }
 
   function buildEquipment(): TrainingEquipment[] {
@@ -320,14 +419,22 @@ export function TrainingPlanWizard() {
     const injuries: TrainingInjury[] = [];
 
     for (const tipo of uniqueTypes(selectedInjuryTypes)) {
-      const observation = normalizedInjuryObservation
-        ? { observacoes: normalizedInjuryObservation }
+      const draft = injuryDrafts[tipo];
+
+      if (!draft?.gravidade) {
+        continue;
+      }
+
+      const normalizedObservation = finalizeFreeText(draft.observacoes, 180);
+      const observation = normalizedObservation
+        ? { observacoes: normalizedObservation }
         : {};
 
       if (tipo === 'customizada') {
         if (normalizedCustomInjuryDescription) {
           injuries.push({
             descricao: normalizedCustomInjuryDescription,
+            gravidade: draft.gravidade,
             tipo,
             ...observation,
           });
@@ -336,7 +443,7 @@ export function TrainingPlanWizard() {
         continue;
       }
 
-      injuries.push({ tipo, ...observation });
+      injuries.push({ gravidade: draft.gravidade, tipo, ...observation });
     }
 
     return injuries;
@@ -598,58 +705,139 @@ export function TrainingPlanWizard() {
                       />
                     ))
                   : null}
-                {hasCustomInjury ? (
-                  <label className="grid min-w-0 gap-1 text-sm font-bold sm:col-span-2">
-                    {t('training.fields.customInjury')}
-                    <input
-                      className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
-                      maxLength={120}
-                      onChange={(event) =>
-                        setCustomInjuryDescription(
-                          normalizeFreeText(event.target.value, 120),
-                        )
-                      }
-                      value={customInjuryDescription}
-                    />
-                  </label>
-                ) : null}
-                {hasInjuries && selectedInjuryTypes.length > 0 ? (
-                  <label className="grid min-w-0 gap-1 text-sm font-bold sm:col-span-2">
-                    {t('training.fields.injuryObservation')}
-                    <input
-                      className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
-                      maxLength={180}
-                      onChange={(event) =>
-                        setInjuryObservation(
-                          normalizeFreeText(event.target.value, 180),
-                        )
-                      }
-                      value={injuryObservation}
-                    />
-                  </label>
-                ) : null}
+                {hasInjuries
+                  ? selectedInjuryTypes.map((injury) => {
+                      const injuryLabel = t(
+                        `training.options.injuries.${injury}`,
+                      );
+                      const draft = injuryDrafts[injury] ?? {
+                        gravidade: '',
+                        observacoes: '',
+                      };
+
+                      return (
+                        <fieldset
+                          className="grid min-w-0 gap-3 border-t border-border pt-3 sm:col-span-2 sm:grid-cols-2"
+                          key={injury}
+                        >
+                          <legend className="mb-2 text-sm font-black text-foreground">
+                            {injuryLabel}
+                          </legend>
+                          {injury === 'customizada' ? (
+                            <label className="grid min-w-0 gap-1 text-sm font-bold sm:col-span-2">
+                              {t('training.fields.customInjury')}
+                              <input
+                                className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
+                                maxLength={120}
+                                onChange={(event) =>
+                                  setCustomInjuryDescription(
+                                    normalizeFreeText(event.target.value, 120),
+                                  )
+                                }
+                                value={customInjuryDescription}
+                              />
+                            </label>
+                          ) : null}
+                          <label className="grid min-w-0 gap-1 text-sm font-bold">
+                            {t('training.fields.injurySeverityFor', {
+                              injury: injuryLabel,
+                            })}
+                            <select
+                              className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
+                              onChange={(event) =>
+                                updateInjuryDraft(injury, {
+                                  gravidade: event.target.value as
+                                    | InjurySeverity
+                                    | '',
+                                })
+                              }
+                              value={draft.gravidade}
+                            >
+                              <option value="">
+                                {t('training.options.injurySeverity.placeholder')}
+                              </option>
+                              {injurySeverities.map((severity) => (
+                                <option key={severity} value={severity}>
+                                  {t(
+                                    `training.options.injurySeverity.${severity}`,
+                                  )}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid min-w-0 gap-1 text-sm font-bold">
+                            {t('training.fields.injuryObservationFor', {
+                              injury: injuryLabel,
+                            })}
+                            <input
+                              className="min-h-12 w-full rounded-2xl border border-input bg-background px-4"
+                              maxLength={180}
+                              onChange={(event) =>
+                                updateInjuryDraft(injury, {
+                                  observacoes: normalizeFreeText(
+                                    event.target.value,
+                                    180,
+                                  ),
+                                })
+                              }
+                              value={draft.observacoes}
+                            />
+                          </label>
+                        </fieldset>
+                      );
+                    })
+                  : null}
               </FieldGroup>
             </>
           ) : null}
 
           {currentStep === 'review' ? (
             <dl className="grid gap-2 text-sm font-bold">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-                <dt className="text-muted-foreground">
-                  {t('training.fields.modality')}
-                </dt>
-                <dd className="min-w-0 break-words text-right">
-                  {t(`training.options.modalities.${form.modalidade}`)}
-                </dd>
-              </div>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-                <dt className="text-muted-foreground">
-                  {t('training.fields.frequency')}
-                </dt>
-                <dd className="min-w-0 break-words text-right">
-                  {t(`training.options.availability.${form.tempoDisponivel}`)}
-                </dd>
-              </div>
+              <ReviewRow label={t('training.fields.modality')}>
+                {t(`training.options.modalities.${form.modalidade}`)}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.goals')}>
+                {form.objetivos
+                  .map((goal) => t(`training.options.goals.${goal}`))
+                  .join(', ')}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.weight')}>
+                {pesoKg} kg
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.height')}>
+                {alturaCm} cm
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.age')}>
+                {calculatedAge === null
+                  ? t('training.review.backendCalculated')
+                  : `${calculatedAge} ${t('training.review.years')}`}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.experience')}>
+                {t(`training.options.experience.${form.nivelExperiencia}`)}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.frequency')}>
+                {t(`training.options.availability.${form.tempoDisponivel}`)}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.duration')}>
+                {t(`training.options.duration.${form.duracaoTreinoMinutos}`)}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.place')}>
+                {t(`training.options.places.${form.localTreino}`)}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.equipment')}>
+                {reviewEquipment}
+              </ReviewRow>
+              <ReviewRow label={t('training.fields.injuries')}>
+                {reviewInjuries.length > 0 ? (
+                  <span className="grid gap-1">
+                    {reviewInjuries.map((injury) => (
+                      <span key={injury}>{injury}</span>
+                    ))}
+                  </span>
+                ) : (
+                  t('training.options.injuries.none')
+                )}
+              </ReviewRow>
             </dl>
           ) : null}
 
@@ -680,7 +868,7 @@ export function TrainingPlanWizard() {
           </div>
         </CardContent>
       </Card>
-      <aside className="hidden lg:block">
+      <aside>
         <Card className="sticky top-4 rounded-2xl">
           <CardContent className="p-4 text-sm font-bold text-muted-foreground">
             {t('training.monthlyLimitNotice')}

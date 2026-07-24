@@ -7,15 +7,16 @@ import {
 } from '../../auth/index.js';
 import {
   EquipamentoTreino,
+  GravidadeLesao,
   LocalTreino,
   ModalidadeEsportiva,
   NivelExperiencia,
   ObjetivoTreino,
   TempoDisponivel,
+  TipoLesao,
   type DadosUsuario,
   type PlanoTreino,
 } from '../domain/index.js';
-import type { GenerateTrainingPlanResult } from '../application/generate-training-plan.js';
 import { createInMemoryTrainingRepositories } from '../infra/in-memory-training-repositories.js';
 
 const validInput: DadosUsuario = {
@@ -127,46 +128,7 @@ async function createUserProfileRepository() {
 }
 
 describe('training routes', () => {
-  it('rejects invalid training plan payloads', async () => {
-    const app = await buildApp({
-      trainingPlanGenerator: async () => ({
-        fallbackUsed: false,
-        attempts: [],
-        error: 'not called',
-      }),
-    });
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/training-plans',
-      payload: { userId: 'missing-required-fields' },
-    });
-
-    assert.equal(response.statusCode, 400);
-    assert.match(response.json().error.message, /body/i);
-  });
-
-  it('rejects training payloads without equipment information', async () => {
-    const app = await buildApp({
-      trainingPlanGenerator: async () => ({
-        fallbackUsed: false,
-        attempts: [],
-        error: 'not called',
-      }),
-    });
-    const { equipamentos, ...payload } = validInput;
-
-    const response = await app.inject({
-      method: 'POST',
-      payload,
-      url: '/api/training-plans',
-    });
-
-    assert.equal(response.statusCode, 400);
-    assert.match(JSON.stringify(response.json()), /equipamentos/);
-  });
-
-  it('rejects unexpected fields on predefined equipment without calling the generator', async () => {
+  it('does not expose the legacy unauthenticated generation endpoint', async () => {
     let generatorCalled = false;
     const app = await buildApp({
       trainingPlanGenerator: async () => {
@@ -182,27 +144,83 @@ describe('training routes', () => {
 
     const response = await app.inject({
       method: 'POST',
-      payload: {
-        ...validInput,
-        equipamentos: [
-          {
-            tipo: EquipamentoTreino.Halteres,
-            descricao: 'campo inesperado',
-          },
-        ],
-      },
+      payload: validInput,
       url: '/api/training-plans',
     });
 
-    assert.equal(response.statusCode, 400);
+    assert.equal(response.statusCode, 404);
     assert.equal(generatorCalled, false);
-    assert.match(response.json().error.message, /additional properties/i);
+  });
+
+  it('rejects unsupported, duplicate, unbounded, or incomplete monthly inputs', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    let generatorCalled = false;
+    const app = await buildApp({
+      authVerifier,
+      trainingPlanGenerator: async () => {
+        generatorCalled = true;
+
+        return {
+          fallbackUsed: false,
+          attempts: [],
+          error: 'not called',
+        };
+      },
+      trainingRepositories: createInMemoryTrainingRepositories(),
+      userProfileRepository,
+    });
+    const invalidPayloads = [
+      { ...monthlyPayload, duracaoTreinoMinutos: 50 },
+      {
+        ...monthlyPayload,
+        lesoes: [{ tipo: TipoLesao.Joelho }],
+      },
+      {
+        ...monthlyPayload,
+        objetivos: [ObjetivoTreino.Performance, ObjetivoTreino.Performance],
+      },
+      {
+        ...monthlyPayload,
+        equipamentos: [
+          { tipo: EquipamentoTreino.Halteres },
+          { tipo: EquipamentoTreino.Halteres },
+        ],
+      },
+      {
+        ...monthlyPayload,
+        lesoes: [
+          { gravidade: GravidadeLesao.Leve, tipo: TipoLesao.Joelho },
+          { gravidade: GravidadeLesao.Alta, tipo: TipoLesao.Joelho },
+        ],
+      },
+      {
+        ...monthlyPayload,
+        objetivos: Array.from(
+          { length: Object.values(ObjetivoTreino).length + 1 },
+          () => ObjetivoTreino.Performance,
+        ),
+      },
+    ];
+
+    for (const payload of invalidPayloads) {
+      const response = await app.inject({
+        headers: { authorization: 'Bearer valid-token' },
+        method: 'POST',
+        payload,
+        url: '/api/training-plans/monthly',
+      });
+
+      assert.equal(response.statusCode, 400);
+    }
+    assert.equal(generatorCalled, false);
   });
 
   it('accepts custom equipment text that normalizes to 80 characters', async () => {
+    const userProfileRepository = await createUserProfileRepository();
     let receivedInput: DadosUsuario | undefined;
     const normalizedDescription = 'a'.repeat(80);
     const app = await buildApp({
+      authVerifier,
       trainingPlanGenerator: async (input) => {
         receivedInput = input;
 
@@ -212,12 +230,15 @@ describe('training routes', () => {
           error: 'not called',
         };
       },
+      trainingRepositories: createInMemoryTrainingRepositories(),
+      userProfileRepository,
     });
 
     const response = await app.inject({
+      headers: { authorization: 'Bearer valid-token' },
       method: 'POST',
       payload: {
-        ...validInput,
+        ...monthlyPayload,
         equipamentos: [
           {
             tipo: EquipamentoTreino.Customizado,
@@ -225,7 +246,7 @@ describe('training routes', () => {
           },
         ],
       },
-      url: '/api/training-plans',
+      url: '/api/training-plans/monthly',
     });
 
     assert.equal(response.statusCode, 503);
@@ -238,77 +259,7 @@ describe('training routes', () => {
     }
   });
 
-  it('creates a training plan with execution metadata', async () => {
-    const successfulResult: GenerateTrainingPlanResult = {
-      provider: 'test',
-      model: 'deterministic',
-      fallbackUsed: false,
-      durationMs: 12,
-      attempts: [
-        {
-          provider: 'test',
-          model: 'deterministic',
-          role: 'primary',
-          status: 'success',
-          durationMs: 12,
-        },
-      ],
-      result: generatedPlan,
-    };
-    const app = await buildApp({
-      trainingPlanGenerator: async () => successfulResult,
-    });
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/training-plans',
-      payload: validInput,
-    });
-
-    assert.equal(response.statusCode, 200);
-    assert.deepEqual(response.json(), successfulResult);
-  });
-
-  it('returns service unavailable when every provider fails', async () => {
-    const app = await buildApp({
-      trainingPlanGenerator: async () => ({
-        fallbackUsed: true,
-        attempts: [
-          {
-            provider: 'nvidia',
-            model: 'model-a',
-            role: 'primary',
-            status: 'error',
-            durationMs: 1,
-            error: 'missing key',
-          },
-          {
-            provider: 'openrouter',
-            model: 'model-b',
-            role: 'fallback',
-            status: 'error',
-            durationMs: 1,
-            error: 'missing key',
-          },
-        ],
-        error: 'Todos os providers configurados falharam.',
-      }),
-    });
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/training-plans',
-      payload: validInput,
-    });
-
-    assert.equal(response.statusCode, 503);
-    assert.equal(
-      response.json().error.message,
-      'Todos os providers configurados falharam.',
-    );
-  });
-
-  it('documents the training plan route in OpenAPI', async () => {
+  it('omits the legacy generation endpoint from OpenAPI', async () => {
     const app = await buildApp();
 
     const response = await app.inject({
@@ -318,49 +269,7 @@ describe('training routes', () => {
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().openapi, '3.0.3');
-    const schema = response.json().paths['/api/training-plans'].post.requestBody.content[
-      'application/json'
-    ].schema;
-
-    assert.ok(schema.required.includes('equipamentos'));
-    assert.equal(schema.properties.equipamentos.minItems, 1);
-    assert.deepEqual(schema.properties.equipamentos.items.anyOf[1].properties.tipo.enum, [
-      EquipamentoTreino.Nenhum,
-      EquipamentoTreino.Halteres,
-      EquipamentoTreino.BarraAnilhas,
-      EquipamentoTreino.Elasticos,
-      EquipamentoTreino.BancoCaixa,
-      EquipamentoTreino.Colchonete,
-      EquipamentoTreino.Cones,
-      EquipamentoTreino.Corda,
-      EquipamentoTreino.MaquinasAcademia,
-      EquipamentoTreino.Bola,
-    ]);
-    assert.deepEqual(schema.properties.equipamentos.items.anyOf[0], {
-      type: 'object',
-      required: ['tipo', 'descricao'],
-      additionalProperties: false,
-      properties: {
-        tipo: { type: 'string', enum: [EquipamentoTreino.Customizado] },
-        descricao: {
-          type: 'string',
-          description:
-            'Normalized server-side: must contain 1 to 80 characters after control-character removal and whitespace collapsing.',
-        },
-      },
-    });
-    assert.equal(
-      schema.properties.lesoes.items.oneOf[0].properties.observacoes.description,
-      'Normalized server-side: must contain 1 to 180 characters after control-character removal and whitespace collapsing.',
-    );
-    assert.equal(
-      schema.properties.lesoes.items.oneOf[1].properties.descricao.description,
-      'Normalized server-side: must contain 1 to 120 characters after control-character removal and whitespace collapsing.',
-    );
-    assert.equal(
-      schema.properties.lesoes.items.oneOf[1].properties.observacoes.description,
-      'Normalized server-side: must contain 1 to 180 characters after control-character removal and whitespace collapsing.',
-    );
+    assert.equal(response.json().paths['/api/training-plans'], undefined);
   });
 
   it('requires authentication for monthly training routes', async () => {
@@ -558,6 +467,39 @@ describe('training routes', () => {
     assert.deepEqual(profileTokens, ['valid-token']);
   });
 
+  it('returns the global 500 contract when monthly repositories fail', async () => {
+    const userProfileRepository = await createUserProfileRepository();
+    const trainingRepositories = createInMemoryTrainingRepositories();
+    trainingRepositories.monthlyTrainingPlanRepository
+      .findActiveGenerationStateByUserId = async () => {
+        throw new Error('repository unavailable');
+      };
+    const app = await buildApp({
+      authVerifier,
+      trainingRepositories,
+      userProfileRepository,
+    });
+
+    const [activeResponse, createResponse] = await Promise.all([
+      app.inject({
+        headers: { authorization: 'Bearer valid-token' },
+        method: 'GET',
+        url: '/api/training-plans/active',
+      }),
+      app.inject({
+        headers: { authorization: 'Bearer valid-token' },
+        method: 'POST',
+        payload: monthlyPayload,
+        url: '/api/training-plans/monthly',
+      }),
+    ]);
+
+    for (const response of [activeResponse, createResponse]) {
+      assert.equal(response.statusCode, 500);
+      assert.equal(response.json().error.code, 'INTERNAL_SERVER_ERROR');
+    }
+  });
+
   it('returns a conflict when a monthly plan is already active', async () => {
     const userProfileRepository = await createUserProfileRepository();
     const app = await buildApp({
@@ -609,12 +551,44 @@ describe('training routes', () => {
     assert.equal(bodySchema.properties.idade, undefined);
     assert.equal(bodySchema.required.includes('userId'), false);
     assert.equal(bodySchema.required.includes('idade'), false);
+    assert.deepEqual(bodySchema.properties.duracaoTreinoMinutos.enum, [
+      30,
+      45,
+      60,
+      75,
+      90,
+    ]);
+    assert.equal(
+      bodySchema.properties.objetivos.maxItems,
+      Object.values(ObjetivoTreino).length,
+    );
+    assert.equal(bodySchema.properties.objetivos.uniqueItems, true);
+    assert.equal(
+      bodySchema.properties.equipamentos.maxItems,
+      Object.values(EquipamentoTreino).length,
+    );
+    assert.equal(bodySchema.properties.equipamentos.uniqueItems, true);
+    assert.equal(bodySchema.properties.equipamentos['x-uniqueBy'], 'tipo');
+    assert.equal(
+      bodySchema.properties.lesoes.maxItems,
+      Object.values(TipoLesao).length,
+    );
+    assert.equal(bodySchema.properties.lesoes.uniqueItems, true);
+    assert.equal(bodySchema.properties.lesoes['x-uniqueBy'], 'tipo');
+    assert.ok(
+      bodySchema.properties.lesoes.items.oneOf[0].required.includes('gravidade'),
+    );
+    assert.ok(
+      bodySchema.properties.lesoes.items.oneOf[1].required.includes('gravidade'),
+    );
     assert.equal(monthlyPlanSchema.properties.metadata, undefined);
     assert.ok(activeRoute.responses['401']);
+    assert.ok(activeRoute.responses['500']);
     assert.ok(activeRoute.responses['503']);
     assert.ok(monthlyRoute.responses['400']);
     assert.ok(monthlyRoute.responses['401']);
     assert.ok(monthlyRoute.responses['409']);
+    assert.ok(monthlyRoute.responses['500']);
     assert.ok(monthlyRoute.responses['503']);
   });
 });

@@ -8,13 +8,45 @@ import type {
   MonthlyTrainingPlan,
 } from '../domain/monthly-plan.js';
 
+const generationReservationLeaseMs = 15 * 60 * 1_000;
+
 export function createInMemoryTrainingRepositories(): {
   athleticProfileRepository: AthleticProfileRepository;
   monthlyTrainingPlanRepository: MonthlyTrainingPlanRepository;
 } {
   const athleticProfiles = new Map<string, AthleticProfile>();
   const monthlyPlans = new Map<string, MonthlyTrainingPlan>();
-  const reservations = new Map<string, { reservedAt: string; userId: string }>();
+  const reservations = new Map<
+    string,
+    { leaseExpiresAt: string; reservedAt: string; userId: string }
+  >();
+
+  function reconcileGenerationState(userId: string, observedAt: string) {
+    const observedAtMs = new Date(observedAt).getTime();
+
+    for (const [id, plan] of monthlyPlans.entries()) {
+      if (
+        plan.userId === userId &&
+        plan.status === MonthlyTrainingPlanStatus.Active &&
+        new Date(plan.availableForRegenerationAt).getTime() <= observedAtMs
+      ) {
+        monthlyPlans.set(id, {
+          ...plan,
+          status: MonthlyTrainingPlanStatus.Expired,
+          updatedAt: observedAt,
+        });
+      }
+    }
+
+    for (const [id, reservation] of reservations.entries()) {
+      if (
+        reservation.userId === userId &&
+        new Date(reservation.leaseExpiresAt).getTime() <= observedAtMs
+      ) {
+        reservations.delete(id);
+      }
+    }
+  }
 
   return {
     athleticProfileRepository: {
@@ -63,31 +95,26 @@ export function createInMemoryTrainingRepositories(): {
 
         return { ok: true, plan };
       },
-      expireActiveByUserId: async (userId, expiredAt) => {
-        for (const [id, plan] of monthlyPlans.entries()) {
-          if (plan.userId === userId && plan.status === MonthlyTrainingPlanStatus.Active) {
-            monthlyPlans.set(id, {
-              ...plan,
-              status: MonthlyTrainingPlanStatus.Expired,
-              updatedAt: expiredAt,
-            });
-          }
-        }
+      findActiveGenerationStateByUserId: async (userId, observedAt) => {
+        reconcileGenerationState(userId, observedAt);
+
+        return {
+          activePlan: Array.from(monthlyPlans.values()).find(
+            (plan) =>
+              plan.userId === userId &&
+              plan.status === MonthlyTrainingPlanStatus.Active,
+          ) ?? null,
+          hasPendingGeneration: Array.from(reservations.values()).some(
+            (reservation) => reservation.userId === userId,
+          ),
+        };
       },
-      findActiveGenerationStateByUserId: async (userId) => ({
-        activePlan: Array.from(monthlyPlans.values()).find(
-          (plan) =>
-            plan.userId === userId &&
-            plan.status === MonthlyTrainingPlanStatus.Active,
-        ) ?? null,
-        hasPendingGeneration: Array.from(reservations.values()).some(
-          (reservation) => reservation.userId === userId,
-        ),
-      }),
       releaseActiveGeneration: async (reservationId) => {
         reservations.delete(reservationId);
       },
       reserveActiveGeneration: async (userId, reservedAt) => {
+        reconcileGenerationState(userId, reservedAt);
+
         const hasActivePlan = Array.from(monthlyPlans.values()).some(
           (plan) =>
             plan.userId === userId &&
@@ -103,7 +130,13 @@ export function createInMemoryTrainingRepositories(): {
 
         const reservationId = randomUUID();
 
-        reservations.set(reservationId, { reservedAt, userId });
+        reservations.set(reservationId, {
+          leaseExpiresAt: new Date(
+            new Date(reservedAt).getTime() + generationReservationLeaseMs,
+          ).toISOString(),
+          reservedAt,
+          userId,
+        });
 
         return { ok: true, reservationId };
       },

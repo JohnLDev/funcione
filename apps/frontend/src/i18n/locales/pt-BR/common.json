@@ -31,29 +31,42 @@
     "active": {
       "emptyExercises": "Nenhum exercicio principal para esta sessao",
       "emptyStretches": "Nenhum alongamento ou mobilidade para esta sessao",
+      "exerciseCount_one": "{{count}} exercicio",
+      "exerciseCount_other": "{{count}} exercicios",
       "exercises": "Exercicios principais",
       "generated": "Gerado em {{date}}",
       "minutes": "min",
       "nextGeneration": "Proxima geracao disponivel em {{date}}",
+      "observations": "Observacoes",
       "openDetails": "Abrir detalhes",
       "openDetailsLabel": "Abrir detalhes de {{session}}",
+      "seconds": "s",
+      "stretchCount_one": "{{count}} alongamento",
+      "stretchCount_other": "{{count}} alongamentos",
       "stretches": "Alongamentos e mobilidade",
       "summary": "Resumo do plano"
     },
     "activeTitle": "Plano ativo",
     "back": "Voltar",
     "continue": "Continuar",
+    "errors": {
+      "requestFailed": "Nao foi possivel atualizar o plano de treino."
+    },
     "fields": {
+      "age": "Idade",
       "body": "Perfil fisico",
       "customEquipment": "Descreva o equipamento",
       "customInjury": "Descreva a lesao",
       "duration": "Duracao do treino",
       "equipment": "Equipamentos",
+      "experience": "Nivel de experiencia",
       "frequency": "Frequencia",
       "goals": "Objetivos",
       "height": "Altura em cm",
       "injuries": "Lesoes",
       "injuryObservation": "Observacao da lesao",
+      "injuryObservationFor": "Observacao de {{injury}}",
+      "injurySeverityFor": "Gravidade de {{injury}}",
       "modality": "Modalidade",
       "place": "Local de treino",
       "routine": "Rotina",
@@ -65,6 +78,9 @@
     "loading": "Carregando plano de treino",
     "monthlyLimitNotice": "Voce podera gerar outro plano depois de 30 dias.",
     "newTitle": "Novo plano de treino",
+    "pendingMessage": "Uma geracao ja esta em andamento. Atualize o status antes de tentar novamente.",
+    "pendingTitle": "Geracao em andamento",
+    "retry": "Tentar novamente",
     "options": {
       "availability": {
         "2x_semana": "2x por semana",
@@ -107,6 +123,12 @@
         "perda_peso": "Perda de peso",
         "prevencao_lesao": "Prevencao de lesao"
       },
+      "injurySeverity": {
+        "alta": "Alta",
+        "leve": "Leve",
+        "moderada": "Moderada",
+        "placeholder": "Selecione a gravidade"
+      },
       "injuries": {
         "customizada": "Outra lesao",
         "has": "Tenho lesao",
@@ -129,6 +151,10 @@
         "ar_livre": "Ar livre",
         "casa": "Casa"
       }
+    },
+    "review": {
+      "backendCalculated": "Calculada pelo cadastro",
+      "years": "anos"
     },
     "reviewTitle": "Revisao",
     "stepLabel": "Etapa {{current}} de {{total}}",

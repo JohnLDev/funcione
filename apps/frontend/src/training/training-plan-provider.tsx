@@ -7,6 +7,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 import { useAuth } from '@/auth/use-auth.js';
+import { useTranslation } from 'react-i18next';
 import { createTrainingPlanGateway } from './training-plan-gateway.js';
 import type {
   MonthlyTrainingPlanRequest,
@@ -31,6 +32,7 @@ export const TrainingPlanContext =
 const trainingPlanGateway = createTrainingPlanGateway();
 
 export function TrainingPlanProvider({ children }: PropsWithChildren) {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -51,12 +53,14 @@ export function TrainingPlanProvider({ children }: PropsWithChildren) {
       setState(await trainingPlanGateway.getActivePlan(session.accessToken));
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Training plan request failed.',
+        error instanceof Error
+          ? error.message
+          : t('training.errors.requestFailed'),
       );
     } finally {
       setIsLoading(false);
     }
-  }, [session]);
+  }, [session, t]);
 
   useEffect(() => {
     void reload();
@@ -89,11 +93,17 @@ export function TrainingPlanProvider({ children }: PropsWithChildren) {
         }
 
         return result;
+      } catch {
+        const message = t('training.errors.requestFailed');
+
+        setErrorMessage(message);
+
+        return { message, ok: false as const };
       } finally {
         setIsGenerating(false);
       }
     },
-    [session],
+    [session, t],
   );
 
   const value = useMemo(

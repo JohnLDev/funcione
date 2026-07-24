@@ -31,29 +31,42 @@
     "active": {
       "emptyExercises": "No main exercises for this session",
       "emptyStretches": "No stretches or mobility work for this session",
+      "exerciseCount_one": "{{count}} exercise",
+      "exerciseCount_other": "{{count}} exercises",
       "exercises": "Main exercises",
       "generated": "Generated on {{date}}",
       "minutes": "min",
       "nextGeneration": "Next generation available on {{date}}",
+      "observations": "Notes",
       "openDetails": "Open details",
       "openDetailsLabel": "Open details for {{session}}",
+      "seconds": "s",
+      "stretchCount_one": "{{count}} stretch",
+      "stretchCount_other": "{{count}} stretches",
       "stretches": "Stretches and mobility",
       "summary": "Plan summary"
     },
     "activeTitle": "Active plan",
     "back": "Back",
     "continue": "Continue",
+    "errors": {
+      "requestFailed": "We could not update the training plan."
+    },
     "fields": {
+      "age": "Age",
       "body": "Physical profile",
       "customEquipment": "Describe the equipment",
       "customInjury": "Describe the injury",
       "duration": "Training duration",
       "equipment": "Equipment",
+      "experience": "Experience level",
       "frequency": "Frequency",
       "goals": "Goals",
       "height": "Height in cm",
       "injuries": "Injuries",
       "injuryObservation": "Injury observation",
+      "injuryObservationFor": "Notes for {{injury}}",
+      "injurySeverityFor": "Severity of {{injury}}",
       "modality": "Sport",
       "place": "Training location",
       "routine": "Routine",
@@ -65,6 +78,9 @@
     "loading": "Loading training plan",
     "monthlyLimitNotice": "You can generate another plan after 30 days.",
     "newTitle": "New training plan",
+    "pendingMessage": "A generation is already in progress. Refresh its status before trying again.",
+    "pendingTitle": "Generation in progress",
+    "retry": "Try again",
     "options": {
       "availability": {
         "2x_semana": "2 times per week",
@@ -107,6 +123,12 @@
         "perda_peso": "Weight loss",
         "prevencao_lesao": "Injury prevention"
       },
+      "injurySeverity": {
+        "alta": "High",
+        "leve": "Mild",
+        "moderada": "Moderate",
+        "placeholder": "Select severity"
+      },
       "injuries": {
         "customizada": "Other injury",
         "has": "I have an injury",
@@ -129,6 +151,10 @@
         "ar_livre": "Outdoors",
         "casa": "Home"
       }
+    },
+    "review": {
+      "backendCalculated": "Calculated from registration",
+      "years": "years old"
     },
     "reviewTitle": "Review",
     "stepLabel": "Step {{current}} of {{total}}",

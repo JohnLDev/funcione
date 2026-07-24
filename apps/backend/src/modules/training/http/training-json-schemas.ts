@@ -56,7 +56,7 @@ const lesaoUsuarioJsonSchema = {
   oneOf: [
     {
       type: 'object',
-      required: ['tipo'],
+      required: ['tipo', 'gravidade'],
       additionalProperties: false,
       properties: {
         tipo: {
@@ -79,7 +79,7 @@ const lesaoUsuarioJsonSchema = {
     },
     {
       type: 'object',
-      required: ['tipo', 'descricao'],
+      required: ['tipo', 'descricao', 'gravidade'],
       additionalProperties: false,
       properties: {
         tipo: { type: 'string', enum: [TipoLesao.Customizada] },
@@ -123,19 +123,27 @@ export const dadosUsuarioJsonSchema = {
     objetivos: {
       type: 'array',
       minItems: 1,
+      maxItems: Object.values(ObjetivoTreino).length,
+      uniqueItems: true,
       items: { type: 'string', enum: Object.values(ObjetivoTreino) },
     },
     nivelExperiencia: { type: 'string', enum: Object.values(NivelExperiencia) },
     tempoDisponivel: { type: 'string', enum: Object.values(TempoDisponivel) },
-    duracaoTreinoMinutos: { type: 'number' },
+    duracaoTreinoMinutos: { type: 'number', enum: [30, 45, 60, 75, 90] },
     localTreino: { type: 'string', enum: Object.values(LocalTreino) },
     equipamentos: {
       type: 'array',
       minItems: 1,
+      maxItems: Object.values(EquipamentoTreino).length,
+      uniqueItems: true,
+      'x-uniqueBy': 'tipo',
       items: equipamentoUsuarioJsonSchema,
     },
     lesoes: {
       type: 'array',
+      maxItems: Object.values(TipoLesao).length,
+      uniqueItems: true,
+      'x-uniqueBy': 'tipo',
       items: lesaoUsuarioJsonSchema,
     },
   },

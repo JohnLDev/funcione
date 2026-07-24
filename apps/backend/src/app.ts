@@ -39,6 +39,22 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       customOptions: {
         removeAdditional: false,
       },
+      onCreate: (ajv) => {
+        ajv.addKeyword({
+          keyword: 'x-uniqueBy',
+          schemaType: 'string',
+          type: 'array',
+          validate: (propertyName: string, values: unknown[]) => {
+            const propertyValues = values.map((value) =>
+              value && typeof value === 'object'
+                ? (value as Record<string, unknown>)[propertyName]
+                : undefined,
+            );
+
+            return new Set(propertyValues).size === propertyValues.length;
+          },
+        });
+      },
     },
     logger: options.logger ?? false,
   });

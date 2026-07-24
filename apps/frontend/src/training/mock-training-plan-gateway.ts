@@ -6,6 +6,22 @@ import type {
 } from './training-plan.js';
 
 const storageKey = 'funcione-mock-training-plans';
+const scenarioStorageKey = 'funcione-mock-training-plan-scenarios';
+
+type MockTrainingPlanScenario = {
+  createError?: string;
+  createThrows?: string;
+  getError?: string;
+  pending?: boolean;
+};
+
+function readScenario(accessToken: string): MockTrainingPlanScenario | null {
+  const scenarios = JSON.parse(
+    window.localStorage.getItem(scenarioStorageKey) ?? '{}',
+  ) as Record<string, MockTrainingPlanScenario>;
+
+  return scenarios[accessToken] ?? null;
+}
 
 function readPlans(): Record<string, MonthlyTrainingPlan> {
   return JSON.parse(window.localStorage.getItem(storageKey) ?? '{}') as Record<
@@ -48,6 +64,7 @@ function createMockPlan(
                 'Fique em posicao atletica, avance o joelho com o calcanhar no chao e respire de forma continua.',
               motivoEscolha: 'Prepara tornozelos para aterrissagens.',
               nome: 'Mobilidade de tornozelo',
+              observacoes: 'Mobilidade controlada, sem forcar a amplitude.',
             },
           ],
           dia: 'Segunda-feira',
@@ -58,6 +75,8 @@ function createMockPlan(
                 'Agache com base firme, salte baixo e aterrisse com joelhos alinhados aos pes.',
               motivoEscolha: 'Desenvolve potencia com controle de impacto.',
               nome: 'Agachamento com salto controlado',
+              observacoes:
+                'Priorize uma aterrissagem sem dor e interrompa a serie se houver desconforto.',
               repeticoes: '4x6',
               series: 4,
             },
@@ -86,6 +105,16 @@ function createMockPlan(
 export function createMockTrainingPlanGateway(): TrainingPlanGateway {
   return {
     createMonthlyPlan: async (accessToken, payload) => {
+      const scenario = readScenario(accessToken);
+
+      if (scenario?.createThrows) {
+        throw new Error(scenario.createThrows);
+      }
+
+      if (scenario?.createError) {
+        return { message: scenario.createError, ok: false };
+      }
+
       const plans = readPlans();
       const existingPlan = plans[accessToken];
 
@@ -102,6 +131,21 @@ export function createMockTrainingPlanGateway(): TrainingPlanGateway {
       return { ok: true, plan };
     },
     getActivePlan: async (accessToken): Promise<MonthlyTrainingPlanState> => {
+      const scenario = readScenario(accessToken);
+
+      if (scenario?.getError) {
+        throw new Error(scenario.getError);
+      }
+
+      if (scenario?.pending) {
+        return {
+          activePlan: null,
+          athleticProfile: null,
+          canGenerate: false,
+          nextGenerationAvailableAt: null,
+        };
+      }
+
       const storedPlan = readPlans()[accessToken] ?? null;
       const activePlan =
         storedPlan && isActivePlan(storedPlan, new Date()) ? storedPlan : null;

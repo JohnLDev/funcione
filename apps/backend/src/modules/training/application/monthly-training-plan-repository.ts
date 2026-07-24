@@ -27,9 +27,9 @@ export type MonthlyTrainingPlanRepository = {
     plan: MonthlyTrainingPlanInput,
     athleticProfile: AthleticProfileInput,
   ) => Promise<CompleteActiveGenerationResult>;
-  expireActiveByUserId: (userId: string, expiredAt: string) => Promise<void>;
   findActiveGenerationStateByUserId: (
     userId: string,
+    observedAt: string,
   ) => Promise<ActiveGenerationState>;
   releaseActiveGeneration: (
     reservationId: string,

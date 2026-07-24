@@ -50,13 +50,13 @@ export type TrainingEquipment =
 
 export type TrainingInjury =
   | {
-      gravidade?: InjurySeverity;
+      gravidade: InjurySeverity;
       observacoes?: string;
       tipo: Exclude<InjuryType, 'customizada'>;
     }
   | {
       descricao: string;
-      gravidade?: InjurySeverity;
+      gravidade: InjurySeverity;
       observacoes?: string;
       tipo: 'customizada';
     };

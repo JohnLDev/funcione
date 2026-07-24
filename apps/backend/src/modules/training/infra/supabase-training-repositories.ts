@@ -189,20 +189,8 @@ function createMonthlyTrainingPlanRepository(
         plan: toMonthlyPlan(data as MonthlyPlanRow),
       };
     },
-    expireActiveByUserId: async (userId, expiredAt) => {
-      const { error } = await client
-        .from('training_monthly_plans')
-        .update({
-          status: MonthlyTrainingPlanStatus.Expired,
-          updated_at: expiredAt,
-        })
-        .eq('user_id', userId)
-        .eq('status', MonthlyTrainingPlanStatus.Active)
-        .lte('available_for_regeneration_at', expiredAt);
-
-      throwIfError(error);
-    },
-    findActiveGenerationStateByUserId: async (userId) => {
+    findActiveGenerationStateByUserId: async (userId, observedAt) => {
+      void observedAt;
       const { data, error } = await client.rpc(
         'get_training_monthly_plan_generation_state',
         { p_user_id: userId },
@@ -220,12 +208,11 @@ function createMonthlyTrainingPlanRepository(
       };
     },
     releaseActiveGeneration: async (reservationId, releasedAt) => {
-      const { error } = await client
-        .from('training_monthly_plan_generation_reservations')
-        .update({ released_at: releasedAt })
-        .eq('id', reservationId)
-        .is('completed_at', null)
-        .is('released_at', null);
+      void releasedAt;
+      const { error } = await client.rpc(
+        'release_training_monthly_plan_generation',
+        { p_reservation_id: reservationId },
+      );
 
       throwIfError(error);
     },
@@ -233,10 +220,11 @@ function createMonthlyTrainingPlanRepository(
       const { data, error } = await client.rpc(
         'reserve_training_monthly_plan_generation',
         {
-          p_reserved_at: reservedAt,
           p_user_id: userId,
         },
       );
+
+      void reservedAt;
 
       throwIfError(error);
 

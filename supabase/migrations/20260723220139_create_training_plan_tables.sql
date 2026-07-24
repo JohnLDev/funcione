@@ -40,9 +40,12 @@ create table if not exists public.training_monthly_plan_generation_reservations 
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   reserved_at timestamptz not null,
+  lease_expires_at timestamptz not null,
   released_at timestamptz,
   completed_at timestamptz,
   created_at timestamptz not null default now(),
+  constraint training_monthly_plan_generation_reservations_valid_lease
+    check (lease_expires_at > reserved_at),
   constraint training_monthly_plan_generation_reservations_terminal_state
     check (released_at is null or completed_at is null)
 );
@@ -63,10 +66,15 @@ alter table public.training_monthly_plan_generation_reservations
 
 grant select, insert, update on public.user_profiles to authenticated;
 grant select, insert, update on public.training_athletic_profiles to authenticated;
-grant select, insert, update on public.training_monthly_plans to authenticated;
-grant select, insert, update
-  on public.training_monthly_plan_generation_reservations
-  to authenticated;
+grant select on public.training_monthly_plans to authenticated;
+grant select on public.training_monthly_plan_generation_reservations to authenticated;
+
+revoke insert, update, delete
+  on table public.training_monthly_plans
+  from public, anon, authenticated;
+revoke insert, update, delete
+  on table public.training_monthly_plan_generation_reservations
+  from public, anon, authenticated;
 
 create policy "Users can select their own registration profile"
   on public.user_profiles for select
@@ -105,49 +113,47 @@ create policy "Users can select their own monthly plans"
   to authenticated
   using ((select auth.uid()) = user_id);
 
-create policy "Users can insert their own monthly plans"
-  on public.training_monthly_plans for insert
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can update their own monthly plans"
-  on public.training_monthly_plans for update
-  to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
-
 create policy "Users can select their own monthly plan reservations"
   on public.training_monthly_plan_generation_reservations for select
   to authenticated
   using ((select auth.uid()) = user_id);
-
-create policy "Users can insert their own monthly plan reservations"
-  on public.training_monthly_plan_generation_reservations for insert
-  to authenticated
-  with check ((select auth.uid()) = user_id);
-
-create policy "Users can update their own monthly plan reservations"
-  on public.training_monthly_plan_generation_reservations for update
-  to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
 
 create or replace function public.get_training_monthly_plan_generation_state(
   p_user_id uuid
 )
 returns jsonb
 language plpgsql
-stable
-security invoker
+volatile
+security definer
 set search_path = ''
 as $$
 declare
   caller_user_id uuid := (select auth.uid());
+  operation_time timestamptz := statement_timestamp();
 begin
   if caller_user_id is null or caller_user_id <> p_user_id then
     raise exception 'Training plan state can only be read by its owner.'
       using errcode = '42501';
   end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_user_id::text, 0)
+  );
+
+  update public.training_monthly_plans
+  set
+    status = 'expired',
+    updated_at = operation_time
+  where user_id = p_user_id
+    and status = 'active'
+    and available_for_regeneration_at <= operation_time;
+
+  update public.training_monthly_plan_generation_reservations
+  set released_at = operation_time
+  where user_id = p_user_id
+    and released_at is null
+    and completed_at is null
+    and lease_expires_at <= statement_timestamp();
 
   return (
     select jsonb_build_object(
@@ -170,18 +176,23 @@ begin
 end;
 $$;
 
+drop function if exists public.reserve_training_monthly_plan_generation(
+  uuid,
+  timestamptz
+);
+
 create or replace function public.reserve_training_monthly_plan_generation(
-  p_user_id uuid,
-  p_reserved_at timestamptz
+  p_user_id uuid
 )
 returns uuid
 language plpgsql
 volatile
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
   caller_user_id uuid := (select auth.uid());
+  operation_time timestamptz := statement_timestamp();
   reservation_id uuid;
 begin
   if caller_user_id is null or caller_user_id <> p_user_id then
@@ -192,6 +203,21 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(p_user_id::text, 0)
   );
+
+  update public.training_monthly_plans
+  set
+    status = 'expired',
+    updated_at = operation_time
+  where user_id = p_user_id
+    and status = 'active'
+    and available_for_regeneration_at <= operation_time;
+
+  update public.training_monthly_plan_generation_reservations
+  set released_at = operation_time
+  where user_id = p_user_id
+    and released_at is null
+    and completed_at is null
+    and lease_expires_at <= statement_timestamp();
 
   if exists (
     select 1
@@ -210,15 +236,60 @@ begin
 
   insert into public.training_monthly_plan_generation_reservations (
     user_id,
-    reserved_at
+    reserved_at,
+    lease_expires_at
   )
   values (
     p_user_id,
-    p_reserved_at
+    operation_time,
+    operation_time + interval '15 minutes'
   )
   returning id into reservation_id;
 
   return reservation_id;
+end;
+$$;
+
+create or replace function public.release_training_monthly_plan_generation(
+  p_reservation_id uuid
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  caller_user_id uuid := (select auth.uid());
+  reservation_user_id uuid;
+begin
+  if caller_user_id is null then
+    raise exception 'Authentication is required to release training plan generation.'
+      using errcode = '42501';
+  end if;
+
+  select reservation.user_id
+  into reservation_user_id
+  from public.training_monthly_plan_generation_reservations as reservation
+  where reservation.id = p_reservation_id
+    and reservation.user_id = caller_user_id;
+
+  if reservation_user_id is null then
+    return false;
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(reservation_user_id::text, 0)
+  );
+
+  update public.training_monthly_plan_generation_reservations
+  set released_at = statement_timestamp()
+  where id = p_reservation_id
+    and user_id = caller_user_id
+    and released_at is null
+    and completed_at is null;
+
+  return found;
 end;
 $$;
 
@@ -230,19 +301,30 @@ create or replace function public.complete_training_monthly_plan_generation(
 returns jsonb
 language plpgsql
 volatile
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
   caller_user_id uuid := (select auth.uid());
   reservation_user_id uuid;
   saved_plan public.training_monthly_plans;
-  completion_time timestamptz := now();
+  completion_time timestamptz := statement_timestamp();
 begin
   if caller_user_id is null then
     raise exception 'Authentication is required to complete training plan generation.'
       using errcode = '42501';
   end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(caller_user_id::text, 0)
+  );
+
+  update public.training_monthly_plan_generation_reservations
+  set released_at = completion_time
+  where user_id = caller_user_id
+    and released_at is null
+    and completed_at is null
+    and lease_expires_at <= statement_timestamp();
 
   select reservation.user_id
   into reservation_user_id
@@ -251,18 +333,16 @@ begin
     and reservation.user_id = caller_user_id
     and reservation.released_at is null
     and reservation.completed_at is null
+    and reservation.lease_expires_at > completion_time
   for update;
 
   if reservation_user_id is null then
     return null;
   end if;
 
-  perform pg_catalog.pg_advisory_xact_lock(
-    pg_catalog.hashtextextended(reservation_user_id::text, 0)
-  );
-
   if (p_plan ->> 'user_id')::uuid <> reservation_user_id
-    or p_plan ->> 'status' <> 'active' then
+    or p_plan ->> 'status' <> 'active'
+    or p_plan #>> '{snapshot,userId}' <> reservation_user_id::text then
     raise exception 'Training plan does not match its reservation.'
       using errcode = '22023';
   end if;
@@ -315,9 +395,9 @@ begin
   )
   values (
     reservation_user_id,
-    p_plan ->> 'status',
-    (p_plan ->> 'generated_at')::timestamptz,
-    (p_plan ->> 'available_for_regeneration_at')::timestamptz,
+    'active',
+    completion_time,
+    completion_time + interval '30 days',
     p_plan -> 'snapshot',
     p_plan -> 'result',
     p_plan -> 'metadata',
@@ -333,7 +413,10 @@ revoke execute
   on function public.get_training_monthly_plan_generation_state(uuid)
   from public, anon;
 revoke execute
-  on function public.reserve_training_monthly_plan_generation(uuid, timestamptz)
+  on function public.reserve_training_monthly_plan_generation(uuid)
+  from public, anon;
+revoke execute
+  on function public.release_training_monthly_plan_generation(uuid)
   from public, anon;
 revoke execute
   on function public.complete_training_monthly_plan_generation(uuid, jsonb, jsonb)
@@ -343,7 +426,10 @@ grant execute
   on function public.get_training_monthly_plan_generation_state(uuid)
   to authenticated;
 grant execute
-  on function public.reserve_training_monthly_plan_generation(uuid, timestamptz)
+  on function public.reserve_training_monthly_plan_generation(uuid)
+  to authenticated;
+grant execute
+  on function public.release_training_monthly_plan_generation(uuid)
   to authenticated;
 grant execute
   on function public.complete_training_monthly_plan_generation(uuid, jsonb, jsonb)

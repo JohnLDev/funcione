@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { CalendarDays, ChevronDown, Dumbbell, Timer } from 'lucide-react';
+import {
+  Activity,
+  CalendarDays,
+  ChevronDown,
+  Dumbbell,
+  Timer,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type {
   MonthlyTrainingPlan,
@@ -35,7 +41,15 @@ function TrainingSessionDetail({ session }: { session: TrainingSession }) {
               <p className="text-xs font-bold text-muted-foreground">
                 {item.motivoEscolha}
               </p>
+              <p className="text-xs font-black text-primary">
+                {item.duracaoSegundos} {t('training.active.seconds')}
+              </p>
               <p className="text-sm text-foreground">{item.instrucoesExecucao}</p>
+              {item.observacoes ? (
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {t('training.active.observations')}: {item.observacoes}
+                </p>
+              ) : null}
             </article>
           ))
         )}
@@ -57,6 +71,11 @@ function TrainingSessionDetail({ session }: { session: TrainingSession }) {
                 {item.motivoEscolha}
               </p>
               <p className="text-sm text-foreground">{item.instrucoesExecucao}</p>
+              {item.observacoes ? (
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {t('training.active.observations')}: {item.observacoes}
+                </p>
+              ) : null}
             </article>
           ))
         )}
@@ -88,7 +107,25 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
             </p>
           </CardHeader>
           <CardContent className="grid gap-3 p-4 pt-0">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="min-w-0 rounded-2xl bg-secondary p-3">
+                <p className="text-xs font-bold text-muted-foreground">
+                  {t('training.fields.modality')}
+                </p>
+                <p className="break-words font-black">
+                  {t(`training.options.modalities.${plan.snapshot.modalidade}`)}
+                </p>
+              </div>
+              <div className="min-w-0 rounded-2xl bg-secondary p-3">
+                <p className="text-xs font-bold text-muted-foreground">
+                  {t('training.fields.goals')}
+                </p>
+                <p className="break-words font-black">
+                  {plan.snapshot.objetivos
+                    .map((goal) => t(`training.options.goals.${goal}`))
+                    .join(', ')}
+                </p>
+              </div>
               <div className="min-w-0 rounded-2xl bg-secondary p-3">
                 <p className="text-xs font-bold text-muted-foreground">
                   {t('training.fields.frequency')}
@@ -124,11 +161,23 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-primary">{session.dia}</p>
                     <h2 className="break-words text-xl font-black">{session.foco}</h2>
-                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
-                      <Timer aria-hidden size={14} />
-                      {session.duracaoMinutos} {t('training.active.minutes')}
-                      <Dumbbell aria-hidden size={14} />
-                      {session.exercicios.length}
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Timer aria-hidden size={14} />
+                        {session.duracaoMinutos} {t('training.active.minutes')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Activity aria-hidden size={14} />
+                        {t('training.active.stretchCount', {
+                          count: session.alongamentos.length,
+                        })}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Dumbbell aria-hidden size={14} />
+                        {t('training.active.exerciseCount', {
+                          count: session.exercicios.length,
+                        })}
+                      </span>
                     </p>
                   </div>
                   <Button

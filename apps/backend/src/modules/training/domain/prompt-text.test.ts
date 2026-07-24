@@ -9,7 +9,7 @@ import {
 describe('prompt text safety', () => {
   it('normalizes whitespace and removes control characters', () => {
     assert.equal(
-      normalizePromptText('  dor\n\tno joelho\u0000 direito  '),
+      normalizePromptText('  dor\n\tno joelho\u0000\u0085 direito\u009f  '),
       'dor no joelho direito',
     );
   });

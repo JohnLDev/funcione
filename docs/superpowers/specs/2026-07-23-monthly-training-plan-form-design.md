@@ -3,11 +3,11 @@
 ## Contexto
 
 O Funcione possui autenticacao com Supabase Auth, frontend Vite/React com rotas
-reais, i18n, tema claro/escuro e o endpoint REST inicial para geracao de plano
-de treino por IA:
+reais, i18n e tema claro/escuro. A geracao de plano por IA e exposta somente
+pela operacao mensal autenticada:
 
 ```txt
-POST /api/training-plans
+POST /api/training-plans/monthly
 ```
 
 Esse endpoint recebe `DadosUsuario` e gera um plano semanal com 2 a 7 sessoes,
@@ -269,10 +269,12 @@ perfil atletico reutilizavel.
 ## Plano Mensal Ativo
 
 O plano mensal ativo representa o plano semanal base valido por 30 dias. A
-regra e autoritativa no backend: a reserva de geracao e atomica, uma criacao
-concorrente perde com conflito, e a persistencia garante um unico plano ativo
-por usuario. Planos anteriores expiram para permitir o proximo ciclo, mas nao
-ha historico visual nesta etapa.
+regra e autoritativa no backend e no banco: a reserva de geracao e atomica, uma
+criacao concorrente perde com conflito, e a persistencia garante um unico plano
+ativo por usuario. Reservas abandonadas usam lease de 15 minutos e sao
+liberadas pelo banco na proxima consulta ou tentativa de reserva. Planos
+anteriores expiram para permitir o proximo ciclo, mas nao ha historico visual
+nesta etapa.
 
 Campos conceituais:
 
@@ -402,8 +404,9 @@ Erros esperados:
 - `503`: falha de geracao por providers indisponiveis;
 - `500`: erro inesperado.
 
-O endpoint antigo `POST /api/training-plans` permanece para compatibilidade e
-testes internos. O frontend em `/training` usa exclusivamente
+O endpoint antigo `POST /api/training-plans` foi removido porque aceitava
+identidade e idade fornecidas pelo cliente e permitia geracao de IA fora da
+regra mensal. O frontend em `/training` usa exclusivamente
 `POST /api/training-plans/monthly` e consulta primeiro
 `GET /api/training-plans/active`.
 
@@ -422,13 +425,20 @@ O frontend nao escreve diretamente nessas tabelas. A aplicacao usa o backend
 como porta principal para validar autenticacao, regra de negocio, sanitizacao,
 OpenAPI e chamadas de IA.
 
-Para preservar RLS, o backend cria os repositorios Supabase no escopo de cada
-request autenticado, com o bearer token do usuario. Assim, as consultas,
-upserts e RPCs executam no contexto do dono da linha; as policies de leitura,
-insercao e atualizacao validam `auth.uid() = user_id`. As funcoes de reserva e
-conclusao usam `security invoker` e conferem a identidade do chamador. Chaves
-privilegiadas, se usadas em operacoes administrativas futuras, ficam somente no
-backend e nunca no frontend.
+O backend cria os repositorios Supabase no escopo de cada request autenticado,
+com o bearer token do usuario. `training_monthly_plans` e
+`training_monthly_plan_generation_reservations` concedem apenas `SELECT` ao
+papel `authenticated`; `INSERT`, `UPDATE` e `DELETE` sao revogados de `public`,
+`anon` e `authenticated`. Toda escrita nessas tabelas passa pelos RPCs de
+estado, reserva, liberacao e conclusao.
+
+Esses RPCs precisam escrever apesar dos grants restritos e, por isso, usam
+`SECURITY DEFINER` com defesa estrita: `auth.uid()` deve existir e corresponder
+ao dono, `search_path` e vazio, todas as relacoes sao qualificadas, `EXECUTE` e
+revogado de `public` e `anon` e concedido explicitamente somente a
+`authenticated`. O banco usa `statement_timestamp()` para criar o lease de 15
+minutos, expirar reservas pendentes e calcular a janela de 30 dias; timestamps
+fornecidos pelo cliente nao controlam elegibilidade.
 
 Toda tabela exposta no Supabase deve ter RLS habilitado e policies por
 propriedade do usuario.
@@ -504,9 +514,11 @@ Estados:
 - carregando status do plano;
 - sem plano ativo: exibe wizard;
 - gerando plano;
+- reserva pendente sem plano ativo: exibe estado de geracao e reconciliacao;
 - plano ativo;
 - bloqueado por 30 dias;
-- erro de geracao ou validacao.
+- erro de consulta, geracao ou validacao com mensagem e acao de tentar
+  novamente.
 
 Mobile:
 
@@ -571,6 +583,10 @@ Backend:
 - considera equipamentos no payload/prompt;
 - valida OpenAPI;
 - normaliza/sanitiza tentativa de prompt injection.
+- recupera reserva pendente abandonada apos 15 minutos;
+- captura falha de rede na conclusao sem deixar excecao escapar;
+- remove a operacao legada do runtime e do OpenAPI;
+- documenta `500` nas duas rotas mensais.
 
 Frontend E2E:
 
@@ -581,6 +597,11 @@ Frontend E2E:
 - campos livres com texto malicioso nao quebram fluxo;
 - desktop exibe secoes com resumo lateral;
 - mobile nao tem overflow horizontal.
+- cada lesao exige gravidade e preserva sua propria observacao;
+- revisao mostra todos os campos enviados e o aviso mensal no mobile;
+- estados pendente e erro permitem reconciliar e tentar novamente;
+- plano ativo mostra modalidade, objetivos, contagens, duracao dos alongamentos
+  e observacoes opcionais.
 
 ## Criterios De Aceite
 

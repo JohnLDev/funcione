@@ -55,28 +55,24 @@ function toActivePlanConflict(): CreateMonthlyTrainingPlanResult {
   };
 }
 
-function hasPlanExpired(plan: MonthlyTrainingPlan, now: Date): boolean {
-  return new Date(plan.availableForRegenerationAt).getTime() <= now.getTime();
-}
-
 async function getFreshActiveGenerationState(
   userId: string,
   now: Date,
   repository: MonthlyTrainingPlanRepository,
 ): Promise<ActiveGenerationState> {
-  const state = await repository.findActiveGenerationStateByUserId(userId);
+  return repository.findActiveGenerationStateByUserId(userId, now.toISOString());
+}
 
-  if (!state.activePlan) {
-    return state;
+async function releaseReservationSafely(
+  repository: MonthlyTrainingPlanRepository,
+  reservationId: string,
+  releasedAt: string,
+): Promise<void> {
+  try {
+    await repository.releaseActiveGeneration(reservationId, releasedAt);
+  } catch {
+    // The database lease is the final recovery path when transport cleanup fails.
   }
-
-  if (!hasPlanExpired(state.activePlan, now)) {
-    return state;
-  }
-
-  await repository.expireActiveByUserId(userId, now.toISOString());
-
-  return repository.findActiveGenerationStateByUserId(userId);
 }
 
 export async function getActiveMonthlyTrainingPlan(
@@ -205,7 +201,8 @@ export async function createMonthlyTrainingPlan(
   try {
     generatedPlan = await dependencies.trainingPlanGenerator(snapshot);
   } catch (error) {
-    await dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration(
+    await releaseReservationSafely(
+      dependencies.monthlyTrainingPlanRepository,
       reservation.reservationId,
       now.toISOString(),
     );
@@ -221,7 +218,8 @@ export async function createMonthlyTrainingPlan(
   }
 
   if (!('result' in generatedPlan)) {
-    await dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration(
+    await releaseReservationSafely(
+      dependencies.monthlyTrainingPlanRepository,
       reservation.reservationId,
       now.toISOString(),
     );
@@ -229,36 +227,39 @@ export async function createMonthlyTrainingPlan(
     return toFailureFromGeneration(generatedPlan);
   }
 
-  const completion = await dependencies.monthlyTrainingPlanRepository.completeActiveGeneration(
-    reservation.reservationId,
-    {
-      availableForRegenerationAt: addDays(now, 30).toISOString(),
-      generatedAt: now.toISOString(),
-      metadata: {
-        attempts: generatedPlan.attempts,
-        durationMs: generatedPlan.durationMs,
-        fallbackUsed: generatedPlan.fallbackUsed,
-        model: generatedPlan.model,
-        provider: generatedPlan.provider,
-      },
-      result: generatedPlan.result,
-      snapshot,
-      status: MonthlyTrainingPlanStatus.Active,
-      userId: user.id,
-    },
-    {
-      alturaCm: snapshot.alturaCm,
-      equipamentosDisponiveis: snapshot.equipamentos,
-      lesoesRecorrentes: snapshot.lesoes,
-      localTreinoComum: snapshot.localTreino,
-      modalidadePreferida: snapshot.modalidade,
-      nivelExperiencia: snapshot.nivelExperiencia,
-      pesoKg: snapshot.pesoKg,
-    },
-  );
+  let completion;
 
-  if (!completion.ok) {
-    await dependencies.monthlyTrainingPlanRepository.releaseActiveGeneration(
+  try {
+    completion = await dependencies.monthlyTrainingPlanRepository.completeActiveGeneration(
+      reservation.reservationId,
+      {
+        availableForRegenerationAt: addDays(now, 30).toISOString(),
+        generatedAt: now.toISOString(),
+        metadata: {
+          attempts: generatedPlan.attempts,
+          durationMs: generatedPlan.durationMs,
+          fallbackUsed: generatedPlan.fallbackUsed,
+          model: generatedPlan.model,
+          provider: generatedPlan.provider,
+        },
+        result: generatedPlan.result,
+        snapshot,
+        status: MonthlyTrainingPlanStatus.Active,
+        userId: user.id,
+      },
+      {
+        alturaCm: snapshot.alturaCm,
+        equipamentosDisponiveis: snapshot.equipamentos,
+        lesoesRecorrentes: snapshot.lesoes,
+        localTreinoComum: snapshot.localTreino,
+        modalidadePreferida: snapshot.modalidade,
+        nivelExperiencia: snapshot.nivelExperiencia,
+        pesoKg: snapshot.pesoKg,
+      },
+    );
+  } catch {
+    await releaseReservationSafely(
+      dependencies.monthlyTrainingPlanRepository,
       reservation.reservationId,
       now.toISOString(),
     );
@@ -266,7 +267,24 @@ export async function createMonthlyTrainingPlan(
     return {
       error: {
         code: 'TRAINING_PLAN_GENERATION_FAILED',
-        message: 'Monthly training plan reservation could not be completed.',
+        message: 'Monthly training plan could not be persisted.',
+        statusCode: 503,
+      },
+      ok: false,
+    };
+  }
+
+  if (!completion.ok) {
+    await releaseReservationSafely(
+      dependencies.monthlyTrainingPlanRepository,
+      reservation.reservationId,
+      now.toISOString(),
+    );
+
+    return {
+      error: {
+        code: 'TRAINING_PLAN_GENERATION_FAILED',
+        message: 'Monthly training plan could not be persisted.',
         statusCode: 503,
       },
       ok: false,

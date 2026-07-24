@@ -2,7 +2,7 @@ import * as z from 'zod';
 
 export function normalizePromptText(value: string): string {
   return value
-    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

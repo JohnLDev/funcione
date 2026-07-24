@@ -164,7 +164,10 @@ describe('Supabase training repositories', () => {
     );
 
     const state = await repositories.monthlyTrainingPlanRepository
-      .findActiveGenerationStateByUserId('user-123');
+      .findActiveGenerationStateByUserId(
+        'user-123',
+        '2026-07-23T12:00:00.000Z',
+      );
 
     assert.equal(state.hasPendingGeneration, true);
     assert.equal(state.activePlan?.id, 'plan-123');
@@ -176,7 +179,7 @@ describe('Supabase training repositories', () => {
     assert.deepEqual(requests[0]?.body, { p_user_id: 'user-123' });
   });
 
-  it('reserves once, maps conflicts, and releases or expires user-owned state', async () => {
+  it('reserves once, maps conflicts, and releases through owner-checked RPCs', async () => {
     let reserveCalls = 0;
     const { repositories, requests } = createRepositories((request) => {
       if (request.url.endsWith('/rpc/reserve_training_monthly_plan_generation')) {
@@ -200,37 +203,18 @@ describe('Supabase training repositories', () => {
       'reservation-123',
       '2026-07-23T12:01:00.000Z',
     );
-    await repository.expireActiveByUserId(
-      'user-123',
-      '2026-08-22T12:00:00.000Z',
-    );
 
     assert.deepEqual(reservation, { ok: true, reservationId: 'reservation-123' });
     assert.deepEqual(conflict, { ok: false, reason: 'ACTIVE_PLAN_CONFLICT' });
     assert.deepEqual(requests[0]?.body, {
-      p_reserved_at: '2026-07-23T12:00:00.000Z',
       p_user_id: 'user-123',
     });
     assert.deepEqual(requests[2]?.body, {
-      released_at: '2026-07-23T12:01:00.000Z',
+      p_reservation_id: 'reservation-123',
     });
     assert.match(
       requests[2]?.url ?? '',
-      /training_monthly_plan_generation_reservations\?id=eq.reservation-123/,
-    );
-    assert.deepEqual(requests[3]?.body, {
-      status: MonthlyTrainingPlanStatus.Expired,
-      updated_at: '2026-08-22T12:00:00.000Z',
-    });
-    const expirationUrl = new URL(requests[3]?.url ?? '');
-    assert.equal(expirationUrl.searchParams.get('user_id'), 'eq.user-123');
-    assert.equal(
-      expirationUrl.searchParams.get('status'),
-      `eq.${MonthlyTrainingPlanStatus.Active}`,
-    );
-    assert.equal(
-      expirationUrl.searchParams.get('available_for_regeneration_at'),
-      'lte.2026-08-22T12:00:00.000Z',
+      /\/rest\/v1\/rpc\/release_training_monthly_plan_generation$/,
     );
   });
 
