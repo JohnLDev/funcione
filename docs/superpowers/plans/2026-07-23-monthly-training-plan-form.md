@@ -4239,7 +4239,7 @@ npm run build
 
 Expected: every command exits with code 0.
 
-- [ ] **Step 6: Visual verification**
+- [x] **Step 6: Visual verification**
 
 Open `http://127.0.0.1:5173/training` with the Playwright dev server or local Vite server and verify:
 

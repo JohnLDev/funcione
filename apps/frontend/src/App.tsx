@@ -48,6 +48,14 @@ function AppRoutes() {
     return <LoadingScreen />;
   }
 
+  const handleSignOut = () => {
+    void signOut().then((result) => {
+      if (result.ok) {
+        navigate('/login', { replace: true });
+      }
+    });
+  };
+
   return (
     <Routes>
       <Route
@@ -99,13 +107,7 @@ function AppRoutes() {
             <Navigate replace to="/complete-profile" />
           ) : (
             <AppShell
-              onSignOut={() => {
-                void signOut().then((result) => {
-                  if (result.ok) {
-                    navigate('/login', { replace: true });
-                  }
-                });
-              }}
+              onSignOut={handleSignOut}
               user={session.user}
             />
           )
@@ -119,7 +121,9 @@ function AppRoutes() {
           ) : !hasCompletedProfile ? (
             <Navigate replace to="/complete-profile" />
           ) : (
-            <TrainingScreen />
+            <AppShell onSignOut={handleSignOut} user={session.user}>
+              <TrainingScreen />
+            </AppShell>
           )
         }
         path="/training"

@@ -57,6 +57,9 @@ test.describe('monthly training plan route', () => {
     await expect(
       page.getByRole('heading', { name: /novo plano de treino/i }),
     ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /treino/i }),
+    ).toHaveAttribute('aria-current', 'page');
   });
 
   test('fills the mobile wizard and generates an active plan', async ({ page }) => {

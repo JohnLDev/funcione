@@ -110,9 +110,11 @@ function MetricCard({
 }
 
 export function AppShell({
+  children,
   onSignOut,
   user,
 }: {
+  children?: React.ReactNode;
   onSignOut: () => void;
   user: AuthUser;
 }) {
@@ -197,64 +199,66 @@ export function AppShell({
             </div>
           </header>
 
-          <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <Card className="relative overflow-hidden rounded-[2rem] border-primary/25 bg-gradient-to-br from-primary/20 via-card to-card">
-              <div className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-primary/30 blur-3xl" />
-              <CardHeader className="relative p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <CardDescription className="font-semibold">
-                      {t('dashboard.eyebrow')}
-                    </CardDescription>
-                    <CardTitle className="mt-2 text-4xl font-black">
-                      {t('dashboard.title')}
-                    </CardTitle>
-                    <p className="mt-2 text-sm font-semibold text-muted-foreground">
-                      {t('dashboard.subtitle')}
-                    </p>
+          {children ?? (
+            <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <Card className="relative overflow-hidden rounded-[2rem] border-primary/25 bg-gradient-to-br from-primary/20 via-card to-card">
+                <div className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-primary/30 blur-3xl" />
+                <CardHeader className="relative p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <CardDescription className="font-semibold">
+                        {t('dashboard.eyebrow')}
+                      </CardDescription>
+                      <CardTitle className="mt-2 text-4xl font-black">
+                        {t('dashboard.title')}
+                      </CardTitle>
+                      <p className="mt-2 text-sm font-semibold text-muted-foreground">
+                        {t('dashboard.subtitle')}
+                      </p>
+                    </div>
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-primary-foreground shadow-[0_18px_42px_rgba(0,89,255,0.28)]">
+                      9
+                    </div>
                   </div>
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-primary-foreground shadow-[0_18px_42px_rgba(0,89,255,0.28)]">
-                    9
+                </CardHeader>
+                <CardContent className="relative p-5 pt-0">
+                  <div className="flex items-center justify-between gap-3 text-xs font-bold text-muted-foreground">
+                    <span>{t('dashboard.progressLabel')}</span>
+                    <span>68%</span>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative p-5 pt-0">
-                <div className="flex items-center justify-between gap-3 text-xs font-bold text-muted-foreground">
-                  <span>{t('dashboard.progressLabel')}</span>
-                  <span>68%</span>
-                </div>
-                <Progress className="mt-2" value={68} />
-                <Button className="mt-5 w-full" type="button">
-                  <Zap aria-hidden="true" size={18} />
-                  {t('actions.startWorkout')}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-3">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-                <MetricCard
-                  icon={Activity}
-                  label={t('metrics.load')}
-                  value={t('metrics.loadValue')}
-                />
-                <MetricCard
-                  icon={ShieldCheck}
-                  label={t('metrics.impact')}
-                  value={t('metrics.impactValue')}
-                />
-              </div>
-              <Card className="rounded-3xl bg-foreground text-background">
-                <CardContent className="p-4">
-                  <Badge className="mb-3" variant="secondary">
-                    <CalendarDays aria-hidden="true" size={14} />
-                    {t('dashboard.nextBlockLabel')}
-                  </Badge>
-                  <p className="text-xl font-black">{t('dashboard.nextBlock')}</p>
+                  <Progress className="mt-2" value={68} />
+                  <Button className="mt-5 w-full" type="button">
+                    <Zap aria-hidden="true" size={18} />
+                    {t('actions.startWorkout')}
+                  </Button>
                 </CardContent>
               </Card>
-            </div>
-          </section>
+
+              <div className="grid gap-3">
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+                  <MetricCard
+                    icon={Activity}
+                    label={t('metrics.load')}
+                    value={t('metrics.loadValue')}
+                  />
+                  <MetricCard
+                    icon={ShieldCheck}
+                    label={t('metrics.impact')}
+                    value={t('metrics.impactValue')}
+                  />
+                </div>
+                <Card className="rounded-3xl bg-foreground text-background">
+                  <CardContent className="p-4">
+                    <Badge className="mb-3" variant="secondary">
+                      <CalendarDays aria-hidden="true" size={14} />
+                      {t('dashboard.nextBlockLabel')}
+                    </Badge>
+                    <p className="text-xl font-black">{t('dashboard.nextBlock')}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+          )}
         </main>
       </div>
 

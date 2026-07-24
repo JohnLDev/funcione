@@ -525,8 +525,9 @@ Desktop:
 - cards de treino com detalhe acessivel.
 
 Todos os textos visiveis usam i18n. O dashboard oferece a entrada para
-`/training`; a rota de treino e uma tela autenticada independente que concentra
-o wizard e a visualizacao do plano ativo.
+`/training`; a rota de treino usa o mesmo shell autenticado do app, mantendo a
+navegacao lateral no desktop e a navegacao inferior no mobile, com o item
+Treino ativo enquanto concentra o wizard e a visualizacao do plano ativo.
 
 ## Testes
 
