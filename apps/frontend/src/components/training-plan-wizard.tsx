@@ -80,11 +80,83 @@ const initialForm: MonthlyTrainingPlanRequest = {
 
 const steps = ['objective', 'body', 'routine', 'safety', 'review'] as const;
 
-function normalizeFreeText(value: string, maxLength: number) {
+export function normalizeFreeText(value: string, maxLength: number) {
   return value
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
     .replace(/\s+/g, ' ')
+    .trim()
     .slice(0, maxLength);
+}
+
+export function uniqueTypes<T extends string>(types: readonly T[]): T[] {
+  return [...new Set(types)];
+}
+
+function normalizeEquipment(
+  equipment: TrainingEquipment[],
+): TrainingEquipment[] {
+  const normalizedEquipment: TrainingEquipment[] = [];
+  const types = new Set<EquipmentType>();
+
+  for (const item of equipment) {
+    if (types.has(item.tipo)) {
+      continue;
+    }
+
+    if (item.tipo === 'customizado') {
+      const descricao = normalizeFreeText(item.descricao, 80);
+
+      if (!descricao) {
+        continue;
+      }
+
+      normalizedEquipment.push({ descricao, tipo: item.tipo });
+      types.add(item.tipo);
+      continue;
+    }
+
+    normalizedEquipment.push({ tipo: item.tipo });
+    types.add(item.tipo);
+  }
+
+  return normalizedEquipment;
+}
+
+function normalizeInjuries(injuries: TrainingInjury[]): TrainingInjury[] {
+  const normalizedInjuries: TrainingInjury[] = [];
+  const types = new Set<InjuryType>();
+
+  for (const injury of injuries) {
+    if (types.has(injury.tipo)) {
+      continue;
+    }
+
+    const observacoes = injury.observacoes
+      ? normalizeFreeText(injury.observacoes, 180)
+      : '';
+    const observation = observacoes ? { observacoes } : {};
+
+    if (injury.tipo === 'customizada') {
+      const descricao = normalizeFreeText(injury.descricao, 120);
+
+      if (!descricao) {
+        continue;
+      }
+
+      normalizedInjuries.push({
+        descricao,
+        tipo: injury.tipo,
+        ...observation,
+      });
+      types.add(injury.tipo);
+      continue;
+    }
+
+    normalizedInjuries.push({ tipo: injury.tipo, ...observation });
+    types.add(injury.tipo);
+  }
+
+  return normalizedInjuries;
 }
 
 function parsePositiveNumber(value: string): number | null {
@@ -107,8 +179,8 @@ export function TrainingPlanWizard() {
     return {
       ...initialForm,
       alturaCm: profile.alturaCm,
-      equipamentos: profile.equipamentosDisponiveis,
-      lesoes: profile.lesoesRecorrentes,
+      equipamentos: normalizeEquipment(profile.equipamentosDisponiveis),
+      lesoes: normalizeInjuries(profile.lesoesRecorrentes),
       localTreino: profile.localTreinoComum,
       modalidade: profile.modalidadePreferida,
       nivelExperiencia: profile.nivelExperiencia,
@@ -125,23 +197,34 @@ export function TrainingPlanWizard() {
   });
   const [selectedEquipmentTypes, setSelectedEquipmentTypes] = useState<
     EquipmentType[]
-  >(() => form.equipamentos.map((equipment) => equipment.tipo));
+  >(() => uniqueTypes(form.equipamentos.map((equipment) => equipment.tipo)));
   const [customEquipmentDescription, setCustomEquipmentDescription] = useState(
     () =>
-      form.equipamentos.find((equipment) => equipment.tipo === 'customizado')
-        ?.descricao ?? '',
+      normalizeFreeText(
+        form.equipamentos.find((equipment) => equipment.tipo === 'customizado')
+          ?.descricao ?? '',
+        80,
+      ),
   );
   const [hasInjuries, setHasInjuries] = useState(() => form.lesoes.length > 0);
   const [selectedInjuryTypes, setSelectedInjuryTypes] = useState<InjuryType[]>(
-    () => form.lesoes.map((injury) => injury.tipo),
+    () => uniqueTypes(form.lesoes.map((injury) => injury.tipo)),
   );
   const [customInjuryDescription, setCustomInjuryDescription] = useState(
     () =>
-      form.lesoes.find((injury) => injury.tipo === 'customizada')?.descricao ??
-      '',
+      normalizeFreeText(
+        form.lesoes.find((injury) => injury.tipo === 'customizada')?.descricao ??
+          '',
+        120,
+      ),
   );
   const [injuryObservation, setInjuryObservation] = useState(
-    () => form.lesoes[0]?.observacoes ?? '',
+    () =>
+      normalizeFreeText(
+        form.lesoes.find((injury) => injury.tipo === 'customizada')
+          ?.observacoes ?? form.lesoes[0]?.observacoes ?? '',
+        180,
+      ),
   );
 
   const currentStep = steps[currentStepIndex];
@@ -149,9 +232,15 @@ export function TrainingPlanWizard() {
   const alturaCm = parsePositiveNumber(bodyMeasurements.alturaCm);
   const pesoKg = parsePositiveNumber(bodyMeasurements.pesoKg);
   const hasValidBodyMeasurements = alturaCm !== null && pesoKg !== null;
-  const normalizedCustomEquipmentDescription = customEquipmentDescription.trim();
-  const normalizedCustomInjuryDescription = customInjuryDescription.trim();
-  const normalizedInjuryObservation = injuryObservation.trim();
+  const normalizedCustomEquipmentDescription = normalizeFreeText(
+    customEquipmentDescription,
+    80,
+  );
+  const normalizedCustomInjuryDescription = normalizeFreeText(
+    customInjuryDescription,
+    120,
+  );
+  const normalizedInjuryObservation = normalizeFreeText(injuryObservation, 180);
   const hasCustomEquipment = selectedEquipmentTypes.includes('customizado');
   const hasCustomInjury = selectedInjuryTypes.includes('customizada');
   const hasValidSafetyInputs =
@@ -198,7 +287,7 @@ export function TrainingPlanWizard() {
   function buildEquipment(): TrainingEquipment[] {
     const equipment: TrainingEquipment[] = [];
 
-    for (const tipo of selectedEquipmentTypes) {
+    for (const tipo of uniqueTypes(selectedEquipmentTypes)) {
       if (tipo === 'customizado') {
         if (normalizedCustomEquipmentDescription) {
           equipment.push({
@@ -223,7 +312,7 @@ export function TrainingPlanWizard() {
 
     const injuries: TrainingInjury[] = [];
 
-    for (const tipo of selectedInjuryTypes) {
+    for (const tipo of uniqueTypes(selectedInjuryTypes)) {
       const observation = normalizedInjuryObservation
         ? { observacoes: normalizedInjuryObservation }
         : {};
