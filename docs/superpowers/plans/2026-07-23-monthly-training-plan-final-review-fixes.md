@@ -130,4 +130,6 @@
 - [x] Add failing backend migration tests for metadata strings and model-attempt item contracts in both migrations.
 - [x] Strengthen base and forward SQL validation for metadata model/provider strings, attempt object shape, attempt role/status allowlists, duration, and optional error text.
 - [x] Run the full root verification commands again after metadata hardening.
-- [ ] Re-review the final diff after the metadata hardening commit.
+- [x] Re-review confirmed SQL metadata hardening and requested stronger regression assertions for `attempt.model`.
+- [x] Add `attempt.model` and nonblank provider/model assertions, verify RED by temporarily removing the SQL guard, restore it, and re-run the full verification commands.
+- [ ] Re-review the final test coverage diff after the regression assertion commit.

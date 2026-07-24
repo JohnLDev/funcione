@@ -363,6 +363,21 @@ describe('training plan Supabase migration security', () => {
       );
       assert.match(
         validationDefinition,
+        /coalesce\(trim\(attempt\.value ->> 'provider'\), ''\) = ''/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /jsonb_typeof\(attempt\.value -> 'model'\) is distinct from 'string'/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
+        /coalesce\(trim\(attempt\.value ->> 'model'\), ''\) = ''/i,
+        fileName,
+      );
+      assert.match(
+        validationDefinition,
         /attempt\.value ->> 'role'[\s\S]*not in \('primary', 'fallback'\)/i,
         fileName,
       );
