@@ -10,14 +10,16 @@ test.describe('monthly training plan route', () => {
       const wizard = (await import(
         '/src/components/training-plan-wizard.tsx'
       )) as unknown as {
+        finalizeFreeText: (value: string, maxLength: number) => string;
         normalizeFreeText: (value: string, maxLength: number) => string;
         uniqueTypes: <T extends string>(types: T[]) => T[];
       };
 
       return {
-        customEquipment: wizard.normalizeFreeText(`\u0001${'e'.repeat(100)}`, 80),
-        customInjury: wizard.normalizeFreeText(`\u0002${'i'.repeat(140)}`, 120),
-        injuryObservation: wizard.normalizeFreeText(`\u0003${'o'.repeat(200)}`, 180),
+        customEquipment: wizard.finalizeFreeText(`\u0001${'e'.repeat(100)}`, 80),
+        customInjury: wizard.finalizeFreeText(`\u0002${'i'.repeat(140)}`, 120),
+        editingValue: wizard.normalizeFreeText('dor ', 80),
+        injuryObservation: wizard.finalizeFreeText(`\u0003${'o'.repeat(200)}`, 180),
         types: wizard.uniqueTypes([
           'halteres',
           'halteres',
@@ -29,6 +31,7 @@ test.describe('monthly training plan route', () => {
 
     expect(result.customEquipment).toBe('e'.repeat(80));
     expect(result.customInjury).toBe('i'.repeat(120));
+    expect(result.editingValue).toBe('dor ');
     expect(result.injuryObservation).toBe('o'.repeat(180));
     expect(result.types).toEqual(['halteres', 'customizado']);
   });
@@ -189,17 +192,37 @@ test.describe('monthly training plan route', () => {
 
     const continueButton = page.getByRole('button', { name: /continuar/i });
     const equipmentDescription = page.getByLabel(/descreva o equipamento/i);
+    await equipmentDescription.pressSequentially('escada alta');
+    await expect(equipmentDescription).toHaveValue('escada alta');
     await equipmentDescription.fill('   ');
     await expect(continueButton).toBeDisabled();
+    await expect(
+      page.getByRole('button', { name: /gerar plano/i }),
+    ).toHaveCount(0);
+    await expect(
+      page.evaluate(() =>
+        window.localStorage.getItem('funcione-mock-training-plans'),
+      ),
+    ).resolves.toBeNull();
 
     await equipmentDescription.fill('escada');
     await page.getByRole('button', { name: /tenho lesao/i }).click();
     await page.getByRole('button', { name: /outra lesao/i }).click();
     const injuryDescription = page.getByLabel(/descreva a lesao/i);
+    await injuryDescription.pressSequentially('dor antiga');
+    await expect(injuryDescription).toHaveValue('dor antiga');
     await injuryDescription.fill('   ');
     await expect(continueButton).toBeDisabled();
+    await expect(
+      page.evaluate(() =>
+        window.localStorage.getItem('funcione-mock-training-plans'),
+      ),
+    ).resolves.toBeNull();
 
     await injuryDescription.fill('dor no joelho');
+    const injuryObservation = page.getByLabel(/observacao da lesao/i);
+    await injuryObservation.pressSequentially('evitar saltos altos');
+    await expect(injuryObservation).toHaveValue('evitar saltos altos');
     await expect(continueButton).toBeEnabled();
     await continueButton.click();
     await expect(

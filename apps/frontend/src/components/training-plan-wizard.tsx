@@ -84,6 +84,13 @@ export function normalizeFreeText(value: string, maxLength: number) {
   return value
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
     .replace(/\s+/g, ' ')
+    .slice(0, maxLength);
+}
+
+export function finalizeFreeText(value: string, maxLength: number) {
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLength);
 }
@@ -104,7 +111,7 @@ function normalizeEquipment(
     }
 
     if (item.tipo === 'customizado') {
-      const descricao = normalizeFreeText(item.descricao, 80);
+      const descricao = finalizeFreeText(item.descricao, 80);
 
       if (!descricao) {
         continue;
@@ -132,12 +139,12 @@ function normalizeInjuries(injuries: TrainingInjury[]): TrainingInjury[] {
     }
 
     const observacoes = injury.observacoes
-      ? normalizeFreeText(injury.observacoes, 180)
+      ? finalizeFreeText(injury.observacoes, 180)
       : '';
     const observation = observacoes ? { observacoes } : {};
 
     if (injury.tipo === 'customizada') {
-      const descricao = normalizeFreeText(injury.descricao, 120);
+      const descricao = finalizeFreeText(injury.descricao, 120);
 
       if (!descricao) {
         continue;
@@ -200,7 +207,7 @@ export function TrainingPlanWizard() {
   >(() => uniqueTypes(form.equipamentos.map((equipment) => equipment.tipo)));
   const [customEquipmentDescription, setCustomEquipmentDescription] = useState(
     () =>
-      normalizeFreeText(
+      finalizeFreeText(
         form.equipamentos.find((equipment) => equipment.tipo === 'customizado')
           ?.descricao ?? '',
         80,
@@ -212,7 +219,7 @@ export function TrainingPlanWizard() {
   );
   const [customInjuryDescription, setCustomInjuryDescription] = useState(
     () =>
-      normalizeFreeText(
+      finalizeFreeText(
         form.lesoes.find((injury) => injury.tipo === 'customizada')?.descricao ??
           '',
         120,
@@ -220,7 +227,7 @@ export function TrainingPlanWizard() {
   );
   const [injuryObservation, setInjuryObservation] = useState(
     () =>
-      normalizeFreeText(
+      finalizeFreeText(
         form.lesoes.find((injury) => injury.tipo === 'customizada')
           ?.observacoes ?? form.lesoes[0]?.observacoes ?? '',
         180,
@@ -232,15 +239,15 @@ export function TrainingPlanWizard() {
   const alturaCm = parsePositiveNumber(bodyMeasurements.alturaCm);
   const pesoKg = parsePositiveNumber(bodyMeasurements.pesoKg);
   const hasValidBodyMeasurements = alturaCm !== null && pesoKg !== null;
-  const normalizedCustomEquipmentDescription = normalizeFreeText(
+  const normalizedCustomEquipmentDescription = finalizeFreeText(
     customEquipmentDescription,
     80,
   );
-  const normalizedCustomInjuryDescription = normalizeFreeText(
+  const normalizedCustomInjuryDescription = finalizeFreeText(
     customInjuryDescription,
     120,
   );
-  const normalizedInjuryObservation = normalizeFreeText(injuryObservation, 180);
+  const normalizedInjuryObservation = finalizeFreeText(injuryObservation, 180);
   const hasCustomEquipment = selectedEquipmentTypes.includes('customizado');
   const hasCustomInjury = selectedInjuryTypes.includes('customizada');
   const hasValidSafetyInputs =
