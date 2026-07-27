@@ -39,3 +39,7 @@ services:
         sync: false
       - key: OPENROUTER_SITE_NAME
         value: Funcione
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: NVIDIA_MODEL
+        value: openai/gpt-oss-120b

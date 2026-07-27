@@ -14,6 +14,7 @@
 - Keep frontend deployment on Cloudflare Pages.
 - Do not add a separate Render worker service while targeting the free Render plan.
 - Mark production secrets with `sync: false` so values are filled in the Render Dashboard.
+- Configure both OpenRouter and Nvidia credentials because training generation uses the non-primary provider as fallback.
 
 ---
 
@@ -47,7 +48,7 @@ services:
 
 - [x] **Step 2: Declare runtime config and secrets**
 
-Set non-sensitive values directly and require the Dashboard for Supabase/OpenRouter secrets:
+Set non-sensitive values directly and require the Dashboard for Supabase/OpenRouter/Nvidia secrets:
 
 ```yaml
 envVars:
@@ -73,6 +74,10 @@ envVars:
     sync: false
   - key: OPENROUTER_SITE_NAME
     value: Funcione
+  - key: NVIDIA_API_KEY
+    sync: false
+  - key: NVIDIA_MODEL
+    value: openai/gpt-oss-120b
 ```
 
 - [x] **Step 3: Verify backend build locally**
