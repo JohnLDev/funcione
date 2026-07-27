@@ -12,9 +12,15 @@ import type {
 } from './types.js';
 
 type SupabaseClientConfig = {
+  authRedirectUrl?: string;
+  clientFactory?: SupabaseClientFactory;
   publishableKey?: string;
   url?: string;
 };
+
+type SupabaseClientFactory = (
+  config: Required<Pick<SupabaseClientConfig, 'publishableKey' | 'url'>>,
+) => SupabaseClient;
 
 function getMetadataString(
   metadata: Record<string, unknown>,
@@ -107,9 +113,19 @@ function createAuthErrorResult(
 }
 
 function createConfiguredSupabaseClient(
-  config: Required<SupabaseClientConfig>,
+  config: Required<Pick<SupabaseClientConfig, 'publishableKey' | 'url'>>,
 ): SupabaseClient {
   return createClient(config.url, config.publishableKey);
+}
+
+function resolveOAuthRedirectUrl(configuredRedirectUrl: string | undefined) {
+  const trimmedRedirectUrl = configuredRedirectUrl?.trim().replace(/\/+$/, '');
+
+  if (trimmedRedirectUrl) {
+    return trimmedRedirectUrl;
+  }
+
+  return window.location.origin;
 }
 
 export function createSupabaseAuthGateway(
@@ -117,7 +133,7 @@ export function createSupabaseAuthGateway(
 ): AuthGateway {
   const supabase =
     config.url && config.publishableKey
-      ? createConfiguredSupabaseClient({
+      ? (config.clientFactory ?? createConfiguredSupabaseClient)({
           publishableKey: config.publishableKey,
           url: config.url,
         })
@@ -160,7 +176,7 @@ export function createSupabaseAuthGateway(
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: resolveOAuthRedirectUrl(config.authRedirectUrl),
         },
       });
 

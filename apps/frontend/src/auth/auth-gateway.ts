@@ -8,6 +8,7 @@ export function createAuthGateway(): AuthGateway {
   }
 
   return createSupabaseAuthGateway({
+    authRedirectUrl: import.meta.env.VITE_AUTH_REDIRECT_URL,
     publishableKey:
       import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
       import.meta.env.VITE_SUPABASE_ANON_KEY,
