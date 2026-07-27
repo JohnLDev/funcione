@@ -22,6 +22,8 @@
 
 **Files:**
 - Create: `render.yaml`
+- Modify: `apps/backend/package.json`
+- Modify: `package-lock.json`
 - Modify: `docs/superpowers/plans/2026-07-27-render-backend-deployment.md`
 
 **Interfaces:**
@@ -89,6 +91,23 @@ rtk env NODE_ENV=production npm run build --workspace @langchain-training/backen
 ```
 
 Expected: command exits 0 and emits backend `dist/` files.
+
+- [x] **Step 3.1: Keep backend build tooling available in Render production install**
+
+Move `@typescript/native-preview` and `@types/node` from backend `devDependencies`
+to backend `dependencies` because the existing Render service is still running
+`npm ci` with `NODE_ENV=production` before `npm run build --workspace
+@langchain-training/backend`. This keeps `tsgo` and Node type declarations
+available when Render omits dev dependencies.
+
+Verify with a clean copied workspace:
+
+```bash
+rtk env NODE_ENV=production npm ci --no-audit --no-fund
+rtk env NODE_ENV=production npm run build --workspace @langchain-training/backend
+```
+
+Expected: both commands exit 0.
 
 - [x] **Step 4: Check Blueprint availability**
 
