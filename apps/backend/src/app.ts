@@ -1,4 +1,5 @@
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
+import fastifyCors from '@fastify/cors';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import {
@@ -75,6 +76,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     return reply
       .status(500)
       .send(createErrorResponse('INTERNAL_SERVER_ERROR', 'Internal server error.'));
+  });
+
+  await app.register(fastifyCors, {
+    allowedHeaders: ['authorization', 'content-type'],
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+    origin: true,
   });
 
   await app.register(fastifySwagger, {

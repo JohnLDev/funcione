@@ -1,3 +1,4 @@
+import { toApiUrl, type ApiUrlOptions } from '../api/api-url.js';
 import type {
   RegistrationProfile,
   RegistrationProfileActionResult,
@@ -25,6 +26,8 @@ type ParsedRegistrationError = {
   userMessageKey?: string;
 };
 
+export type ApiRegistrationProfileGatewayOptions = ApiUrlOptions;
+
 async function parseApiError(response: Response): Promise<ParsedRegistrationError> {
   try {
     const body = (await response.json()) as ApiErrorResponse;
@@ -41,7 +44,9 @@ async function parseApiError(response: Response): Promise<ParsedRegistrationErro
   }
 }
 
-export function createApiRegistrationProfileGateway(): RegistrationProfileGateway {
+export function createApiRegistrationProfileGateway(
+  options: ApiRegistrationProfileGatewayOptions = {},
+): RegistrationProfileGateway {
   return {
     completeProfile: async (
       accessToken: string,
@@ -55,7 +60,7 @@ export function createApiRegistrationProfileGateway(): RegistrationProfileGatewa
         lastName: profile.lastName,
         phoneNumber: profile.phoneNumber,
       };
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch(toApiUrl('/api/auth/profile', options), {
         body: JSON.stringify(requestBody),
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -93,7 +98,7 @@ export function createApiRegistrationProfileGateway(): RegistrationProfileGatewa
     getProfileState: async (
       accessToken: string,
     ): Promise<RegistrationProfileState> => {
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch(toApiUrl('/api/auth/profile', options), {
         headers: {
           authorization: `Bearer ${accessToken}`,
         },

@@ -27,4 +27,28 @@ describe('health route', () => {
     assert.ok(response.json().paths['/healthz']);
     assert.ok(response.json().paths['/healthz'].get.responses['200']);
   });
+
+  it('allows browser preflight requests for API routes', async () => {
+    const app = await buildApp();
+
+    const response = await app.inject({
+      headers: {
+        'access-control-request-headers': 'authorization, content-type',
+        'access-control-request-method': 'PUT',
+        origin: 'https://funcione.pages.dev',
+      },
+      method: 'OPTIONS',
+      url: '/api/auth/profile',
+    });
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(
+      response.headers['access-control-allow-origin'],
+      'https://funcione.pages.dev',
+    );
+    assert.match(
+      String(response.headers['access-control-allow-headers']),
+      /authorization/i,
+    );
+  });
 });

@@ -1,3 +1,4 @@
+import { toApiUrl, type ApiUrlOptions } from '../api/api-url.js';
 import { TrainingPlanGatewayError } from './training-plan.js';
 import type {
   MonthlyTrainingPlanGeneration,
@@ -26,6 +27,8 @@ type ParsedApiError = {
   userMessageKey?: string;
 };
 
+export type ApiTrainingPlanGatewayOptions = ApiUrlOptions;
+
 function formatApiError(error?: ApiErrorResponse['error']): ParsedApiError {
   return {
     code: error?.code,
@@ -46,13 +49,15 @@ async function parseApiError(response: Response): Promise<ParsedApiError> {
   }
 }
 
-export function createApiTrainingPlanGateway(): TrainingPlanGateway {
+export function createApiTrainingPlanGateway(
+  options: ApiTrainingPlanGatewayOptions = {},
+): TrainingPlanGateway {
   return {
     createMonthlyPlan: async (
       accessToken: string,
       payload: MonthlyTrainingPlanRequest,
     ): Promise<TrainingPlanActionResult> => {
-      const response = await fetch('/api/training-plans/monthly', {
+      const response = await fetch(toApiUrl('/api/training-plans/monthly', options), {
         body: JSON.stringify(payload),
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -91,7 +96,7 @@ export function createApiTrainingPlanGateway(): TrainingPlanGateway {
     getActivePlan: async (
       accessToken: string,
     ): Promise<MonthlyTrainingPlanState> => {
-      const response = await fetch('/api/training-plans/active', {
+      const response = await fetch(toApiUrl('/api/training-plans/active', options), {
         headers: {
           authorization: `Bearer ${accessToken}`,
         },
@@ -110,7 +115,7 @@ export function createApiTrainingPlanGateway(): TrainingPlanGateway {
       generationId: string,
     ): Promise<TrainingPlanGenerationStatusResult> => {
       const response = await fetch(
-        `/api/training-plans/generations/${generationId}`,
+        toApiUrl(`/api/training-plans/generations/${generationId}`, options),
         {
           headers: {
             authorization: `Bearer ${accessToken}`,

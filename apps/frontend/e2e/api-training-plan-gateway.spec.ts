@@ -96,6 +96,42 @@ test.describe('API training plan gateway', () => {
     }
   });
 
+  test('uses the configured backend URL for generation status requests', async () => {
+    const originalFetch = globalThis.fetch;
+    let requestUrl: string | undefined;
+
+    globalThis.fetch = async (...[input]: Parameters<typeof fetch>) => {
+      requestUrl = String(input);
+
+      return Response.json({
+        generation: {
+          completedAt: null,
+          createdAt: '2026-07-24T12:00:00.000Z',
+          errorMessage: null,
+          failedAt: null,
+          id: 'generation-123',
+          startedAt: null,
+          status: 'running',
+          updatedAt: '2026-07-24T12:00:00.000Z',
+          userId: 'user-123',
+        },
+        plan: null,
+      });
+    };
+
+    try {
+      await createApiTrainingPlanGateway({
+        apiBaseUrl: 'https://funcione-api.onrender.com',
+      }).getGenerationStatus('valid-token', 'generation-123');
+
+      expect(requestUrl).toBe(
+        'https://funcione-api.onrender.com/api/training-plans/generations/generation-123',
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   test('preserves missing authentication token error codes without localizing the gateway', async () => {
     const originalFetch = globalThis.fetch;
 
