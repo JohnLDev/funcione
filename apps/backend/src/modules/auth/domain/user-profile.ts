@@ -9,6 +9,8 @@ export const requiredUserProfileFields = [
   'email',
 ] as const;
 
+export const userProfileNameMaxLength = 80;
+
 export type RequiredUserProfileField = (typeof requiredUserProfileFields)[number];
 
 function onlyDigits(value: string): string {
@@ -44,8 +46,8 @@ function isPastDate(value: string): boolean {
 }
 
 export const CompleteUserProfileInputSchema = z.object({
-  firstName: z.string().trim().min(2),
-  lastName: z.string().trim().min(2),
+  firstName: z.string().trim().min(2).max(userProfileNameMaxLength),
+  lastName: z.string().trim().min(2).max(userProfileNameMaxLength),
   cpf: z.string().transform(onlyDigits).refine(isValidCpf, 'Invalid CPF.'),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isPastDate),
   phoneNumber: z.string().transform(onlyDigits).refine(

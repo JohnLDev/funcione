@@ -162,6 +162,10 @@ test.describe('Funcione app shell', () => {
   });
 
   test('creates a password account with required registration data and signs in again', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('funcione-theme', 'system');
+    });
+
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/login$/);
@@ -211,11 +215,18 @@ test.describe('Funcione app shell', () => {
 
     await page.getByRole('button', { name: /configuracoes|settings/i }).click();
     const themeButton = page.getByRole('button', { name: /tema/i });
+    await expect(themeButton).toHaveAccessibleName(/tema: escuro|theme: dark/i);
+    await expect(themeButton).not.toHaveAccessibleName(/sistema|system/i);
+
     await themeButton.click();
     await expect(page.locator('html')).toHaveClass(/light/);
+    await expect(themeButton).toHaveAccessibleName(/tema: claro|theme: light/i);
+    await expect(themeButton).not.toHaveAccessibleName(/sistema|system/i);
 
     await themeButton.click();
     await expect(page.locator('html')).toHaveClass(/dark/);
+    await expect(themeButton).toHaveAccessibleName(/tema: escuro|theme: dark/i);
+    await expect(themeButton).not.toHaveAccessibleName(/sistema|system/i);
 
     const languageButton = page.getByRole('button', { name: /idioma|language/i });
     await languageButton.click();
@@ -273,9 +284,15 @@ test.describe('Funcione app shell', () => {
     await expect(page.getByLabel(/e-mail/i)).toHaveValue('google@funcione.app');
     await page.getByLabel(/^nome$/i).fill('Google');
     await page.getByLabel(/sobrenome/i).fill('Atleta');
-    await page.getByLabel(/cpf/i).fill('52998224725');
+    await page.getByLabel(/cpf/i).fill('abc52998224725z');
+    await expect(page.getByLabel(/cpf/i)).toHaveValue('529.982.247-25');
     await page.getByLabel(/data de nascimento/i).fill('1995-02-10');
-    await page.getByLabel(/telefone/i).fill('11988887777');
+    await expect(
+      page.getByRole('img', { name: /bandeira do brasil|brazil flag/i }),
+    ).toBeVisible();
+    await expect(page.getByText('+55')).toBeVisible();
+    await page.getByLabel(/telefone/i).fill('tel11988887777x');
+    await expect(page.getByLabel(/telefone/i)).toHaveValue('(11) 98888-7777');
     await page.getByRole('button', { name: /salvar cadastro/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -295,12 +312,52 @@ test.describe('Funcione app shell', () => {
     const savedProfileValues = Object.values(savedProfiles);
     expect(savedProfileValues).toHaveLength(1);
     expect(savedProfileValues[0]).not.toHaveProperty('password');
+    expect(savedProfileValues[0]).toMatchObject({
+      cpf: '52998224725',
+      phoneNumber: '11988887777',
+    });
 
     const scrollWidth = await page.evaluate(
       () => document.documentElement.scrollWidth,
     );
     const viewportWidth = await page.evaluate(() => window.innerWidth);
     expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
+  });
+
+  test('limits complete profile name fields to 80 characters', async ({
+    page,
+  }) => {
+    const longFirstName = 'A'.repeat(81);
+    const longLastName = 'B'.repeat(81);
+
+    await page.goto('/');
+
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole('button', { name: /continuar com google/i }).click();
+    await expect(page).toHaveURL(/\/complete-profile$/);
+
+    await page.getByLabel(/^nome$/i).fill(longFirstName);
+    await page.getByLabel(/sobrenome/i).fill(longLastName);
+
+    await expect(page.getByLabel(/^nome$/i)).toHaveValue('A'.repeat(80));
+    await expect(page.getByLabel(/sobrenome/i)).toHaveValue('B'.repeat(80));
+  });
+
+  test('allows signing out from complete profile before saving', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole('button', { name: /continuar com google/i }).click();
+    await expect(page).toHaveURL(/\/complete-profile$/);
+
+    await page.getByRole('button', { name: /^sair$/i }).click();
+
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(
+      page.getByRole('heading', { name: /entrar no funcione/i }),
+    ).toBeVisible();
   });
 
   test('desktop dashboard shell uses only real navigation and state', async ({
@@ -380,6 +437,12 @@ test.describe('Funcione app shell', () => {
 
     const sidebarBox = await page.locator('aside').first().boundingBox();
     expect(sidebarBox?.height).toBeGreaterThan(1120);
+    const dashboardViewportOverflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollHeight -
+        document.documentElement.clientHeight,
+    );
+    expect(dashboardViewportOverflow).toBeLessThanOrEqual(1);
 
     const profileLink = page.getByRole('link', { name: /^perfil$|^profile$/i });
     await expect(profileLink).toHaveAttribute('href', '/profile');

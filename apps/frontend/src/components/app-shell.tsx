@@ -98,7 +98,7 @@ export function AppShell({
   return (
     <div className="min-h-dvh overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 md:px-8 md:pb-8">
       <div className="mx-auto grid w-full max-w-6xl gap-5 md:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden min-h-[calc(100dvh-2rem)] flex-col rounded-[2rem] border border-border bg-card/70 p-4 shadow-sm backdrop-blur md:sticky md:top-4 md:flex">
+        <aside className="hidden min-h-[calc(100dvh-2rem)] flex-col rounded-[2rem] border border-border bg-card/70 p-4 shadow-sm backdrop-blur md:sticky md:top-4 md:flex md:min-h-[calc(100dvh-3rem)]">
           <div className="flex items-center gap-3">
             <ProductLogo className="h-12 w-24" decorative />
             <div>
@@ -140,7 +140,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <main className="flex min-h-[calc(100dvh-2rem)] min-w-0 flex-col">
+        <main className="flex min-h-[calc(100dvh-2rem)] min-w-0 flex-col md:min-h-[calc(100dvh-3rem)]">
           <header className="flex items-center justify-between gap-3" role="banner">
             <div className="flex min-w-0 items-center gap-3">
               <ProductLogo className="h-10 w-32 max-[360px]:w-28 md:hidden" />

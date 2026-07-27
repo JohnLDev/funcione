@@ -1,3 +1,5 @@
+import { userProfileNameMaxLength } from '../domain/user-profile.js';
+
 export const authenticatedUserJsonSchema = {
   type: 'object',
   required: ['id', 'email', 'provider'],
@@ -42,8 +44,16 @@ export const completeUserProfileBodyJsonSchema = {
   ],
   additionalProperties: false,
   properties: {
-    firstName: { type: 'string', minLength: 2 },
-    lastName: { type: 'string', minLength: 2 },
+    firstName: {
+      type: 'string',
+      minLength: 2,
+      maxLength: userProfileNameMaxLength,
+    },
+    lastName: {
+      type: 'string',
+      minLength: 2,
+      maxLength: userProfileNameMaxLength,
+    },
     cpf: {
       type: 'string',
       description: 'Brazilian CPF. Punctuation is accepted but stored as digits.',

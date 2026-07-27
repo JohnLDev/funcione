@@ -268,6 +268,7 @@
   "registration": {
     "backToSignIn": "Ja tenho conta",
     "birthDate": "Data de nascimento",
+    "brazilFlag": "Bandeira do Brasil",
     "completeTitle": "Complete seu cadastro",
     "cpf": "CPF",
     "email": "E-mail",
@@ -280,7 +281,6 @@
   },
   "theme": {
     "button": "Tema: {{theme}}",
-    "system": "sistema",
     "light": "claro",
     "dark": "escuro"
   },

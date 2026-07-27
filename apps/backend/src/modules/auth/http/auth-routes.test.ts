@@ -237,6 +237,49 @@ describe('auth routes', () => {
     assert.equal(response.json().error.code, 'VALIDATION_ERROR');
   });
 
+  it('rejects registration profile names longer than 80 characters', async () => {
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepository: createInMemoryUserProfileRepository(),
+    });
+    const basePayload = {
+      firstName: 'Joao',
+      lastName: 'Silva',
+      cpf: '52998224725',
+      birthDate: '1994-08-20',
+      phoneNumber: '11999999999',
+      email: 'athlete@funcione.app',
+    };
+
+    const longFirstNameResponse = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+      payload: {
+        ...basePayload,
+        firstName: 'A'.repeat(81),
+      },
+    });
+    const longLastNameResponse = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer valid-token',
+      },
+      payload: {
+        ...basePayload,
+        lastName: 'B'.repeat(81),
+      },
+    });
+
+    assert.equal(longFirstNameResponse.statusCode, 400);
+    assert.equal(longFirstNameResponse.json().error.code, 'VALIDATION_ERROR');
+    assert.equal(longLastNameResponse.statusCode, 400);
+    assert.equal(longLastNameResponse.json().error.code, 'VALIDATION_ERROR');
+  });
+
   it('creates and returns the authenticated user registration profile', async () => {
     const userProfileRepository = createInMemoryUserProfileRepository();
     const app = await buildApp({
@@ -305,6 +348,12 @@ describe('auth routes', () => {
     assert.ok(response.json().paths['/api/auth/me'].get);
     assert.ok(response.json().paths['/api/auth/profile'].get);
     assert.ok(response.json().paths['/api/auth/profile'].put);
+    const profilePutBodySchema =
+      response.json().paths['/api/auth/profile'].put.requestBody.content[
+        'application/json'
+      ].schema;
+    assert.equal(profilePutBodySchema.properties.firstName.maxLength, 80);
+    assert.equal(profilePutBodySchema.properties.lastName.maxLength, 80);
     assert.deepEqual(
       response.json().paths['/api/auth/me'].get.security,
       [{ bearerAuth: [] }],

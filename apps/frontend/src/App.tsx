@@ -100,7 +100,7 @@ function AppRoutes() {
           ) : hasCompletedProfile ? (
             <Navigate replace to="/dashboard" />
           ) : (
-            <ProfileCompletionScreen />
+            <ProfileCompletionScreen onSignOut={handleSignOut} />
           )
         }
         path="/complete-profile"
@@ -165,7 +165,7 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="system">
+    <ThemeProvider defaultTheme="dark">
       <AppToastProvider>
         <BrowserRouter>
           <AuthProvider>

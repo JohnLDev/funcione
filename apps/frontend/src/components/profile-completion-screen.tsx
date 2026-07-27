@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '@/auth/use-auth.js';
 import type { RegistrationProfileInput } from '@/auth/registration-profile.js';
 import {
@@ -9,12 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card.js';
+import { Button } from './ui/button.js';
 import { LanguageToggle } from './language-toggle.js';
 import { ProductLogo } from './product-logo.js';
 import { RegistrationProfileForm } from './registration-profile-form.js';
 import { ThemeToggle } from './theme-toggle.js';
 
-export function ProfileCompletionScreen() {
+export function ProfileCompletionScreen({ onSignOut }: { onSignOut: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
@@ -38,6 +40,15 @@ export function ProfileCompletionScreen() {
           <div className="flex shrink-0 items-center gap-2">
             <LanguageToggle />
             <ThemeToggle />
+            <Button
+              aria-label={t('auth.signOut')}
+              onClick={onSignOut}
+              size="icon"
+              type="button"
+              variant="outline"
+            >
+              <LogOut aria-hidden="true" size={18} />
+            </Button>
           </div>
         </header>
 
