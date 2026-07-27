@@ -7,8 +7,45 @@ import type {
 } from './types.js';
 
 const mockSessionStorageKey = 'funcione-mock-session';
+const mockAuthScenarioStorageKey = 'funcione-mock-auth-scenario';
 
 const listeners = new Set<AuthStateListener>();
+
+type MockAuthScenarioResult = {
+  code?: string;
+  message: string;
+};
+
+type MockAuthScenario = {
+  signInWithGoogle?: MockAuthScenarioResult;
+  signInWithPassword?: MockAuthScenarioResult;
+  signOut?: MockAuthScenarioResult;
+  signUpWithPassword?: MockAuthScenarioResult;
+};
+
+function readScenario(): MockAuthScenario | null {
+  const storedScenario = window.localStorage.getItem(mockAuthScenarioStorageKey);
+
+  if (!storedScenario) {
+    return null;
+  }
+
+  return JSON.parse(storedScenario) as MockAuthScenario;
+}
+
+function createScenarioError(
+  scenario: MockAuthScenarioResult,
+): AuthActionResult {
+  return {
+    error: {
+      code: scenario.code ?? 'AUTH_SIGN_IN_FAILED',
+      message: scenario.message,
+      source: 'auth',
+    },
+    ok: false,
+    message: scenario.message,
+  };
+}
 
 function readSession(): AuthSession | null {
   window.localStorage.removeItem(mockSessionStorageKey);
@@ -65,18 +102,55 @@ export function createMockAuthGateway(): AuthGateway {
       };
     },
     signInWithGoogle: async () => {
+      const scenario = readScenario();
+
+      if (scenario?.signInWithGoogle) {
+        return createScenarioError({
+          code: scenario.signInWithGoogle.code ?? 'AUTH_OAUTH_FAILED',
+          message: scenario.signInWithGoogle.message,
+        });
+      }
+
       const session = createMockSession('google@funcione.app', 'google');
 
       writeSession(session);
 
       return { ok: true, session };
     },
-    signInWithPassword: async (credentials) => signInMockUser(credentials),
+    signInWithPassword: async (credentials) => {
+      const scenario = readScenario();
+
+      if (scenario?.signInWithPassword) {
+        return createScenarioError(scenario.signInWithPassword);
+      }
+
+      return signInMockUser(credentials);
+    },
     signOut: async () => {
+      const scenario = readScenario();
+
+      if (scenario?.signOut) {
+        return createScenarioError({
+          code: scenario.signOut.code ?? 'AUTH_SIGN_OUT_FAILED',
+          message: scenario.signOut.message,
+        });
+      }
+
       writeSession(null);
 
       return { ok: true };
     },
-    signUpWithPassword: async (credentials) => signInMockUser(credentials),
+    signUpWithPassword: async (credentials) => {
+      const scenario = readScenario();
+
+      if (scenario?.signUpWithPassword) {
+        return createScenarioError({
+          code: scenario.signUpWithPassword.code ?? 'AUTH_SIGN_UP_FAILED',
+          message: scenario.signUpWithPassword.message,
+        });
+      }
+
+      return signInMockUser(credentials);
+    },
   };
 }

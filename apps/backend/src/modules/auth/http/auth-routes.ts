@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { AuthVerifier } from '../application/auth-verifier.js';
+import { extractBearerToken } from '../application/bearer-token.js';
+import type { UserProfileRepositoryFactory } from '../application/user-profile-repository-factory.js';
 import type { AuthenticatedUser } from '../domain/authenticated-user.js';
 import {
   completeUserProfile,
@@ -21,6 +23,7 @@ import {
 export type AuthRoutesOptions = {
   authVerifier: AuthVerifier;
   userProfileRepository: UserProfileRepository;
+  userProfileRepositoryFactory?: UserProfileRepositoryFactory;
 };
 
 type VerifiedCurrentUser =
@@ -36,6 +39,18 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
   app,
   options,
 ) => {
+  const getUserProfileRepository = (
+    authorizationHeader: string | undefined,
+  ): UserProfileRepository => {
+    const accessToken = extractBearerToken(authorizationHeader);
+
+    if (!accessToken || !options.userProfileRepositoryFactory) {
+      return options.userProfileRepository;
+    }
+
+    return options.userProfileRepositoryFactory(accessToken);
+  };
+
   const verifyCurrentUser = async (
     authorizationHeader: string | undefined,
   ): Promise<VerifiedCurrentUser> => {
@@ -107,9 +122,12 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
         return reply.status(currentUser.statusCode).send(currentUser.error);
       }
 
+      const userProfileRepository = getUserProfileRepository(
+        request.headers.authorization,
+      );
       const profileState = await getUserProfileState(
         currentUser.user,
-        options.userProfileRepository,
+        userProfileRepository,
       );
 
       return reply.status(200).send(profileState);
@@ -143,10 +161,13 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
         return reply.status(currentUser.statusCode).send(currentUser.error);
       }
 
+      const userProfileRepository = getUserProfileRepository(
+        request.headers.authorization,
+      );
       const result = await completeUserProfile(
         currentUser.user,
         request.body,
-        options.userProfileRepository,
+        userProfileRepository,
       );
 
       if ('error' in result) {

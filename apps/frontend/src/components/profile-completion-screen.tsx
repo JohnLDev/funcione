@@ -18,7 +18,6 @@ export function ProfileCompletionScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const {
-    authMessage,
     completeRegistrationProfile,
     isAuthActionRunning,
     session,
@@ -33,7 +32,7 @@ export function ProfileCompletionScreen() {
 
   return (
     <div className="min-h-dvh overflow-x-hidden px-4 py-4 sm:px-6">
-      <main className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-5">
+      <main className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-5 lg:justify-center">
         <header className="flex items-center justify-between gap-3">
           <ProductLogo className="h-10 w-32 max-[360px]:w-28" />
           <div className="flex shrink-0 items-center gap-2">
@@ -42,7 +41,7 @@ export function ProfileCompletionScreen() {
           </div>
         </header>
 
-        <Card className="mt-auto rounded-[2rem] border-primary/25 bg-card/92 shadow-xl">
+        <Card className="mt-auto rounded-[2rem] border-primary/25 bg-card/92 shadow-xl lg:mt-0">
           <CardHeader className="p-5">
             <CardDescription className="font-bold text-primary">
               {t('brand.byline')}
@@ -52,15 +51,6 @@ export function ProfileCompletionScreen() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 p-5 pt-0">
-            {authMessage ? (
-              <p
-                className="rounded-2xl border border-border bg-muted p-3 text-sm font-semibold text-muted-foreground"
-                role="status"
-              >
-                {authMessage}
-              </p>
-            ) : null}
-
             <RegistrationProfileForm
               emailReadonly={Boolean(user?.email)}
               initialValues={initialProfile}

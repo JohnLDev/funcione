@@ -1,15 +1,36 @@
 import {
+  EquipamentoTreino,
   GravidadeLesao,
   CategoriaExercicio,
   IntensidadeTreino,
   LocalTreino,
   ModalidadeEsportiva,
+  MonthlyTrainingPlanStatus,
   NivelImpacto,
   NivelExperiencia,
   ObjetivoTreino,
   TempoDisponivel,
   TipoLesao,
 } from './enums.js';
+
+export const equipamentoTreinoLabel: Record<EquipamentoTreino, string> = {
+  [EquipamentoTreino.Nenhum]: 'nenhum equipamento',
+  [EquipamentoTreino.Halteres]: 'halteres',
+  [EquipamentoTreino.BarraAnilhas]: 'barra e anilhas',
+  [EquipamentoTreino.Elasticos]: 'elasticos',
+  [EquipamentoTreino.BancoCaixa]: 'banco ou caixa',
+  [EquipamentoTreino.Colchonete]: 'colchonete',
+  [EquipamentoTreino.Cones]: 'cones',
+  [EquipamentoTreino.Corda]: 'corda',
+  [EquipamentoTreino.MaquinasAcademia]: 'maquinas de academia',
+  [EquipamentoTreino.Bola]: 'bola',
+  [EquipamentoTreino.Customizado]: 'outro equipamento',
+};
+
+export const monthlyTrainingPlanStatusLabel: Record<MonthlyTrainingPlanStatus, string> = {
+  [MonthlyTrainingPlanStatus.Active]: 'ativo',
+  [MonthlyTrainingPlanStatus.Expired]: 'expirado',
+};
 
 export const nivelExperienciaLabel: Record<NivelExperiencia, string> = {
   [NivelExperiencia.Iniciante]: 'Iniciante',

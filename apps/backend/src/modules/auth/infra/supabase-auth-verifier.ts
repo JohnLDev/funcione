@@ -1,24 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AuthVerifier } from '../application/auth-verifier.js';
+import { extractBearerToken } from '../application/bearer-token.js';
 
 export type SupabaseAuthConfig = {
   supabaseUrl?: string;
   supabasePublishableKey?: string;
 };
-
-function extractBearerToken(authorizationHeader: string | undefined): string | null {
-  if (!authorizationHeader) {
-    return null;
-  }
-
-  const [scheme, token] = authorizationHeader.trim().split(/\s+/);
-
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    return null;
-  }
-
-  return token;
-}
 
 function createSupabaseAuthClient(config: Required<SupabaseAuthConfig>): SupabaseClient {
   return createClient(config.supabaseUrl, config.supabasePublishableKey, {

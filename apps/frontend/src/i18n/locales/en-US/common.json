@@ -2,19 +2,73 @@
   "brand": {
     "name": "Funcione",
     "byline": "by MileX",
-    "logoAlt": "Official Funcione logo"
+    "logoAlt": "Official Funcione logo",
+    "milexLogoAlt": "Official MileX logo"
+  },
+  "footer": {
+    "label": "Footer",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use"
+  },
+  "legal": {
+    "backToApp": "Back to athlete area",
+    "backToLogin": "Back to sign in"
+  },
+  "toast": {
+    "dismiss": "Close notification",
+    "label": "System feedback",
+    "region": "System notifications",
+    "severity": {
+      "error": "Needs attention",
+      "info": "Information",
+      "success": "All set",
+      "warning": "Attention"
+    }
+  },
+  "errors": {
+    "auth": {
+      "emailConfirmationRequired": "Check your email to confirm your account.",
+      "invalidCredentials": "Invalid email or password.",
+      "sessionExpired": "Your session expired. Sign in again.",
+      "signInFailed": "We could not sign you in right now.",
+      "signOutFailed": "We could not sign you out right now.",
+      "signUpFailed": "We could not create your account right now.",
+      "socialLoginFailed": "We could not sign you in with Google right now.",
+      "supabaseNotConfigured": "Authentication is not configured yet."
+    },
+    "common": {
+      "unexpected": "Something went out of rhythm. Try again shortly."
+    },
+    "network": {
+      "requestFailed": "We could not connect right now. Check your connection."
+    },
+    "registration": {
+      "authRequired": "Sign in again to complete your registration.",
+      "invalidPayload": "We could not accept the registration data.",
+      "requestFailed": "We could not update your registration."
+    },
+    "training": {
+      "generationFailed": "Workout generation failed. You can try again.",
+      "generationUnavailable": "We could not check the workout generation.",
+      "monthlyPlanAlreadyActive": "You already have an active plan for this period.",
+      "requestFailed": "We could not update the training plan."
+    }
   },
   "dashboard": {
-    "eyebrow": "Today's plan",
-    "title": "Power",
-    "subtitle": "Volleyball • 90 min • intermediate",
-    "progressLabel": "Workout progress",
-    "nextBlockLabel": "Next block",
-    "nextBlock": "Controlled landing",
+    "activeTitle": "Active workout",
+    "openProfile": "View profile",
+    "openTraining": "View workout",
+    "profileCardTitle": "Athlete profile",
+    "requestDescription": "Request a monthly plan generated from your sport profile, availability, equipment, and restrictions.",
+    "requestTitle": "Request workout",
+    "shellTitle": "Athlete area",
+    "trainingBadge": "Monthly plan",
+    "welcomeEyebrow": "Hi, {{name}}",
+    "welcomeText": "Ready to train? Your plan stays organized here to make your routine easier.",
+    "welcomeTitle": "Ready to make your life easier?",
     "bottomNav": {
       "home": "Home",
       "workout": "Workout",
-      "history": "History",
       "profile": "Profile"
     }
   },
@@ -25,12 +79,185 @@
     "impactValue": "Safe"
   },
   "actions": {
+    "requestWorkout": "Request workout",
     "startWorkout": "Start workout"
+  },
+  "settings": {
+    "button": "Settings",
+    "title": "Settings"
+  },
+  "profile": {
+    "athleteDescription": "Data used to personalize workout requests.",
+    "athleteEmpty": "Your athletic profile will be created from the first requested plan.",
+    "athleteTitle": "Athletic profile",
+    "registrationDescription": "Main data from your Funcione account.",
+    "registrationEmpty": "Registration not found.",
+    "registrationTitle": "Registration",
+    "title": "Athlete profile"
+  },
+  "training": {
+    "active": {
+      "emptyExercises": "No main exercises for this session",
+      "emptyStretches": "No stretches or mobility work for this session",
+      "exerciseCount_one": "{{count}} exercise",
+      "exerciseCount_other": "{{count}} exercises",
+      "exercises": "Main exercises",
+      "generated": "Generated on {{date}}",
+      "minutes": "min",
+      "nextGeneration": "Next generation available on {{date}}",
+      "observations": "Notes",
+      "openDetails": "Open details",
+      "openDetailsLabel": "Open details for {{session}}",
+      "seconds": "s",
+      "stretchCount_one": "{{count}} stretch",
+      "stretchCount_other": "{{count}} stretches",
+      "stretches": "Stretches and mobility",
+      "summary": "Plan summary"
+    },
+    "activeTitle": "Active plan",
+    "back": "Back",
+    "confirmGeneration": {
+      "cancel": "Cancel",
+      "confirm": "Confirm generation",
+      "message": "After confirming, this workout will become your active plan and can only be regenerated after 30 days.",
+      "title": "Confirm plan generation"
+    },
+    "continue": "Continue",
+    "errors": {
+      "generationFailed": "Workout generation failed. You can try again.",
+      "requestFailed": "We could not update the training plan.",
+      "sessionExpired": "Your session expired. Sign in again to generate the workout."
+    },
+    "fields": {
+      "age": "Age",
+      "body": "Physical profile",
+      "customEquipment": "Describe the equipment",
+      "customInjury": "Describe the injury",
+      "duration": "Training duration",
+      "equipment": "Equipment",
+      "experience": "Experience level",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "height": "Height in cm",
+      "injuries": "Injuries",
+      "injuryObservation": "Injury observation",
+      "injuryObservationFor": "Notes for {{injury}}",
+      "injurySeverityFor": "Severity of {{injury}}",
+      "modality": "Sport",
+      "place": "Training location",
+      "routine": "Routine",
+      "safety": "Environment and safety",
+      "weight": "Weight in kg"
+    },
+    "generate": "Generate plan",
+    "generating": "Generating plan",
+    "generationFeedback": {
+      "connect": "Connecting to the AI",
+      "longRunning": "The AI is still building the workout. Keep this screen open.",
+      "prepare": "Preparing data",
+      "save": "Saving plan",
+      "statusLabel": "Generation progress",
+      "subtitle": "This may take a few seconds.",
+      "title": "Generating your monthly plan"
+    },
+    "loading": "Loading training plan",
+    "loadingDescription": "Checking your active plan and recent history.",
+    "monthlyLimitNotice": "You can generate another plan after 30 days.",
+    "newTitle": "New training plan",
+    "pendingDescription": "We are preparing your plan without blocking your navigation.",
+    "pendingMessage": "Your workout was requested and is being processed. Once it finishes, the active plan will appear here.",
+    "pendingTitle": "Generation in progress",
+    "retry": "Try again",
+    "options": {
+      "availability": {
+        "2x_semana": "2 times per week",
+        "3x_semana": "3 times per week",
+        "4x_semana": "4 times per week",
+        "5x_semana": "5 times per week",
+        "6x_semana": "6 times per week",
+        "7x_semana": "7 times per week"
+      },
+      "duration": {
+        "30": "30 minutes",
+        "45": "45 minutes",
+        "60": "60 minutes",
+        "75": "75 minutes",
+        "90": "90 minutes"
+      },
+      "equipment": {
+        "banco_caixa": "Bench or box",
+        "barra_anilhas": "Barbell and plates",
+        "bola": "Ball",
+        "colchonete": "Mat",
+        "cones": "Cones",
+        "corda": "Jump rope",
+        "customizado": "Other equipment",
+        "elasticos": "Resistance bands",
+        "halteres": "Dumbbells",
+        "maquinas_academia": "Gym machines",
+        "nenhum": "None"
+      },
+      "experience": {
+        "avancado": "Advanced",
+        "iniciante": "Beginner",
+        "intermediario": "Intermediate",
+        "profissional": "Professional"
+      },
+      "goals": {
+        "condicionamento": "Conditioning",
+        "ganho_massa": "Muscle gain",
+        "performance": "Performance",
+        "perda_peso": "Weight loss",
+        "prevencao_lesao": "Injury prevention"
+      },
+      "injurySeverity": {
+        "alta": "High",
+        "leve": "Mild",
+        "moderada": "Moderate",
+        "placeholder": "Select severity"
+      },
+      "injuries": {
+        "customizada": "Other injury",
+        "has": "I have an injury",
+        "joelho": "Knee",
+        "lombar": "Lower back",
+        "none": "No injuries",
+        "ombro": "Shoulder",
+        "punho": "Wrist",
+        "quadril": "Hip",
+        "tornozelo": "Ankle"
+      },
+      "modalities": {
+        "basquete": "Basketball",
+        "beach_tenis": "Beach tennis",
+        "futebol_futsal": "Football and futsal",
+        "volei": "Volleyball"
+      },
+      "places": {
+        "academia": "Gym",
+        "ar_livre": "Outdoors",
+        "casa": "Home"
+      }
+    },
+    "review": {
+      "backendCalculated": "Calculated from registration",
+      "years": "years old"
+    },
+    "reviewTitle": "Review",
+    "stepLabel": "Step {{current}} of {{total}}",
+    "steps": {
+      "body": "Physical profile",
+      "objective": "Sport objective",
+      "review": "Review",
+      "routine": "Routine",
+      "safety": "Environment and safety"
+    }
   },
   "auth": {
     "continueWithGoogle": "Continue with Google",
     "email": "Email",
     "loading": "Loading Funcione",
+    "loadingDescription": "Preparing your experience.",
     "password": "Password",
     "signedInFallback": "Authenticated user",
     "signIn": "Sign in",

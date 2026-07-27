@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import {
+  EquipamentoTreino,
   GravidadeLesao,
   LocalTreino,
   ModalidadeEsportiva,
@@ -8,6 +9,37 @@ import {
   TempoDisponivel,
   TipoLesao,
 } from './enums.js';
+import { createBoundedPromptTextSchema } from './prompt-text.js';
+
+const LesaoCustomizadaDescricaoSchema = createBoundedPromptTextSchema(120);
+const LesaoObservacaoSchema = createBoundedPromptTextSchema(180).optional();
+const EquipamentoCustomizadoDescricaoSchema = createBoundedPromptTextSchema(80);
+const DuracaoTreinoMinutosSchema = z.union([
+  z.literal(30),
+  z.literal(45),
+  z.literal(60),
+  z.literal(75),
+  z.literal(90),
+]);
+
+function reportDuplicateValues<T>(
+  values: readonly T[],
+  getValue: (value: T) => string,
+  message: string,
+  ctx: z.RefinementCtx,
+) {
+  const seenValues = new Set<string>();
+
+  values.forEach((value, index) => {
+    const uniqueValue = getValue(value);
+
+    if (seenValues.has(uniqueValue)) {
+      ctx.addIssue({ code: 'custom', message, path: [index] });
+    }
+
+    seenValues.add(uniqueValue);
+  });
+}
 
 export const LesaoUsuarioSchema = z.discriminatedUnion('tipo', [
   z.object({
@@ -19,14 +51,35 @@ export const LesaoUsuarioSchema = z.discriminatedUnion('tipo', [
       TipoLesao.Quadril,
       TipoLesao.Punho,
     ]),
-    gravidade: z.enum(GravidadeLesao).optional(),
-    observacoes: z.string().optional(),
+    gravidade: z.enum(GravidadeLesao),
+    observacoes: LesaoObservacaoSchema,
   }),
   z.object({
     tipo: z.literal(TipoLesao.Customizada),
-    descricao: z.string(),
-    gravidade: z.enum(GravidadeLesao).optional(),
-    observacoes: z.string().optional(),
+    descricao: LesaoCustomizadaDescricaoSchema,
+    gravidade: z.enum(GravidadeLesao),
+    observacoes: LesaoObservacaoSchema,
+  }),
+]);
+
+export const EquipamentoUsuarioSchema = z.discriminatedUnion('tipo', [
+  z.object({
+    tipo: z.enum([
+      EquipamentoTreino.Nenhum,
+      EquipamentoTreino.Halteres,
+      EquipamentoTreino.BarraAnilhas,
+      EquipamentoTreino.Elasticos,
+      EquipamentoTreino.BancoCaixa,
+      EquipamentoTreino.Colchonete,
+      EquipamentoTreino.Cones,
+      EquipamentoTreino.Corda,
+      EquipamentoTreino.MaquinasAcademia,
+      EquipamentoTreino.Bola,
+    ]),
+  }),
+  z.object({
+    tipo: z.literal(EquipamentoTreino.Customizado),
+    descricao: EquipamentoCustomizadoDescricaoSchema,
   }),
 ]);
 
@@ -36,13 +89,62 @@ export const DadosUsuarioSchema = z.object({
   idade: z.number().int().min(16).max(100),
   pesoKg: z.number().positive(),
   alturaCm: z.number().positive(),
-  objetivos: z.array(z.enum(ObjetivoTreino)).min(1),
+  objetivos: z
+    .array(z.enum(ObjetivoTreino))
+    .min(1)
+    .max(Object.values(ObjetivoTreino).length)
+    .superRefine((objetivos, ctx) => {
+      reportDuplicateValues(
+        objetivos,
+        (objetivo) => objetivo,
+        'Training goals must be unique.',
+        ctx,
+      );
+    }),
   nivelExperiencia: z.enum(NivelExperiencia),
   tempoDisponivel: z.enum(TempoDisponivel),
-  duracaoTreinoMinutos: z.number(),
+  duracaoTreinoMinutos: DuracaoTreinoMinutosSchema,
   localTreino: z.enum(LocalTreino),
-  lesoes: z.array(LesaoUsuarioSchema),
+  equipamentos: z
+    .array(EquipamentoUsuarioSchema)
+    .min(1)
+    .max(Object.values(EquipamentoTreino).length)
+    .superRefine((equipamentos, ctx) => {
+      reportDuplicateValues(
+        equipamentos,
+        (equipamento) => equipamento.tipo,
+        'Equipment types must be unique.',
+        ctx,
+      );
+
+      const hasNenhum = equipamentos.some(
+        (equipamento) => equipamento.tipo === EquipamentoTreino.Nenhum,
+      );
+
+      if (hasNenhum && equipamentos.length > 1) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Equipment "nenhum" cannot be combined with other equipment.',
+        });
+      }
+    }),
+  lesoes: z
+    .array(LesaoUsuarioSchema)
+    .max(Object.values(TipoLesao).length)
+    .superRefine((lesoes, ctx) => {
+      reportDuplicateValues(
+        lesoes,
+        (lesao) => lesao.tipo,
+        'Injury types must be unique.',
+        ctx,
+      );
+    }),
 });
+
+export const CreateMonthlyTrainingPlanRequestSchema = DadosUsuarioSchema.omit({
+  idade: true,
+  userId: true,
+}).strict();
 
 export const AlongamentoSchema = z.object({
   nome: z
@@ -103,6 +205,10 @@ export const PlanoTreinoSchema = z.object({
 });
 
 export type LesaoUsuario = z.infer<typeof LesaoUsuarioSchema>;
+export type EquipamentoUsuario = z.infer<typeof EquipamentoUsuarioSchema>;
+export type CreateMonthlyTrainingPlanRequest = z.infer<
+  typeof CreateMonthlyTrainingPlanRequestSchema
+>;
 export type DadosUsuario = z.infer<typeof DadosUsuarioSchema>;
 export type AlongamentoDTO = z.infer<typeof AlongamentoSchema>;
 export type ExercicioDTO = z.infer<typeof ExercicioSchema>;

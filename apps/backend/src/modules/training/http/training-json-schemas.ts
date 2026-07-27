@@ -1,4 +1,5 @@
 import {
+  EquipamentoTreino,
   GravidadeLesao,
   LocalTreino,
   ModalidadeEsportiva,
@@ -8,11 +9,60 @@ import {
   TipoLesao,
 } from '../domain/index.js';
 
+function normalizedTextDescription(maxLength: number): string {
+  return `Normalized server-side: must contain 1 to ${maxLength} characters after control-character removal and whitespace collapsing.`;
+}
+
+function normalizedTextJsonSchema(maxLength: number) {
+  return {
+    type: 'string',
+    description: normalizedTextDescription(maxLength),
+    minLength: 1,
+    maxLength,
+  } as const;
+}
+
+export const equipamentoUsuarioJsonSchema = {
+  anyOf: [
+    {
+      type: 'object',
+      required: ['tipo', 'descricao'],
+      additionalProperties: false,
+      properties: {
+        tipo: { type: 'string', enum: [EquipamentoTreino.Customizado] },
+        descricao: normalizedTextJsonSchema(80),
+      },
+    },
+    {
+      type: 'object',
+      required: ['tipo'],
+      additionalProperties: false,
+      properties: {
+        tipo: {
+          type: 'string',
+          enum: [
+            EquipamentoTreino.Nenhum,
+            EquipamentoTreino.Halteres,
+            EquipamentoTreino.BarraAnilhas,
+            EquipamentoTreino.Elasticos,
+            EquipamentoTreino.BancoCaixa,
+            EquipamentoTreino.Colchonete,
+            EquipamentoTreino.Cones,
+            EquipamentoTreino.Corda,
+            EquipamentoTreino.MaquinasAcademia,
+            EquipamentoTreino.Bola,
+          ],
+        },
+      },
+    },
+  ],
+} as const;
+
 const lesaoUsuarioJsonSchema = {
   oneOf: [
     {
       type: 'object',
-      required: ['tipo'],
+      required: ['tipo', 'gravidade'],
       additionalProperties: false,
       properties: {
         tipo: {
@@ -27,18 +77,18 @@ const lesaoUsuarioJsonSchema = {
           ],
         },
         gravidade: { type: 'string', enum: Object.values(GravidadeLesao) },
-        observacoes: { type: 'string' },
+        observacoes: normalizedTextJsonSchema(180),
       },
     },
     {
       type: 'object',
-      required: ['tipo', 'descricao'],
+      required: ['tipo', 'descricao', 'gravidade'],
       additionalProperties: false,
       properties: {
         tipo: { type: 'string', enum: [TipoLesao.Customizada] },
-        descricao: { type: 'string' },
+        descricao: normalizedTextJsonSchema(120),
         gravidade: { type: 'string', enum: Object.values(GravidadeLesao) },
-        observacoes: { type: 'string' },
+        observacoes: normalizedTextJsonSchema(180),
       },
     },
   ],
@@ -57,6 +107,7 @@ export const dadosUsuarioJsonSchema = {
     'tempoDisponivel',
     'duracaoTreinoMinutos',
     'localTreino',
+    'equipamentos',
     'lesoes',
   ],
   additionalProperties: false,
@@ -69,17 +120,42 @@ export const dadosUsuarioJsonSchema = {
     objetivos: {
       type: 'array',
       minItems: 1,
+      maxItems: Object.values(ObjetivoTreino).length,
+      uniqueItems: true,
       items: { type: 'string', enum: Object.values(ObjetivoTreino) },
     },
     nivelExperiencia: { type: 'string', enum: Object.values(NivelExperiencia) },
     tempoDisponivel: { type: 'string', enum: Object.values(TempoDisponivel) },
-    duracaoTreinoMinutos: { type: 'number' },
+    duracaoTreinoMinutos: { type: 'number', enum: [30, 45, 60, 75, 90] },
     localTreino: { type: 'string', enum: Object.values(LocalTreino) },
+    equipamentos: {
+      type: 'array',
+      minItems: 1,
+      maxItems: Object.values(EquipamentoTreino).length,
+      uniqueItems: true,
+      'x-uniqueBy': 'tipo',
+      items: equipamentoUsuarioJsonSchema,
+    },
     lesoes: {
       type: 'array',
+      maxItems: Object.values(TipoLesao).length,
+      uniqueItems: true,
+      'x-uniqueBy': 'tipo',
       items: lesaoUsuarioJsonSchema,
     },
   },
+} as const;
+
+const { idade: _idade, userId: _userId, ...createMonthlyTrainingPlanProperties } =
+  dadosUsuarioJsonSchema.properties;
+
+export const createMonthlyTrainingPlanBodyJsonSchema = {
+  type: 'object',
+  required: dadosUsuarioJsonSchema.required.filter(
+    (field) => field !== 'userId' && field !== 'idade',
+  ),
+  additionalProperties: false,
+  properties: createMonthlyTrainingPlanProperties,
 } as const;
 
 const alongamentoJsonSchema = {
@@ -171,5 +247,164 @@ export const generateTrainingPlanSuccessJsonSchema = {
     },
     durationMs: { type: 'number' },
     result: planoTreinoJsonSchema,
+  },
+} as const;
+
+export const monthlyTrainingPlanPublicJsonSchema = {
+  type: 'object',
+  required: [
+    'availableForRegenerationAt',
+    'generatedAt',
+    'id',
+    'result',
+    'snapshot',
+    'status',
+    'userId',
+  ],
+  additionalProperties: false,
+  properties: {
+    availableForRegenerationAt: { type: 'string', format: 'date-time' },
+    generatedAt: { type: 'string', format: 'date-time' },
+    id: { type: 'string' },
+    result: planoTreinoJsonSchema,
+    snapshot: dadosUsuarioJsonSchema,
+    status: { type: 'string', enum: ['active', 'expired'] },
+    userId: { type: 'string' },
+  },
+} as const;
+
+export const monthlyTrainingPlanGenerationPublicJsonSchema = {
+  type: 'object',
+  required: [
+    'completedAt',
+    'createdAt',
+    'errorMessage',
+    'failedAt',
+    'id',
+    'startedAt',
+    'status',
+    'updatedAt',
+    'userId',
+  ],
+  additionalProperties: false,
+  properties: {
+    completedAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    createdAt: { type: 'string', format: 'date-time' },
+    errorMessage: {
+      anyOf: [{ type: 'string' }, { type: 'null' }],
+    },
+    failedAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    id: { type: 'string' },
+    startedAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    status: {
+      type: 'string',
+      enum: ['queued', 'running', 'completed', 'failed'],
+    },
+    updatedAt: { type: 'string', format: 'date-time' },
+    userId: { type: 'string' },
+  },
+} as const;
+
+export const athleticProfilePublicJsonSchema = {
+  type: 'object',
+  required: [
+    'alturaCm',
+    'createdAt',
+    'equipamentosDisponiveis',
+    'lesoesRecorrentes',
+    'localTreinoComum',
+    'modalidadePreferida',
+    'nivelExperiencia',
+    'pesoKg',
+    'updatedAt',
+    'userId',
+  ],
+  additionalProperties: false,
+  properties: {
+    alturaCm: { type: 'number' },
+    createdAt: { type: 'string', format: 'date-time' },
+    equipamentosDisponiveis: {
+      type: 'array',
+      items: equipamentoUsuarioJsonSchema,
+    },
+    lesoesRecorrentes: {
+      type: 'array',
+      items: lesaoUsuarioJsonSchema,
+    },
+    localTreinoComum: { type: 'string', enum: Object.values(LocalTreino) },
+    modalidadePreferida: {
+      type: 'string',
+      enum: Object.values(ModalidadeEsportiva),
+    },
+    nivelExperiencia: {
+      type: 'string',
+      enum: Object.values(NivelExperiencia),
+    },
+    pesoKg: { type: 'number' },
+    updatedAt: { type: 'string', format: 'date-time' },
+    userId: { type: 'string' },
+  },
+} as const;
+
+export const activeMonthlyTrainingPlanResponseJsonSchema = {
+  type: 'object',
+  required: [
+    'activePlan',
+    'athleticProfile',
+    'canGenerate',
+    'nextGenerationAvailableAt',
+    'pendingGeneration',
+  ],
+  additionalProperties: false,
+  properties: {
+    activePlan: {
+      anyOf: [monthlyTrainingPlanPublicJsonSchema, { type: 'null' }],
+    },
+    athleticProfile: {
+      anyOf: [athleticProfilePublicJsonSchema, { type: 'null' }],
+    },
+    canGenerate: { type: 'boolean' },
+    nextGenerationAvailableAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    pendingGeneration: {
+      anyOf: [monthlyTrainingPlanGenerationPublicJsonSchema, { type: 'null' }],
+    },
+  },
+} as const;
+
+export const createMonthlyTrainingPlanResponseJsonSchema = {
+  type: 'object',
+  required: ['generation'],
+  additionalProperties: false,
+  properties: {
+    generation: monthlyTrainingPlanGenerationPublicJsonSchema,
+  },
+} as const;
+
+export const monthlyTrainingPlanGenerationStatusParamsJsonSchema = {
+  type: 'object',
+  required: ['generationId'],
+  additionalProperties: false,
+  properties: {
+    generationId: { type: 'string' },
+  },
+} as const;
+
+export const monthlyTrainingPlanGenerationStatusResponseJsonSchema = {
+  type: 'object',
+  required: ['generation', 'plan'],
+  additionalProperties: false,
+  properties: {
+    generation: monthlyTrainingPlanGenerationPublicJsonSchema,
+    plan: {
+      anyOf: [monthlyTrainingPlanPublicJsonSchema, { type: 'null' }],
+    },
   },
 } as const;

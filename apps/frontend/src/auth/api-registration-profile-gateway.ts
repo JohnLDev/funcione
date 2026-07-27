@@ -5,18 +5,39 @@ import type {
   RegistrationProfileInput,
   RegistrationProfileState,
 } from './registration-profile.js';
+import { RegistrationProfileGatewayError as ProfileGatewayError } from './registration-profile.js';
 
-async function parseErrorMessage(response: Response): Promise<string> {
+type ApiErrorResponse = {
+  error?: {
+    code?: string;
+    details?: Record<string, unknown>;
+    message?: string;
+    requestId?: string;
+    userMessageKey?: string;
+  };
+};
+
+type ParsedRegistrationError = {
+  code?: string;
+  details?: Record<string, unknown>;
+  message: string;
+  requestId?: string;
+  userMessageKey?: string;
+};
+
+async function parseApiError(response: Response): Promise<ParsedRegistrationError> {
   try {
-    const body = (await response.json()) as {
-      error?: {
-        message?: string;
-      };
-    };
+    const body = (await response.json()) as ApiErrorResponse;
 
-    return body.error?.message ?? 'Registration profile request failed.';
+    return {
+      code: body.error?.code,
+      details: body.error?.details,
+      message: body.error?.message ?? 'Registration profile request failed.',
+      requestId: body.error?.requestId,
+      userMessageKey: body.error?.userMessageKey,
+    };
   } catch {
-    return 'Registration profile request failed.';
+    return { message: 'Registration profile request failed.' };
   }
 }
 
@@ -26,8 +47,16 @@ export function createApiRegistrationProfileGateway(): RegistrationProfileGatewa
       accessToken: string,
       profile: RegistrationProfileInput,
     ): Promise<RegistrationProfileActionResult> => {
+      const requestBody: RegistrationProfileInput = {
+        birthDate: profile.birthDate,
+        cpf: profile.cpf,
+        email: profile.email,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        phoneNumber: profile.phoneNumber,
+      };
       const response = await fetch('/api/auth/profile', {
-        body: JSON.stringify(profile),
+        body: JSON.stringify(requestBody),
         headers: {
           authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
@@ -36,9 +65,19 @@ export function createApiRegistrationProfileGateway(): RegistrationProfileGatewa
       });
 
       if (!response.ok) {
+        const error = await parseApiError(response);
+
         return {
+          error: {
+            code: error.code ?? 'REGISTRATION_PROFILE_REQUEST_FAILED',
+            details: error.details,
+            message: error.message,
+            requestId: error.requestId,
+            source: 'registration',
+            userMessageKey: error.userMessageKey,
+          },
           ok: false,
-          message: await parseErrorMessage(response),
+          message: error.message,
         };
       }
 
@@ -61,7 +100,15 @@ export function createApiRegistrationProfileGateway(): RegistrationProfileGatewa
       });
 
       if (!response.ok) {
-        throw new Error(await parseErrorMessage(response));
+        const error = await parseApiError(response);
+
+        throw new ProfileGatewayError({
+          code: error.code ?? 'REGISTRATION_PROFILE_REQUEST_FAILED',
+          details: error.details,
+          message: error.message,
+          requestId: error.requestId,
+          userMessageKey: error.userMessageKey,
+        });
       }
 
       return (await response.json()) as RegistrationProfileState;

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import './i18n/index.js';
 import { App } from './App.js';
+import { registerServiceWorker } from './pwa/register-service-worker.js';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -15,3 +16,5 @@ ReactDOM.createRoot(app).render(
     <App />
   </React.StrictMode>,
 );
+
+registerServiceWorker();

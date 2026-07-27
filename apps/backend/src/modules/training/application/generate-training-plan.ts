@@ -43,6 +43,7 @@ export type TrainingPlanGenerator = (
 export type GenerateTrainingPlanDependencies = {
   env?: NodeJS.ProcessEnv;
   now?: () => number;
+  modelTimeoutMs?: number;
   modelCandidates?: InstructorModelConfig[];
   createAgent?: (
     modelConfig: InstructorModelConfig,
@@ -63,24 +64,92 @@ function getPrimaryProvider(env: NodeJS.ProcessEnv): SupportedProvider {
 function createModelConfig(
   provider: SupportedProvider,
   env: NodeJS.ProcessEnv,
+  timeoutMs: number,
 ): InstructorModelConfig {
   if (provider === 'openrouter') {
-    return createOpenRouterModel(env.OPENROUTER_MODEL ?? 'openai/gpt-oss-120b', env);
+    return createOpenRouterModel(
+      env.OPENROUTER_MODEL ?? 'openai/gpt-oss-120b',
+      env,
+      timeoutMs,
+    );
   }
 
-  return createNvidiaModel(env.NVIDIA_MODEL ?? 'openai/gpt-oss-120b', env);
+  return createNvidiaModel(
+    env.NVIDIA_MODEL ?? 'openai/gpt-oss-120b',
+    env,
+    timeoutMs,
+  );
 }
 
-function createModelCandidates(env: NodeJS.ProcessEnv): InstructorModelConfig[] {
+function createModelCandidates(
+  env: NodeJS.ProcessEnv,
+  timeoutMs: number,
+): InstructorModelConfig[] {
   const primaryProvider = getPrimaryProvider(env);
   const fallbackProvider: SupportedProvider =
     primaryProvider === 'nvidia' ? 'openrouter' : 'nvidia';
 
-  return [createModelConfig(primaryProvider, env), createModelConfig(fallbackProvider, env)];
+  return [
+    createModelConfig(primaryProvider, env, timeoutMs),
+    createModelConfig(fallbackProvider, env, timeoutMs),
+  ];
 }
 
 function stringifyError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function getModelTimeoutMs(
+  env: NodeJS.ProcessEnv,
+  override?: number,
+): number {
+  const timeoutMs = override ?? Number(env.TRAINING_PLAN_MODEL_TIMEOUT_MS);
+
+  return Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 600_000;
+}
+
+function summarizeFailedAttempts(attempts: ModelAttempt[]): string {
+  const details = attempts
+    .filter((attempt) => attempt.status === 'error')
+    .map((attempt) => {
+      const error = attempt.error ?? 'erro desconhecido';
+      const compactError =
+        error.length > 240 ? `${error.slice(0, 237)}...` : error;
+
+      return `${attempt.provider}/${attempt.model}: ${compactError}`;
+    });
+
+  if (details.length === 0) {
+    return 'Todos os providers configurados falharam.';
+  }
+
+  return `Todos os providers configurados falharam: ${details.join('; ')}`;
+}
+
+async function withTimeout<T>(
+  operation: () => Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  let didTimeout = false;
+  const operationPromise = operation();
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      didTimeout = true;
+      reject(new Error(`Model attempt timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([operationPromise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId!);
+
+    if (didTimeout) {
+      // Soft timeout: provider SDKs may keep their network call alive until settled.
+      operationPromise.catch(() => undefined);
+    }
+  }
 }
 
 function getMissingCredentialError(
@@ -108,7 +177,9 @@ export async function generateTrainingPlan(
     dependencies.createAgent ??
     ((modelConfig: InstructorModelConfig) => InstructorAgent.createAgent(modelConfig));
   const onModelEvent = dependencies.onModelEvent ?? (() => undefined);
-  const candidates = dependencies.modelCandidates ?? createModelCandidates(env);
+  const modelTimeoutMs = getModelTimeoutMs(env, dependencies.modelTimeoutMs);
+  const candidates = dependencies.modelCandidates ?? createModelCandidates(env, modelTimeoutMs);
+  const generationStartedAt = now();
   const attempts: ModelAttempt[] = [];
 
   for (const [index, modelConfig] of candidates.entries()) {
@@ -139,7 +210,10 @@ export async function generateTrainingPlan(
 
     try {
       const agent = createAgent(modelConfig);
-      const result = await agent.createTrainingPlan(input);
+      const result = await withTimeout(
+        () => agent.createTrainingPlan(input),
+        modelTimeoutMs,
+      );
       const attempt: ModelAttempt = {
         ...baseLog,
         status: 'success',
@@ -154,7 +228,7 @@ export async function generateTrainingPlan(
         model: modelConfig.modelName,
         fallbackUsed: role === 'fallback',
         attempts,
-        durationMs: attempt.durationMs,
+        durationMs: now() - generationStartedAt,
         result,
       };
     } catch (error) {
@@ -173,6 +247,6 @@ export async function generateTrainingPlan(
   return {
     fallbackUsed: attempts.length > 1,
     attempts,
-    error: 'Todos os providers configurados falharam.',
+    error: summarizeFailedAttempts(attempts),
   };
 }

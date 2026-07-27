@@ -1,7 +1,7 @@
-import 'dotenv/config';
 import { buildApp } from './app.js';
-import { getServerConfig } from './shared/config/env.js';
+import { getServerConfig, loadServerEnv } from './shared/config/env.js';
 
+loadServerEnv();
 const config = getServerConfig();
 const app = await buildApp({ logger: true });
 

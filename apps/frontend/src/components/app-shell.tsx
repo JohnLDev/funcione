@@ -1,78 +1,104 @@
 import {
-  Activity,
-  BarChart3,
-  CalendarDays,
   Dumbbell,
   Home,
   LogOut,
-  ShieldCheck,
   UserRound,
-  Zap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Badge } from './ui/badge.js';
-import { Button } from './ui/button.js';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from './ui/card.js';
-import { Progress } from './ui/progress.js';
-import { LanguageToggle } from './language-toggle.js';
-import { ProductLogo } from './product-logo.js';
-import { ThemeToggle } from './theme-toggle.js';
-import { cn } from '@/lib/utils.js';
+import { Link, NavLink } from 'react-router';
+import { useAuth } from '@/auth/use-auth.js';
 import type { AuthUser } from '@/auth/types.js';
+import { Button } from './ui/button.js';
+import { ProductLogo } from './product-logo.js';
+import { SettingsMenu } from './settings-menu.js';
+import { cn } from '@/lib/utils.js';
 
 const navigationItems = [
-  { icon: Home, labelKey: 'dashboard.bottomNav.home', active: true },
-  { icon: Dumbbell, labelKey: 'dashboard.bottomNav.workout', active: false },
-  { icon: BarChart3, labelKey: 'dashboard.bottomNav.history', active: false },
-  { icon: UserRound, labelKey: 'dashboard.bottomNav.profile', active: false },
+  {
+    icon: Home,
+    isRouteDestination: true,
+    labelKey: 'dashboard.bottomNav.home',
+    to: '/dashboard',
+  },
+  {
+    icon: Dumbbell,
+    labelKey: 'dashboard.bottomNav.workout',
+    to: '/training',
+  },
+  {
+    icon: UserRound,
+    labelKey: 'dashboard.bottomNav.profile',
+    to: '/profile',
+  },
 ] as const;
 
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
+function getDisplayName({
+  fallback,
+  firstName,
+  fullName,
+  lastName,
 }: {
-  icon: typeof Zap;
-  label: string;
-  value: string;
+  fallback: string;
+  firstName?: string | null;
+  fullName?: string | null;
+  lastName?: string | null;
+}) {
+  const nameParts = [firstName, lastName].filter(Boolean);
+  const joinedName = nameParts.join(' ').trim();
+
+  return joinedName || fullName || fallback;
+}
+
+function DashboardNavigationLink({
+  children,
+  className,
+  item,
+}: {
+  children: React.ReactNode;
+  className: string;
+  item: (typeof navigationItems)[number];
 }) {
   return (
-    <Card className="rounded-2xl bg-card/88">
-      <CardContent className="flex items-center gap-3 p-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
-          <Icon aria-hidden="true" size={20} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-          <p className="mt-0.5 truncate text-xl font-black text-foreground">
-            {value}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <NavLink
+      className={({ isActive }) =>
+        cn(
+          className,
+          isActive
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+        )
+      }
+      to={item.to}
+    >
+      {children}
+    </NavLink>
   );
 }
 
 export function AppShell({
+  children,
   onSignOut,
   user,
 }: {
+  children?: React.ReactNode;
   onSignOut: () => void;
   user: AuthUser;
 }) {
   const { t } = useTranslation();
-  const userLabel = user.email ?? t('auth.signedInFallback');
+  const { profileState } = useAuth();
+  const profile = profileState?.profile;
+  const emailLabel = profile?.email ?? user.email ?? t('auth.signedInFallback');
+  const userLabel = getDisplayName({
+    fallback: emailLabel,
+    firstName: profile?.firstName ?? user.firstName,
+    fullName: user.fullName,
+    lastName: profile?.lastName ?? user.lastName,
+  });
 
   return (
     <div className="min-h-dvh overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 md:px-8 md:pb-8">
       <div className="mx-auto grid w-full max-w-6xl gap-5 md:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="hidden rounded-[2rem] border border-border bg-card/70 p-4 shadow-sm backdrop-blur md:block">
+        <aside className="hidden min-h-[calc(100dvh-2rem)] flex-col rounded-[2rem] border border-border bg-card/70 p-4 shadow-sm backdrop-blur md:sticky md:top-4 md:flex">
           <div className="flex items-center gap-3">
             <ProductLogo className="h-12 w-24" decorative />
             <div>
@@ -82,23 +108,25 @@ export function AppShell({
           </div>
           <nav className="mt-8 grid gap-2">
             {navigationItems.map((item) => (
-              <button
+              <DashboardNavigationLink
+                className="flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold transition-colors"
                 key={item.labelKey}
-                className={cn(
-                  'flex min-h-12 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-muted-foreground transition-colors',
-                  item.active && 'bg-primary text-primary-foreground',
-                )}
-                type="button"
+                item={item}
               >
                 <item.icon aria-hidden="true" size={18} />
                 {t(item.labelKey)}
-              </button>
+              </DashboardNavigationLink>
             ))}
           </nav>
-          <div className="mt-8 rounded-2xl border border-border bg-background/50 p-3">
+          <div className="mt-auto rounded-2xl border border-border bg-background/50 p-3">
             <p className="truncate text-xs font-bold text-muted-foreground">
               {userLabel}
             </p>
+            {emailLabel !== userLabel ? (
+              <p className="mt-1 truncate text-xs font-bold text-muted-foreground/75">
+                {emailLabel}
+              </p>
+            ) : null}
             <Button
               className="mt-3 w-full"
               onClick={onSignOut}
@@ -112,121 +140,78 @@ export function AppShell({
           </div>
         </aside>
 
-        <main className="min-w-0">
-          <header className="grid gap-3 sm:flex sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-start">
-              <ProductLogo className="h-10 w-32 max-[360px]:w-28 sm:h-12 sm:w-32" />
-              <div className="flex shrink-0 items-center gap-2 sm:hidden">
-                <LanguageToggle />
-                <ThemeToggle />
-              </div>
-            </div>
-            <div className="flex min-w-0 items-end justify-between gap-3 sm:flex-1 sm:items-center">
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-primary">{t('brand.byline')}</p>
-                <h1 className="truncate text-3xl font-black leading-none text-foreground">
-                  {t('brand.name')}
-                </h1>
-                <p className="mt-1 max-w-[14rem] truncate text-xs font-bold text-muted-foreground sm:max-w-xs">
+        <main className="flex min-h-[calc(100dvh-2rem)] min-w-0 flex-col">
+          <header className="flex items-center justify-between gap-3" role="banner">
+            <div className="flex min-w-0 items-center gap-3">
+              <ProductLogo className="h-10 w-32 max-[360px]:w-28 md:hidden" />
+              <div className="hidden min-w-0 md:block">
+                <p className="truncate text-xs font-bold text-muted-foreground">
                   {userLabel}
                 </p>
+                <h1 className="truncate text-2xl font-black leading-tight text-foreground">
+                  {t('dashboard.shellTitle')}
+                </h1>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  aria-label={t('auth.signOut')}
-                  onClick={onSignOut}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <LogOut aria-hidden="true" size={18} />
-                  <span className="hidden sm:inline">{t('auth.signOut')}</span>
-                </Button>
-              </div>
-              <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                <LanguageToggle />
-                <ThemeToggle />
-              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <SettingsMenu />
+              <Button
+                aria-label={t('auth.signOut')}
+                className="md:hidden"
+                onClick={onSignOut}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <LogOut aria-hidden="true" size={18} />
+              </Button>
             </div>
           </header>
 
-          <section className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <Card className="relative overflow-hidden rounded-[2rem] border-primary/25 bg-gradient-to-br from-primary/20 via-card to-card">
-              <div className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-primary/30 blur-3xl" />
-              <CardHeader className="relative p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <CardDescription className="font-semibold">
-                      {t('dashboard.eyebrow')}
-                    </CardDescription>
-                    <CardTitle className="mt-2 text-4xl font-black">
-                      {t('dashboard.title')}
-                    </CardTitle>
-                    <p className="mt-2 text-sm font-semibold text-muted-foreground">
-                      {t('dashboard.subtitle')}
-                    </p>
-                  </div>
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-primary-foreground shadow-[0_18px_42px_rgba(0,89,255,0.28)]">
-                    9
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="relative p-5 pt-0">
-                <div className="flex items-center justify-between gap-3 text-xs font-bold text-muted-foreground">
-                  <span>{t('dashboard.progressLabel')}</span>
-                  <span>68%</span>
-                </div>
-                <Progress className="mt-2" value={68} />
-                <Button className="mt-5 w-full" type="button">
-                  <Zap aria-hidden="true" size={18} />
-                  {t('actions.startWorkout')}
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="min-w-0">{children}</div>
 
-            <div className="grid gap-3">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-                <MetricCard
-                  icon={Activity}
-                  label={t('metrics.load')}
-                  value={t('metrics.loadValue')}
-                />
-                <MetricCard
-                  icon={ShieldCheck}
-                  label={t('metrics.impact')}
-                  value={t('metrics.impactValue')}
-                />
-              </div>
-              <Card className="rounded-3xl bg-foreground text-background">
-                <CardContent className="p-4">
-                  <Badge className="mb-3" variant="secondary">
-                    <CalendarDays aria-hidden="true" size={14} />
-                    {t('dashboard.nextBlockLabel')}
-                  </Badge>
-                  <p className="text-xl font-black">{t('dashboard.nextBlock')}</p>
-                </CardContent>
-              </Card>
+          <footer
+            aria-label={t('footer.label')}
+            className="mt-8 flex flex-col gap-3 border-t border-border/70 pb-1 pt-4 text-xs font-bold text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:mt-auto"
+            role="contentinfo"
+          >
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link
+                className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                to="/terms"
+              >
+                {t('footer.terms')}
+              </Link>
+              <Link
+                className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                to="/privacy"
+              >
+                {t('footer.privacy')}
+              </Link>
             </div>
-          </section>
+            <img
+              alt={t('brand.milexLogoAlt')}
+              className="h-8 w-fit object-contain brightness-75 contrast-125 drop-shadow-[0_14px_30px_rgba(0,89,255,0.2)] dark:brightness-100 dark:contrast-100"
+              data-testid="footer-milex-logo"
+              src="/brand/milex-logo-transparent.png"
+            />
+          </footer>
         </main>
       </div>
 
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-3 bottom-3 z-10 grid grid-cols-4 rounded-[1.5rem] border border-border bg-card/92 p-2 shadow-2xl backdrop-blur md:hidden"
+        className="fixed inset-x-3 bottom-3 z-10 grid grid-cols-3 rounded-[1.5rem] border border-border bg-card/92 p-2 shadow-2xl backdrop-blur md:hidden"
       >
         {navigationItems.map((item) => (
-          <button
+          <DashboardNavigationLink
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[0.7rem] font-bold"
             key={item.labelKey}
-            className={cn(
-              'flex min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-[0.7rem] font-bold text-muted-foreground',
-              item.active && 'bg-primary text-primary-foreground',
-            )}
-            type="button"
+            item={item}
           >
             <item.icon aria-hidden="true" size={18} />
             <span>{t(item.labelKey)}</span>
-          </button>
+          </DashboardNavigationLink>
         ))}
       </nav>
     </div>

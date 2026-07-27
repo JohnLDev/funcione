@@ -84,6 +84,133 @@ describe('auth routes', () => {
     ]);
   });
 
+  it('uses a request scoped user profile repository when a factory is provided', async () => {
+    const calls: string[] = [];
+    const app = await buildApp({
+      authVerifier: async () => ({
+        authenticated: true,
+        user: {
+          email: 'athlete@funcione.app',
+          id: 'user-123',
+          provider: 'password',
+        },
+      }),
+      userProfileRepositoryFactory: (accessToken) => {
+        calls.push(accessToken);
+
+        return createInMemoryUserProfileRepository();
+      },
+    });
+
+    const response = await app.inject({
+      headers: { authorization: 'Bearer scoped-token' },
+      method: 'GET',
+      url: '/api/auth/profile',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(calls, ['scoped-token']);
+  });
+
+  it('builds a user-scoped Supabase profile repository from server config', async () => {
+    const originalSupabaseUrl = process.env.SUPABASE_URL;
+    const originalSupabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const requests: Request[] = [];
+    process.env.SUPABASE_URL = 'https://project.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY = 'publishable-key';
+
+    let app;
+    try {
+      app = await buildApp({
+        authVerifier: authenticatedAuthVerifier,
+        supabaseFetch: async (input, init) => {
+          const request = new Request(input, init);
+          requests.push(request);
+
+          return Response.json({
+            birth_date: '1994-08-20',
+            cpf: '52998224725',
+            created_at: '2026-07-23T12:00:00.000Z',
+            email: 'athlete@funcione.app',
+            first_name: 'Joao',
+            last_name: 'Silva',
+            phone_number: '11999999999',
+            updated_at: '2026-07-23T12:00:00.000Z',
+            user_id: 'user-123',
+          });
+        },
+      });
+    } finally {
+      if (originalSupabaseUrl === undefined) {
+        delete process.env.SUPABASE_URL;
+      } else {
+        process.env.SUPABASE_URL = originalSupabaseUrl;
+      }
+      if (originalSupabasePublishableKey === undefined) {
+        delete process.env.SUPABASE_PUBLISHABLE_KEY;
+      } else {
+        process.env.SUPABASE_PUBLISHABLE_KEY = originalSupabasePublishableKey;
+      }
+    }
+
+    const response = await app.inject({
+      headers: { authorization: 'Bearer scoped-token' },
+      method: 'GET',
+      url: '/api/auth/profile',
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().completed, true);
+    assert.equal(requests.length, 1);
+    assert.equal(
+      requests[0]?.headers.get('authorization'),
+      'Bearer scoped-token',
+    );
+  });
+
+  it('persists a profile through the request scoped repository on PUT', async () => {
+    const requestScopedRepository = createInMemoryUserProfileRepository();
+    const factoryTokens: string[] = [];
+    const app = await buildApp({
+      authVerifier: authenticatedAuthVerifier,
+      userProfileRepositoryFactory: (accessToken) => {
+        factoryTokens.push(accessToken);
+
+        return requestScopedRepository;
+      },
+    });
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/auth/profile',
+      headers: {
+        authorization: 'Bearer scoped-put-token',
+      },
+      payload: {
+        firstName: 'Joao',
+        lastName: 'Silva',
+        cpf: '52998224725',
+        birthDate: '1994-08-20',
+        phoneNumber: '11999999999',
+        email: 'athlete@funcione.app',
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(factoryTokens, ['scoped-put-token']);
+    assert.deepEqual(await requestScopedRepository.findByUserId('user-123'), {
+      birthDate: '1994-08-20',
+      cpf: '52998224725',
+      createdAt: response.json().profile.createdAt,
+      email: 'athlete@funcione.app',
+      firstName: 'Joao',
+      lastName: 'Silva',
+      phoneNumber: '11999999999',
+      updatedAt: response.json().profile.updatedAt,
+      userId: 'user-123',
+    });
+  });
+
   it('rejects invalid registration profile payloads', async () => {
     const app = await buildApp({
       authVerifier: authenticatedAuthVerifier,

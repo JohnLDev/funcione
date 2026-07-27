@@ -2,19 +2,73 @@
   "brand": {
     "name": "Funcione",
     "byline": "by MileX",
-    "logoAlt": "Logo oficial do Funcione"
+    "logoAlt": "Logo oficial do Funcione",
+    "milexLogoAlt": "Logo oficial da MileX"
+  },
+  "footer": {
+    "label": "Rodape",
+    "privacy": "Politica de privacidade",
+    "terms": "Termos de uso"
+  },
+  "legal": {
+    "backToApp": "Voltar para area do atleta",
+    "backToLogin": "Voltar para login"
+  },
+  "toast": {
+    "dismiss": "Fechar notificacao",
+    "label": "Feedback do sistema",
+    "region": "Notificacoes do sistema",
+    "severity": {
+      "error": "Ajuste necessario",
+      "info": "Informacao",
+      "success": "Tudo certo",
+      "warning": "Atencao"
+    }
+  },
+  "errors": {
+    "auth": {
+      "emailConfirmationRequired": "Confira seu e-mail para confirmar sua conta.",
+      "invalidCredentials": "E-mail ou senha invalidos.",
+      "sessionExpired": "Sua sessao expirou. Entre novamente.",
+      "signInFailed": "Nao foi possivel entrar agora.",
+      "signOutFailed": "Nao foi possivel sair agora.",
+      "signUpFailed": "Nao foi possivel criar sua conta agora.",
+      "socialLoginFailed": "Nao foi possivel entrar com o Google agora.",
+      "supabaseNotConfigured": "A autenticacao ainda nao esta configurada."
+    },
+    "common": {
+      "unexpected": "Algo saiu do ritmo. Tente novamente em instantes."
+    },
+    "network": {
+      "requestFailed": "Nao foi possivel conectar agora. Verifique sua conexao."
+    },
+    "registration": {
+      "authRequired": "Entre novamente para concluir seu cadastro.",
+      "invalidPayload": "Nao foi possivel aceitar os dados do cadastro.",
+      "requestFailed": "Nao foi possivel atualizar seu cadastro."
+    },
+    "training": {
+      "generationFailed": "A geracao do treino falhou. Voce pode tentar novamente.",
+      "generationUnavailable": "Nao foi possivel consultar a geracao do treino.",
+      "monthlyPlanAlreadyActive": "Voce ja tem um plano ativo neste periodo.",
+      "requestFailed": "Nao foi possivel atualizar o plano de treino."
+    }
   },
   "dashboard": {
-    "eyebrow": "Plano de hoje",
-    "title": "Potencia",
-    "subtitle": "Volei • 90 min • intermediario",
-    "progressLabel": "Progresso do treino",
-    "nextBlockLabel": "Proximo bloco",
-    "nextBlock": "Aterrissagem controlada",
+    "activeTitle": "Treino ativo",
+    "openProfile": "Ver perfil",
+    "openTraining": "Ver treino",
+    "profileCardTitle": "Perfil do atleta",
+    "requestDescription": "Solicite um plano mensal gerado a partir do seu perfil esportivo, disponibilidade, equipamentos e restricoes.",
+    "requestTitle": "Solicitar treino",
+    "shellTitle": "Area do atleta",
+    "trainingBadge": "Plano mensal",
+    "welcomeEyebrow": "Ola, {{name}}",
+    "welcomeText": "Vamos treinar? Seu plano fica concentrado aqui para facilitar sua rotina.",
+    "welcomeTitle": "Pronto para deixar sua vida mais facil?",
     "bottomNav": {
       "home": "Inicio",
       "workout": "Treino",
-      "history": "Historico",
       "profile": "Perfil"
     }
   },
@@ -25,12 +79,185 @@
     "impactValue": "Seguro"
   },
   "actions": {
+    "requestWorkout": "Solicitar treino",
     "startWorkout": "Iniciar treino"
+  },
+  "settings": {
+    "button": "Configuracoes",
+    "title": "Configuracoes"
+  },
+  "profile": {
+    "athleteDescription": "Dados usados para personalizar solicitacoes de treino.",
+    "athleteEmpty": "Seu perfil atletico sera formado a partir do primeiro plano solicitado.",
+    "athleteTitle": "Perfil atletico",
+    "registrationDescription": "Dados principais da sua conta Funcione.",
+    "registrationEmpty": "Cadastro nao encontrado.",
+    "registrationTitle": "Cadastro",
+    "title": "Perfil do atleta"
+  },
+  "training": {
+    "active": {
+      "emptyExercises": "Nenhum exercicio principal para esta sessao",
+      "emptyStretches": "Nenhum alongamento ou mobilidade para esta sessao",
+      "exerciseCount_one": "{{count}} exercicio",
+      "exerciseCount_other": "{{count}} exercicios",
+      "exercises": "Exercicios principais",
+      "generated": "Gerado em {{date}}",
+      "minutes": "min",
+      "nextGeneration": "Proxima geracao disponivel em {{date}}",
+      "observations": "Observacoes",
+      "openDetails": "Abrir detalhes",
+      "openDetailsLabel": "Abrir detalhes de {{session}}",
+      "seconds": "s",
+      "stretchCount_one": "{{count}} alongamento",
+      "stretchCount_other": "{{count}} alongamentos",
+      "stretches": "Alongamentos e mobilidade",
+      "summary": "Resumo do plano"
+    },
+    "activeTitle": "Plano ativo",
+    "back": "Voltar",
+    "confirmGeneration": {
+      "cancel": "Cancelar",
+      "confirm": "Confirmar geracao",
+      "message": "Ao confirmar, este treino sera gerado como seu plano ativo e so podera ser regerado depois de 30 dias.",
+      "title": "Confirmar geracao do plano"
+    },
+    "continue": "Continuar",
+    "errors": {
+      "generationFailed": "A geracao do treino falhou. Voce pode tentar novamente.",
+      "requestFailed": "Nao foi possivel atualizar o plano de treino.",
+      "sessionExpired": "Sua sessao expirou. Entre novamente para gerar o treino."
+    },
+    "fields": {
+      "age": "Idade",
+      "body": "Perfil fisico",
+      "customEquipment": "Descreva o equipamento",
+      "customInjury": "Descreva a lesao",
+      "duration": "Duracao do treino",
+      "equipment": "Equipamentos",
+      "experience": "Nivel de experiencia",
+      "frequency": "Frequencia",
+      "goals": "Objetivos",
+      "height": "Altura em cm",
+      "injuries": "Lesoes",
+      "injuryObservation": "Observacao da lesao",
+      "injuryObservationFor": "Observacao de {{injury}}",
+      "injurySeverityFor": "Gravidade de {{injury}}",
+      "modality": "Modalidade",
+      "place": "Local de treino",
+      "routine": "Rotina",
+      "safety": "Ambiente e seguranca",
+      "weight": "Peso em kg"
+    },
+    "generate": "Gerar plano",
+    "generating": "Gerando plano",
+    "generationFeedback": {
+      "connect": "Conectando com a IA",
+      "longRunning": "A IA ainda esta montando o treino. Mantenha esta tela aberta.",
+      "prepare": "Preparando dados",
+      "save": "Salvando plano",
+      "statusLabel": "Andamento da geracao",
+      "subtitle": "Isso pode levar alguns segundos.",
+      "title": "Gerando seu plano mensal"
+    },
+    "loading": "Carregando plano de treino",
+    "loadingDescription": "Buscando seu plano ativo e historico recente.",
+    "monthlyLimitNotice": "Voce podera gerar outro plano depois de 30 dias.",
+    "newTitle": "Novo plano de treino",
+    "pendingDescription": "Estamos preparando seu plano sem travar sua navegacao.",
+    "pendingMessage": "Seu treino foi solicitado e esta sendo processado. Assim que terminar, o plano ativo aparecera aqui.",
+    "pendingTitle": "Geracao em andamento",
+    "retry": "Tentar novamente",
+    "options": {
+      "availability": {
+        "2x_semana": "2x por semana",
+        "3x_semana": "3x por semana",
+        "4x_semana": "4x por semana",
+        "5x_semana": "5x por semana",
+        "6x_semana": "6x por semana",
+        "7x_semana": "7x por semana"
+      },
+      "duration": {
+        "30": "30 minutos",
+        "45": "45 minutos",
+        "60": "60 minutos",
+        "75": "75 minutos",
+        "90": "90 minutos"
+      },
+      "equipment": {
+        "banco_caixa": "Banco ou caixa",
+        "barra_anilhas": "Barra e anilhas",
+        "bola": "Bola",
+        "colchonete": "Colchonete",
+        "cones": "Cones",
+        "corda": "Corda",
+        "customizado": "Outro equipamento",
+        "elasticos": "Elasticos",
+        "halteres": "Halteres",
+        "maquinas_academia": "Maquinas de academia",
+        "nenhum": "Nenhum"
+      },
+      "experience": {
+        "avancado": "Avancado",
+        "iniciante": "Iniciante",
+        "intermediario": "Intermediario",
+        "profissional": "Profissional"
+      },
+      "goals": {
+        "condicionamento": "Condicionamento",
+        "ganho_massa": "Ganho de massa",
+        "performance": "Performance",
+        "perda_peso": "Perda de peso",
+        "prevencao_lesao": "Prevencao de lesao"
+      },
+      "injurySeverity": {
+        "alta": "Alta",
+        "leve": "Leve",
+        "moderada": "Moderada",
+        "placeholder": "Selecione a gravidade"
+      },
+      "injuries": {
+        "customizada": "Outra lesao",
+        "has": "Tenho lesao",
+        "joelho": "Joelho",
+        "lombar": "Lombar",
+        "none": "Sem lesoes",
+        "ombro": "Ombro",
+        "punho": "Punho",
+        "quadril": "Quadril",
+        "tornozelo": "Tornozelo"
+      },
+      "modalities": {
+        "basquete": "Basquete",
+        "beach_tenis": "Beach tenis",
+        "futebol_futsal": "Futebol e futsal",
+        "volei": "Volei"
+      },
+      "places": {
+        "academia": "Academia",
+        "ar_livre": "Ar livre",
+        "casa": "Casa"
+      }
+    },
+    "review": {
+      "backendCalculated": "Calculada pelo cadastro",
+      "years": "anos"
+    },
+    "reviewTitle": "Revisao",
+    "stepLabel": "Etapa {{current}} de {{total}}",
+    "steps": {
+      "body": "Perfil fisico",
+      "objective": "Objetivo esportivo",
+      "review": "Revisao",
+      "routine": "Rotina",
+      "safety": "Ambiente e seguranca"
+    }
   },
   "auth": {
     "continueWithGoogle": "Continuar com Google",
     "email": "E-mail",
     "loading": "Carregando Funcione",
+    "loadingDescription": "Preparando sua experiencia.",
     "password": "Senha",
     "signedInFallback": "Usuario autenticado",
     "signIn": "Entrar",

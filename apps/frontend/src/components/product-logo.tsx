@@ -15,10 +15,10 @@ export function ProductLogo({
       alt={decorative ? '' : t('brand.logoAlt')}
       aria-hidden={decorative ? 'true' : undefined}
       className={cn(
-        'shrink-0 rounded-xl border border-primary/30 bg-[#02040a] object-contain shadow-[0_18px_42px_rgba(0,89,255,0.22)]',
+        'shrink-0 object-contain brightness-75 drop-shadow-[0_18px_42px_rgba(0,89,255,0.26)] dark:brightness-100',
         className,
       )}
-      src="/brand/funcione-logo.png"
+      src="/brand/funcione-logo-transparent.png"
     />
   );
 }

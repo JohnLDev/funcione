@@ -66,9 +66,43 @@ function mapSession(session: Session | null): AuthSession | null {
 }
 
 function createMissingConfigResult(): AuthActionResult {
+  const message = 'Supabase authentication is not configured.';
+
   return {
+    error: {
+      code: 'AUTH_SUPABASE_NOT_CONFIGURED',
+      message,
+      source: 'auth',
+    },
     ok: false,
-    message: 'Supabase authentication is not configured.',
+    message,
+  };
+}
+
+function resolveAuthErrorCode(message: string, fallbackCode: string) {
+  if (/invalid login credentials/i.test(message)) {
+    return 'AUTH_INVALID_CREDENTIALS';
+  }
+
+  if (/check your email to confirm your account|email not confirmed/i.test(message)) {
+    return 'AUTH_EMAIL_CONFIRMATION_REQUIRED';
+  }
+
+  return fallbackCode;
+}
+
+function createAuthErrorResult(
+  message: string,
+  fallbackCode: string,
+): AuthActionResult {
+  return {
+    error: {
+      code: resolveAuthErrorCode(message, fallbackCode),
+      message,
+      source: 'auth',
+    },
+    ok: false,
+    message,
   };
 }
 
@@ -131,7 +165,7 @@ export function createSupabaseAuthGateway(
       });
 
       if (error) {
-        return { ok: false, message: error.message };
+        return createAuthErrorResult(error.message, 'AUTH_OAUTH_FAILED');
       }
 
       return { ok: true };
@@ -147,7 +181,7 @@ export function createSupabaseAuthGateway(
       });
 
       if (error) {
-        return { ok: false, message: error.message };
+        return createAuthErrorResult(error.message, 'AUTH_SIGN_IN_FAILED');
       }
 
       return { ok: true, session: mapSession(data.session) ?? undefined };
@@ -160,7 +194,7 @@ export function createSupabaseAuthGateway(
       const { error } = await supabase.auth.signOut();
 
       if (error) {
-        return { ok: false, message: error.message };
+        return createAuthErrorResult(error.message, 'AUTH_SIGN_OUT_FAILED');
       }
 
       return { ok: true };
@@ -176,13 +210,21 @@ export function createSupabaseAuthGateway(
       });
 
       if (error) {
-        return { ok: false, message: error.message };
+        return createAuthErrorResult(error.message, 'AUTH_SIGN_UP_FAILED');
       }
 
       if (!data.session) {
+        const message = 'Check your email to confirm your account.';
+
         return {
+          error: {
+            code: 'AUTH_EMAIL_CONFIRMATION_REQUIRED',
+            message,
+            severity: 'info',
+            source: 'auth',
+          },
           ok: true,
-          message: 'Check your email to confirm your account.',
+          message,
         };
       }
 

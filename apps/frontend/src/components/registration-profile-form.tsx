@@ -50,7 +50,23 @@ export function RegistrationProfileForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await onSubmit(values);
+    const profileValues: RegistrationProfileInput = {
+      birthDate: values.birthDate,
+      cpf: values.cpf,
+      email: values.email,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      phoneNumber: values.phoneNumber,
+    };
+
+    await onSubmit(
+      mode === 'signup'
+        ? {
+            ...profileValues,
+            password: values.password,
+          }
+        : profileValues,
+    );
   };
 
   return (

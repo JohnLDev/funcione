@@ -1,0 +1,78 @@
+services:
+  backend:
+    build:
+      context: .
+      target: backend-runtime
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      PORT: 3000
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/healthz').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      retries: 12
+      start_period: 10s
+      timeout: 5s
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: .
+      target: frontend-runtime
+      args:
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/"]
+      interval: 10s
+      retries: 12
+      start_period: 10s
+      timeout: 5s
+    ports:
+      - "8080:8080"
+
+  worker:
+    build:
+      context: .
+      target: backend-runtime
+    command:
+      - node
+      - apps/backend/dist/training-worker.js
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    profiles:
+      - worker
+
+  docker-tests:
+    image: node:22-alpine
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    command:
+      - node
+      - -e
+      - |
+        const checks = [
+          ['backend health', 'http://backend:3000/healthz'],
+          ['openapi', 'http://backend:3000/documentation/json'],
+          ['frontend', 'http://frontend:8080/'],
+          ['frontend api proxy', 'http://frontend:8080/healthz'],
+        ];
+        for (const [name, url] of checks) {
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(name + ' failed with status ' + response.status);
+          }
+        }
+    profiles:
+      - test

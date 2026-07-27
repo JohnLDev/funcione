@@ -13,6 +13,10 @@
     "test:e2e": "npm run test:e2e --workspace @langchain-training/frontend",
     "typecheck": "npm run typecheck --workspaces",
     "dev:backend": "npm run dev --workspace @langchain-training/backend",
-    "dev:frontend": "npm run dev --workspace @langchain-training/frontend"
+    "dev:frontend": "npm run dev --workspace @langchain-training/frontend",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d backend frontend",
+    "docker:test": "docker compose run --rm docker-tests",
+    "docker:down": "docker compose down --remove-orphans"
   }
 }
