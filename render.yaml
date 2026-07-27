@@ -6,7 +6,7 @@ services:
     region: virginia
     branch: main
     autoDeployTrigger: commit
-    buildCommand: npm ci && npm run build --workspace @langchain-training/backend
+    buildCommand: npm ci --include=dev && npm run build --workspace @langchain-training/backend
     startCommand: npm run start --workspace @langchain-training/backend
     healthCheckPath: /healthz
     buildFilter:

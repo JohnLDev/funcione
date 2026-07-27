@@ -41,7 +41,7 @@ services:
     region: virginia
     branch: main
     autoDeployTrigger: commit
-    buildCommand: npm ci && npm run build --workspace @langchain-training/backend
+    buildCommand: npm ci --include=dev && npm run build --workspace @langchain-training/backend
     startCommand: npm run start --workspace @langchain-training/backend
     healthCheckPath: /healthz
 ```
@@ -85,7 +85,7 @@ envVars:
 Run:
 
 ```bash
-rtk npm run build --workspace @langchain-training/backend
+rtk env NODE_ENV=production npm run build --workspace @langchain-training/backend
 ```
 
 Expected: command exits 0 and emits backend `dist/` files.
