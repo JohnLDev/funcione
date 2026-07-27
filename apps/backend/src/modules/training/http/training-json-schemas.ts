@@ -273,6 +273,44 @@ export const monthlyTrainingPlanPublicJsonSchema = {
   },
 } as const;
 
+export const monthlyTrainingPlanGenerationPublicJsonSchema = {
+  type: 'object',
+  required: [
+    'completedAt',
+    'createdAt',
+    'errorMessage',
+    'failedAt',
+    'id',
+    'startedAt',
+    'status',
+    'updatedAt',
+    'userId',
+  ],
+  additionalProperties: false,
+  properties: {
+    completedAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    createdAt: { type: 'string', format: 'date-time' },
+    errorMessage: {
+      anyOf: [{ type: 'string' }, { type: 'null' }],
+    },
+    failedAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    id: { type: 'string' },
+    startedAt: {
+      anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
+    },
+    status: {
+      type: 'string',
+      enum: ['queued', 'running', 'completed', 'failed'],
+    },
+    updatedAt: { type: 'string', format: 'date-time' },
+    userId: { type: 'string' },
+  },
+} as const;
+
 export const athleticProfilePublicJsonSchema = {
   type: 'object',
   required: [
@@ -321,6 +359,7 @@ export const activeMonthlyTrainingPlanResponseJsonSchema = {
     'athleticProfile',
     'canGenerate',
     'nextGenerationAvailableAt',
+    'pendingGeneration',
   ],
   additionalProperties: false,
   properties: {
@@ -334,14 +373,38 @@ export const activeMonthlyTrainingPlanResponseJsonSchema = {
     nextGenerationAvailableAt: {
       anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
     },
+    pendingGeneration: {
+      anyOf: [monthlyTrainingPlanGenerationPublicJsonSchema, { type: 'null' }],
+    },
   },
 } as const;
 
 export const createMonthlyTrainingPlanResponseJsonSchema = {
   type: 'object',
-  required: ['plan'],
+  required: ['generation'],
   additionalProperties: false,
   properties: {
-    plan: monthlyTrainingPlanPublicJsonSchema,
+    generation: monthlyTrainingPlanGenerationPublicJsonSchema,
+  },
+} as const;
+
+export const monthlyTrainingPlanGenerationStatusParamsJsonSchema = {
+  type: 'object',
+  required: ['generationId'],
+  additionalProperties: false,
+  properties: {
+    generationId: { type: 'string' },
+  },
+} as const;
+
+export const monthlyTrainingPlanGenerationStatusResponseJsonSchema = {
+  type: 'object',
+  required: ['generation', 'plan'],
+  additionalProperties: false,
+  properties: {
+    generation: monthlyTrainingPlanGenerationPublicJsonSchema,
+    plan: {
+      anyOf: [monthlyTrainingPlanPublicJsonSchema, { type: 'null' }],
+    },
   },
 } as const;

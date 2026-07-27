@@ -1,18 +1,48 @@
+import { TrainingPlanGatewayError } from './training-plan.js';
 import type {
-  MonthlyTrainingPlan,
+  MonthlyTrainingPlanGeneration,
   MonthlyTrainingPlanRequest,
   MonthlyTrainingPlanState,
   TrainingPlanActionResult,
+  TrainingPlanGenerationStatusResult,
   TrainingPlanGateway,
 } from './training-plan.js';
 
-async function parseErrorMessage(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: { message?: string } };
+type ApiErrorResponse = {
+  error?: {
+    code?: string;
+    details?: Record<string, unknown>;
+    message?: string;
+    requestId?: string;
+    userMessageKey?: string;
+  };
+};
 
-    return body.error?.message ?? 'Training plan request failed.';
+type ParsedApiError = {
+  code?: string;
+  details?: Record<string, unknown>;
+  message: string;
+  requestId?: string;
+  userMessageKey?: string;
+};
+
+function formatApiError(error?: ApiErrorResponse['error']): ParsedApiError {
+  return {
+    code: error?.code,
+    details: error?.details,
+    message: error?.message ?? 'Training plan request failed.',
+    requestId: error?.requestId,
+    userMessageKey: error?.userMessageKey,
+  };
+}
+
+async function parseApiError(response: Response): Promise<ParsedApiError> {
+  try {
+    const body = (await response.json()) as ApiErrorResponse;
+
+    return formatApiError(body.error);
   } catch {
-    return 'Training plan request failed.';
+    return { message: 'Training plan request failed.' };
   }
 }
 
@@ -32,17 +62,30 @@ export function createApiTrainingPlanGateway(): TrainingPlanGateway {
       });
 
       if (!response.ok) {
+        const error = await parseApiError(response);
+
         return {
-          message: await parseErrorMessage(response),
+          code: error.code,
+          error: {
+            code: error.code ?? 'TRAINING_PLAN_REQUEST_FAILED',
+            details: error.details,
+            message: error.message,
+            requestId: error.requestId,
+            source: 'training',
+            userMessageKey: error.userMessageKey,
+          },
+          message: error.message,
           ok: false,
         };
       }
 
-      const body = (await response.json()) as { plan: MonthlyTrainingPlan };
+      const body = (await response.json()) as {
+        generation: MonthlyTrainingPlanGeneration;
+      };
 
       return {
+        generation: body.generation,
         ok: true,
-        plan: body.plan,
       };
     },
     getActivePlan: async (
@@ -55,10 +98,33 @@ export function createApiTrainingPlanGateway(): TrainingPlanGateway {
       });
 
       if (!response.ok) {
-        throw new Error(await parseErrorMessage(response));
+        const error = await parseApiError(response);
+
+        throw new TrainingPlanGatewayError(error);
       }
 
       return (await response.json()) as MonthlyTrainingPlanState;
+    },
+    getGenerationStatus: async (
+      accessToken: string,
+      generationId: string,
+    ): Promise<TrainingPlanGenerationStatusResult> => {
+      const response = await fetch(
+        `/api/training-plans/generations/${generationId}`,
+        {
+          headers: {
+            authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await parseApiError(response);
+
+        throw new TrainingPlanGatewayError(error);
+      }
+
+      return (await response.json()) as TrainingPlanGenerationStatusResult;
     },
   };
 }

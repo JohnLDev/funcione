@@ -1,3 +1,5 @@
+import type { AppErrorInput } from '@/errors/app-error.js';
+
 export type TrainingModality =
   | 'volei'
   | 'basquete'
@@ -132,11 +134,64 @@ export type MonthlyTrainingPlanState = {
   athleticProfile: AthleticProfile | null;
   canGenerate: boolean;
   nextGenerationAvailableAt: string | null;
+  pendingGeneration: MonthlyTrainingPlanGeneration | null;
+};
+
+export type MonthlyTrainingPlanGenerationStatus =
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+export type MonthlyTrainingPlanGeneration = {
+  completedAt: string | null;
+  createdAt: string;
+  errorMessage: string | null;
+  failedAt: string | null;
+  id: string;
+  planId?: string | null;
+  startedAt: string | null;
+  status: MonthlyTrainingPlanGenerationStatus;
+  updatedAt: string;
+  userId: string;
+};
+
+export type TrainingPlanGenerationStatusResult = {
+  generation: MonthlyTrainingPlanGeneration;
+  plan: MonthlyTrainingPlan | null;
 };
 
 export type TrainingPlanActionResult =
-  | { ok: true; plan: MonthlyTrainingPlan }
-  | { message: string; ok: false };
+  | { generation: MonthlyTrainingPlanGeneration; ok: true }
+  | { code?: string; error?: AppErrorInput; message: string; ok: false };
+
+export class TrainingPlanGatewayError extends Error {
+  readonly code?: string;
+  readonly details?: Record<string, unknown>;
+  readonly requestId?: string;
+  readonly userMessageKey?: string;
+
+  constructor({
+    code,
+    details,
+    message,
+    requestId,
+    userMessageKey,
+  }: {
+    code?: string;
+    details?: Record<string, unknown>;
+    message: string;
+    requestId?: string;
+    userMessageKey?: string;
+  }) {
+    super(message);
+    this.code = code;
+    this.details = details;
+    this.name = 'TrainingPlanGatewayError';
+    this.requestId = requestId;
+    this.userMessageKey = userMessageKey;
+  }
+}
 
 export type TrainingPlanGateway = {
   createMonthlyPlan: (
@@ -144,4 +199,8 @@ export type TrainingPlanGateway = {
     payload: MonthlyTrainingPlanRequest,
   ) => Promise<TrainingPlanActionResult>;
   getActivePlan: (accessToken: string) => Promise<MonthlyTrainingPlanState>;
+  getGenerationStatus: (
+    accessToken: string,
+    generationId: string,
+  ) => Promise<TrainingPlanGenerationStatusResult>;
 };

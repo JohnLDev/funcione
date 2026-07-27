@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { AthleticProfileRepository } from '../application/athletic-profile-repository.js';
+import type { MonthlyTrainingPlanGenerationJobRepository } from '../application/monthly-training-plan-generation-job-repository.js';
 import type { MonthlyTrainingPlanRepository } from '../application/monthly-training-plan-repository.js';
 import { MonthlyTrainingPlanStatus } from '../domain/enums.js';
 import type {
   AthleticProfile,
   AthleticProfileInput,
+  MonthlyTrainingPlanGeneration,
   MonthlyTrainingPlan,
 } from '../domain/monthly-plan.js';
 
@@ -12,9 +14,11 @@ const generationReservationLeaseMs = 15 * 60 * 1_000;
 
 export function createInMemoryTrainingRepositories(): {
   athleticProfileRepository: AthleticProfileRepository;
+  monthlyTrainingPlanGenerationJobRepository: MonthlyTrainingPlanGenerationJobRepository;
   monthlyTrainingPlanRepository: MonthlyTrainingPlanRepository;
 } {
   const athleticProfiles = new Map<string, AthleticProfile>();
+  const generationJobs = new Map<string, MonthlyTrainingPlanGeneration>();
   const monthlyPlans = new Map<string, MonthlyTrainingPlan>();
   const reservations = new Map<
     string,
@@ -65,6 +69,130 @@ export function createInMemoryTrainingRepositories(): {
 
         return profile;
       },
+    },
+    monthlyTrainingPlanGenerationJobRepository: {
+      claimNextGenerationJob: async ({ claimedAt, leaseExpiresAt }) => {
+        const claimableJob = Array.from(generationJobs.values())
+          .filter((job) => {
+            if (job.status === 'queued') {
+              return true;
+            }
+
+            return (
+              job.status === 'running' &&
+              job.lockExpiresAt !== null &&
+              new Date(job.lockExpiresAt).getTime() <= new Date(claimedAt).getTime()
+            );
+          })
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+
+        if (!claimableJob) {
+          return null;
+        }
+
+        const claimedJob: MonthlyTrainingPlanGeneration = {
+          ...claimableJob,
+          attemptCount: claimableJob.attemptCount + 1,
+          lockExpiresAt: leaseExpiresAt,
+          lockedAt: claimedAt,
+          startedAt: claimableJob.startedAt ?? claimedAt,
+          status: 'running',
+          updatedAt: claimedAt,
+        };
+
+        generationJobs.set(claimedJob.id, claimedJob);
+
+        return claimedJob;
+      },
+      completeGenerationJob: async (generationId, { completedAt, planId }) => {
+        const job = generationJobs.get(generationId);
+
+        if (!job) {
+          return null;
+        }
+
+        const completedJob: MonthlyTrainingPlanGeneration = {
+          ...job,
+          completedAt,
+          lockExpiresAt: null,
+          lockedAt: null,
+          planId,
+          status: 'completed',
+          updatedAt: completedAt,
+        };
+
+        generationJobs.set(generationId, completedJob);
+
+        return completedJob;
+      },
+      enqueueGenerationJob: async (input) => {
+        const now = input.createdAt;
+        const job: MonthlyTrainingPlanGeneration = {
+          attemptCount: 0,
+          athleticProfile: input.athleticProfile,
+          completedAt: null,
+          createdAt: now,
+          errorMessage: null,
+          failedAt: null,
+          id: randomUUID(),
+          lockExpiresAt: null,
+          lockedAt: null,
+          maxAttempts: input.maxAttempts ?? 3,
+          planId: null,
+          reservationId: input.reservationId,
+          snapshot: input.snapshot,
+          startedAt: null,
+          status: 'queued',
+          updatedAt: now,
+          userId: input.userId,
+        };
+
+        generationJobs.set(job.id, job);
+
+        return job;
+      },
+      failGenerationJob: async (generationId, { errorMessage, failedAt }) => {
+        const job = generationJobs.get(generationId);
+
+        if (!job) {
+          return null;
+        }
+
+        const failedJob: MonthlyTrainingPlanGeneration = {
+          ...job,
+          errorMessage,
+          failedAt,
+          lockExpiresAt: null,
+          lockedAt: null,
+          status: 'failed',
+          updatedAt: failedAt,
+        };
+
+        generationJobs.set(generationId, failedJob);
+
+        return failedJob;
+      },
+      findGenerationJobById: async (userId, generationId) => {
+        const job = generationJobs.get(generationId);
+
+        return job?.userId === userId ? job : null;
+      },
+      findPendingGenerationByUserId: async (userId, observedAt) => {
+        const observedAtMs = new Date(observedAt).getTime();
+
+        return Array.from(generationJobs.values())
+          .filter(
+            (job) =>
+              job.userId === userId &&
+              (job.status === 'queued' ||
+                (job.status === 'running' &&
+                  (job.lockExpiresAt === null ||
+                    new Date(job.lockExpiresAt).getTime() > observedAtMs))),
+          )
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0] ?? null;
+      },
+      listByStatus: async (status) =>
+        Array.from(generationJobs.values()).filter((job) => job.status === status),
     },
     monthlyTrainingPlanRepository: {
       completeActiveGeneration: async (reservationId, planInput, profileInput) => {

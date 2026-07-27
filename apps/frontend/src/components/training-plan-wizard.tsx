@@ -1,5 +1,14 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { Activity, Dumbbell, MapPin, Target, Timer } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Dumbbell,
+  LoaderCircle,
+  MapPin,
+  Target,
+  Timer,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type {
   EquipmentType,
@@ -193,10 +202,116 @@ function ReviewRow({ children, label }: { children: ReactNode; label: string }) 
   );
 }
 
+export function getGenerationFeedbackPhase(elapsedMs: number) {
+  if (elapsedMs >= 18_000) {
+    return 2;
+  }
+
+  if (elapsedMs >= 6_000) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function GenerationFeedback({ isGenerating }: { isGenerating: boolean }) {
+  const { t } = useTranslation();
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      setElapsedMs(0);
+      return;
+    }
+
+    const startedAt = Date.now();
+    const intervalId = window.setInterval(() => {
+      setElapsedMs(Date.now() - startedAt);
+    }, 1_000);
+
+    setElapsedMs(0);
+
+    return () => window.clearInterval(intervalId);
+  }, [isGenerating]);
+
+  if (!isGenerating) {
+    return null;
+  }
+
+  const activeStepIndex = getGenerationFeedbackPhase(elapsedMs);
+  const steps = [
+    t('training.generationFeedback.prepare'),
+    t('training.generationFeedback.connect'),
+    t('training.generationFeedback.save'),
+  ];
+
+  return (
+    <div
+      aria-label={t('training.generationFeedback.statusLabel')}
+      aria-live="polite"
+      className="grid gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4 text-sm font-bold"
+      role="status"
+    >
+      <div className="flex items-center gap-3">
+        <LoaderCircle
+          aria-hidden="true"
+          className="shrink-0 animate-spin text-primary"
+          size={20}
+        />
+        <div className="min-w-0">
+          <p className="text-foreground">
+            {t('training.generationFeedback.title')}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {elapsedMs >= 18_000
+              ? t('training.generationFeedback.longRunning')
+              : t('training.generationFeedback.subtitle')}
+          </p>
+        </div>
+      </div>
+      <ol className="grid gap-2">
+        {steps.map((step, index) => {
+          const isComplete = index < activeStepIndex;
+          const isActive = index === activeStepIndex;
+
+          return (
+            <li
+              className="flex min-w-0 items-center gap-2 text-muted-foreground"
+              key={step}
+            >
+              {isComplete ? (
+                <CheckCircle2
+                  aria-hidden="true"
+                  className="shrink-0 text-primary"
+                  size={16}
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className={
+                    isActive
+                      ? 'h-2.5 w-2.5 shrink-0 rounded-full bg-primary'
+                      : 'h-2.5 w-2.5 shrink-0 rounded-full bg-border'
+                  }
+                />
+              )}
+              <span className={isActive ? 'text-foreground' : undefined}>
+                {step}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 export function TrainingPlanWizard() {
   const { t } = useTranslation();
   const { createMonthlyPlan, isGenerating, state } = useTrainingPlan();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [pendingRequest, setPendingRequest] =
+    useState<MonthlyTrainingPlanRequest | null>(null);
   const [form, setForm] = useState<MonthlyTrainingPlanRequest>(() => {
     const profile = state?.athleticProfile;
 
@@ -453,20 +568,41 @@ export function TrainingPlanWizard() {
     setCurrentStepIndex((index) => Math.min(steps.length - 1, index + 1));
   }
 
-  async function submit() {
+  function buildSubmitRequest(): MonthlyTrainingPlanRequest | null {
     if (
       !hasValidBodyMeasurements ||
       !hasValidSafetyInputs ||
       alturaCm === null ||
       pesoKg === null
     ) {
-      return;
+      return null;
     }
 
-    const result = await createMonthlyPlan({
+    return {
       ...form,
       alturaCm,
       pesoKg,
+    };
+  }
+
+  function requestGenerationConfirmation() {
+    const request = buildSubmitRequest();
+
+    if (request) {
+      setPendingRequest(request);
+    }
+  }
+
+  async function confirmGeneration() {
+    if (!pendingRequest) {
+      return;
+    }
+
+    const request = pendingRequest;
+    setPendingRequest(null);
+
+    const result = await createMonthlyPlan({
+      ...request,
     });
 
     if (result.ok) {
@@ -811,6 +947,8 @@ export function TrainingPlanWizard() {
             </dl>
           ) : null}
 
+          <GenerationFeedback isGenerating={isGenerating} />
+
           <div className="grid grid-cols-2 gap-2">
             <Button
               disabled={currentStepIndex === 0}
@@ -825,7 +963,7 @@ export function TrainingPlanWizard() {
                 disabled={
                   isGenerating || !hasValidBodyMeasurements || !hasValidSafetyInputs
                 }
-                onClick={submit}
+                onClick={requestGenerationConfirmation}
                 type="button"
               >
                 {isGenerating ? t('training.generating') : t('training.generate')}
@@ -836,6 +974,49 @@ export function TrainingPlanWizard() {
               </Button>
             )}
           </div>
+          {pendingRequest ? (
+            <div className="fixed inset-0 z-50 grid place-items-end bg-background/80 p-4 backdrop-blur-sm sm:place-items-center">
+              <div
+                aria-describedby="training-generation-confirm-description"
+                aria-labelledby="training-generation-confirm-title"
+                aria-modal="true"
+                className="w-full max-w-md rounded-2xl border border-primary/30 bg-card p-5 shadow-2xl"
+                role="alertdialog"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                    <AlertTriangle aria-hidden="true" size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <h2
+                      className="text-xl font-black leading-tight text-foreground"
+                      id="training-generation-confirm-title"
+                    >
+                      {t('training.confirmGeneration.title')}
+                    </h2>
+                    <p
+                      className="mt-2 text-sm font-semibold leading-relaxed text-muted-foreground"
+                      id="training-generation-confirm-description"
+                    >
+                      {t('training.confirmGeneration.message')}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => setPendingRequest(null)}
+                    type="button"
+                    variant="outline"
+                  >
+                    {t('training.confirmGeneration.cancel')}
+                  </Button>
+                  <Button onClick={() => void confirmGeneration()} type="button">
+                    {t('training.confirmGeneration.confirm')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
       <aside>

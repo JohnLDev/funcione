@@ -131,6 +131,7 @@ type OpenAICompatibleModelParams = {
   apiKey?: string;
   baseURL: string;
   temperature?: number;
+  timeoutMs?: number;
   defaultHeaders?: Record<string, string>;
 };
 
@@ -140,6 +141,7 @@ export function createOpenAICompatibleModel({
   apiKey,
   baseURL,
   temperature = 0.3,
+  timeoutMs,
   defaultHeaders,
 }: OpenAICompatibleModelParams): InstructorModelConfig {
   return {
@@ -149,6 +151,8 @@ export function createOpenAICompatibleModel({
       model: modelName,
       temperature,
       apiKey,
+      timeout: timeoutMs,
+      maxRetries: 0,
       configuration: {
         baseURL,
         defaultHeaders,
@@ -160,24 +164,28 @@ export function createOpenAICompatibleModel({
 export function createNvidiaModel(
   modelName = 'meta/llama-3.3-70b-instruct',
   env: NodeJS.ProcessEnv = process.env,
+  timeoutMs?: number,
 ): InstructorModelConfig {
   return createOpenAICompatibleModel({
     provider: 'nvidia',
     modelName,
     apiKey: env.NVIDIA_API_KEY,
     baseURL: 'https://integrate.api.nvidia.com/v1',
+    timeoutMs,
   });
 }
 
 export function createOpenRouterModel(
   modelName = 'openai/gpt-oss-120b',
   env: NodeJS.ProcessEnv = process.env,
+  timeoutMs?: number,
 ): InstructorModelConfig {
   return createOpenAICompatibleModel({
     provider: 'openrouter',
     modelName,
     apiKey: env.OPENROUTER_API_KEY,
     baseURL: 'https://openrouter.ai/api/v1',
+    timeoutMs,
     defaultHeaders: {
       'HTTP-Referer':
         env.OPENROUTER_SITE_URL ?? 'http://localhost',

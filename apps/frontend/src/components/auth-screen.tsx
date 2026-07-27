@@ -1,4 +1,4 @@
-import { ArrowLeft, Chrome, LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, LogIn, UserPlus } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -6,23 +6,15 @@ import type { RegistrationProfileInput } from '@/auth/registration-profile.js';
 import { useAuth } from '@/auth/use-auth.js';
 import { RegistrationProfileForm } from './registration-profile-form.js';
 import { Button } from './ui/button.js';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from './ui/card.js';
-import { LanguageToggle } from './language-toggle.js';
-import { ProductLogo } from './product-logo.js';
-import { ThemeToggle } from './theme-toggle.js';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card.js';
+import { GoogleIcon } from './google-icon.js';
+import { SettingsMenu } from './settings-menu.js';
 
 type AuthScreenMode = 'signin' | 'signup';
 
 export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
   const { t } = useTranslation();
   const {
-    authMessage,
     isAuthActionRunning,
     signInWithGoogle,
     signInWithPassword,
@@ -40,28 +32,42 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
   const handleRegistrationSubmit = async (
     values: RegistrationProfileInput & { password?: string },
   ) => {
-    await signUpWithPassword(values, values.password ?? '');
+    const { password: submittedPassword = '', ...profile } = values;
+
+    await signUpWithPassword(profile, submittedPassword);
   };
 
   return (
     <div className="min-h-dvh overflow-x-hidden px-4 py-4 sm:px-6">
-      <main className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-5">
-        <header className="flex items-center justify-between gap-3">
-          <ProductLogo className="h-10 w-32 max-[360px]:w-28" />
-          <div className="flex shrink-0 items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
-          </div>
-        </header>
+      <div className="fixed right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <SettingsMenu />
+      </div>
 
-        <Card className="mt-auto rounded-[2rem] border-primary/25 bg-card/92 shadow-xl">
-          <CardHeader className="p-5">
-            <CardDescription className="font-bold text-primary">
-              {t('brand.byline')}
-            </CardDescription>
-            <CardTitle className="text-3xl font-black">
+      <main className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-md flex-col justify-center py-16 sm:max-w-xl sm:py-20">
+        <div className="mx-auto mb-5 flex w-full flex-col items-center gap-2 sm:mb-6">
+          <img
+            alt={t('brand.logoAlt')}
+            className={
+              isSignIn
+                ? 'h-auto w-[min(92vw,34rem)] object-contain drop-shadow-[0_28px_80px_rgba(0,120,255,0.5)] sm:w-[34rem]'
+                : 'h-auto w-[min(78vw,18rem)] object-contain drop-shadow-[0_22px_64px_rgba(0,120,255,0.42)] sm:w-72'
+            }
+            data-testid="auth-product-logo"
+            src="/brand/funcione-logo-transparent.png"
+          />
+        </div>
+
+        <Card className="mx-auto w-full max-w-lg rounded-[2rem] border-primary/25 bg-card/92 shadow-xl backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-start justify-between gap-4 p-5">
+            <CardTitle className="min-w-0 text-3xl font-black leading-tight">
               {isSignIn ? t('auth.title') : t('registration.signUpTitle')}
             </CardTitle>
+            <img
+              alt={t('brand.milexLogoAlt')}
+              className="mt-0.5 h-8 w-auto max-w-[6.5rem] shrink-0 object-contain brightness-75 contrast-125 drop-shadow-[0_16px_44px_rgba(0,120,255,0.26)] dark:brightness-100 dark:contrast-100 sm:h-9"
+              data-testid="auth-milex-logo"
+              src="/brand/milex-logo-transparent.png"
+            />
           </CardHeader>
           <CardContent className="grid gap-4 p-5 pt-0">
             {isSignIn ? (
@@ -95,15 +101,6 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
                     />
                   </label>
 
-                  {authMessage ? (
-                    <p
-                      className="rounded-2xl border border-border bg-muted p-3 text-sm font-semibold text-muted-foreground"
-                      role="status"
-                    >
-                      {authMessage}
-                    </p>
-                  ) : null}
-
                   <Button disabled={isAuthActionRunning} type="submit">
                     <LogIn aria-hidden="true" size={18} />
                     {t('auth.signIn')}
@@ -126,26 +123,18 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
                 <div className="h-px bg-border" />
 
                 <Button
+                  className="border-[#dadce0] bg-white text-[#3c4043] shadow-sm hover:bg-[#f8fafd]"
                   disabled={isAuthActionRunning}
                   onClick={signInWithGoogle}
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                 >
-                  <Chrome aria-hidden="true" size={18} />
+                  <GoogleIcon className="h-[18px] w-[18px]" />
                   {t('auth.continueWithGoogle')}
                 </Button>
               </>
             ) : (
               <>
-                {authMessage ? (
-                  <p
-                    className="rounded-2xl border border-border bg-muted p-3 text-sm font-semibold text-muted-foreground"
-                    role="status"
-                  >
-                    {authMessage}
-                  </p>
-                ) : null}
-
                 <RegistrationProfileForm
                   isSubmitting={isAuthActionRunning}
                   mode="signup"

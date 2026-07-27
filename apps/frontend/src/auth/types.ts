@@ -1,3 +1,5 @@
+import type { AppErrorInput } from '@/errors/app-error.js';
+
 export type AuthUser = {
   firstName: string | null;
   fullName: string | null;
@@ -15,11 +17,13 @@ export type AuthSession = {
 
 export type AuthActionResult =
   | {
+      error?: AppErrorInput;
       ok: true;
       message?: string;
       session?: AuthSession;
     }
   | {
+      error?: AppErrorInput;
       ok: false;
       message: string;
     };

@@ -14,12 +14,21 @@ import { createInMemoryTrainingRepositories } from '../infra/in-memory-training-
 import {
   createMonthlyTrainingPlan,
   getActiveMonthlyTrainingPlan,
+  processAvailableMonthlyTrainingPlanGenerationJobs,
+  processNextMonthlyTrainingPlanGenerationJob,
+  requestMonthlyTrainingPlanGeneration,
   type MonthlyTrainingPlanServiceDependencies,
 } from './monthly-training-plan-service.js';
 
 const user = {
   email: 'athlete@funcione.app',
   id: 'user-123',
+  provider: 'password',
+};
+
+const secondUser = {
+  email: 'second-athlete@funcione.app',
+  id: 'user-456',
   provider: 'password',
 };
 
@@ -85,6 +94,232 @@ async function createDependencies(
 }
 
 describe('monthly training plan service', () => {
+  it('requests monthly generation as a queued durable job without calling the AI', async () => {
+    const dependencies = await createDependencies();
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const result = await requestMonthlyTrainingPlanGeneration(
+      user,
+      payload,
+      dependencies,
+    );
+
+    assert.equal(result.ok, true);
+    if (!result.ok) {
+      return;
+    }
+    assert.equal(result.generation.status, 'queued');
+    assert.equal(result.generation.userId, user.id);
+    assert.equal(result.generation.snapshot.idade, 30);
+    assert.equal(generationCalls, 0);
+
+    const state = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(state.canGenerate, false);
+    assert.equal(state.pendingGeneration?.id, result.generation.id);
+  });
+
+  it('processes the next queued monthly generation job and persists the active plan', async () => {
+    const dependencies = await createDependencies();
+
+    const requestResult = await requestMonthlyTrainingPlanGeneration(
+      user,
+      payload,
+      dependencies,
+    );
+
+    assert.equal(requestResult.ok, true);
+    const processResult = await processNextMonthlyTrainingPlanGenerationJob(
+      dependencies,
+    );
+
+    assert.equal(processResult.ok, true);
+    if (!processResult.ok) {
+      return;
+    }
+    assert.equal(processResult.generation.status, 'completed');
+    assert.equal(processResult.plan.snapshot.userId, user.id);
+    assert.equal(processResult.plan.availableForRegenerationAt, '2026-08-22T12:00:00.000Z');
+
+    const state = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(state.activePlan?.id, processResult.plan.id);
+    assert.equal(state.pendingGeneration, null);
+    assert.equal(state.canGenerate, false);
+  });
+
+  it('marks a failed async generation job as failed, releases the reservation and permits retry', async () => {
+    const dependencies = await createDependencies();
+    let currentNow = new Date('2026-07-23T12:00:00.000Z');
+    dependencies.now = () => currentNow;
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+
+      if (generationCalls === 1) {
+        currentNow = new Date('2026-07-23T12:03:30.000Z');
+
+        return {
+          attempts: [
+            {
+              durationMs: 210000,
+              error: 'provider timed out',
+              model: 'slow-model',
+              provider: 'test-provider',
+              role: 'primary',
+              status: 'error',
+            },
+          ],
+          error: 'test generation failure: test-provider/slow-model: provider timed out',
+          fallbackUsed: false,
+        };
+      }
+
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const requestResult = await requestMonthlyTrainingPlanGeneration(
+      user,
+      payload,
+      dependencies,
+    );
+    assert.equal(requestResult.ok, true);
+
+    const failedProcessResult = await processNextMonthlyTrainingPlanGenerationJob(
+      dependencies,
+    );
+
+    assert.equal(failedProcessResult.ok, false);
+    if (failedProcessResult.ok) {
+      return;
+    }
+    assert.equal(failedProcessResult.error.code, 'TRAINING_PLAN_GENERATION_FAILED');
+
+    const failedGeneration = await dependencies
+      .monthlyTrainingPlanGenerationJobRepository.findGenerationJobById(
+        user.id,
+        requestResult.generation.id,
+      );
+    assert.equal(failedGeneration?.status, 'failed');
+    assert.equal(
+      failedGeneration?.errorMessage,
+      'test generation failure: test-provider/slow-model: provider timed out',
+    );
+    assert.equal(failedGeneration?.failedAt, '2026-07-23T12:03:30.000Z');
+
+    const stateAfterFailure = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(stateAfterFailure.canGenerate, true);
+    assert.equal(stateAfterFailure.pendingGeneration, null);
+
+    const retryRequest = await requestMonthlyTrainingPlanGeneration(
+      user,
+      payload,
+      dependencies,
+    );
+    assert.equal(retryRequest.ok, true);
+  });
+
+  it('keeps draining available generation jobs after a controlled job failure', async () => {
+    const dependencies = await createDependencies();
+    await dependencies.userProfileRepository.upsert(secondUser.id, {
+      birthDate: '1992-05-10',
+      cpf: '15350946056',
+      email: secondUser.email,
+      firstName: 'Maria',
+      lastName: 'Atleta',
+      phoneNumber: '11988888888',
+    });
+    let generationCalls = 0;
+    dependencies.trainingPlanGenerator = async () => {
+      generationCalls += 1;
+
+      if (generationCalls === 1) {
+        return {
+          attempts: [],
+          error: 'first job failed',
+          fallbackUsed: false,
+        };
+      }
+
+      return {
+        attempts: [],
+        durationMs: 10,
+        fallbackUsed: false,
+        model: 'test-model',
+        provider: 'test-provider',
+        result: generatedPlan,
+      };
+    };
+
+    const firstRequest = await requestMonthlyTrainingPlanGeneration(
+      user,
+      payload,
+      dependencies,
+    );
+    const secondRequest = await requestMonthlyTrainingPlanGeneration(
+      secondUser,
+      payload,
+      dependencies,
+    );
+
+    assert.equal(firstRequest.ok, true);
+    assert.equal(secondRequest.ok, true);
+
+    const results = await processAvailableMonthlyTrainingPlanGenerationJobs(
+      dependencies,
+    );
+
+    assert.equal(results.length, 2);
+    assert.equal(results[0]?.ok, false);
+    assert.equal(results[1]?.ok, true);
+    assert.equal(generationCalls, 2);
+
+    const secondState = await getActiveMonthlyTrainingPlan(secondUser, dependencies);
+    assert.equal(secondState.activePlan?.userId, secondUser.id);
+    assert.equal(secondState.pendingGeneration, null);
+  });
+
+  it('uses a configured lease duration when claiming async generation jobs', async () => {
+    const dependencies = await createDependencies();
+    let claimInput:
+      | {
+          claimedAt: string;
+          leaseExpiresAt: string;
+        }
+      | undefined;
+    dependencies.generationJobLeaseMs = 60_000;
+    dependencies.monthlyTrainingPlanGenerationJobRepository.claimNextGenerationJob =
+      async (input) => {
+        claimInput = input;
+        return null;
+      };
+
+    const result = await processNextMonthlyTrainingPlanGenerationJob(dependencies);
+
+    assert.equal(result.ok, false);
+    assert.deepEqual(claimInput, {
+      claimedAt: '2026-07-23T12:00:00.000Z',
+      leaseExpiresAt: '2026-07-23T12:01:00.000Z',
+    });
+  });
+
   it('returns generation availability when no active plan exists', async () => {
     const dependencies = await createDependencies();
 

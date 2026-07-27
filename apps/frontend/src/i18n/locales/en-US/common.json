@@ -2,19 +2,73 @@
   "brand": {
     "name": "Funcione",
     "byline": "by MileX",
-    "logoAlt": "Official Funcione logo"
+    "logoAlt": "Official Funcione logo",
+    "milexLogoAlt": "Official MileX logo"
+  },
+  "footer": {
+    "label": "Footer",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use"
+  },
+  "legal": {
+    "backToApp": "Back to athlete area",
+    "backToLogin": "Back to sign in"
+  },
+  "toast": {
+    "dismiss": "Close notification",
+    "label": "System feedback",
+    "region": "System notifications",
+    "severity": {
+      "error": "Needs attention",
+      "info": "Information",
+      "success": "All set",
+      "warning": "Attention"
+    }
+  },
+  "errors": {
+    "auth": {
+      "emailConfirmationRequired": "Check your email to confirm your account.",
+      "invalidCredentials": "Invalid email or password.",
+      "sessionExpired": "Your session expired. Sign in again.",
+      "signInFailed": "We could not sign you in right now.",
+      "signOutFailed": "We could not sign you out right now.",
+      "signUpFailed": "We could not create your account right now.",
+      "socialLoginFailed": "We could not sign you in with Google right now.",
+      "supabaseNotConfigured": "Authentication is not configured yet."
+    },
+    "common": {
+      "unexpected": "Something went out of rhythm. Try again shortly."
+    },
+    "network": {
+      "requestFailed": "We could not connect right now. Check your connection."
+    },
+    "registration": {
+      "authRequired": "Sign in again to complete your registration.",
+      "invalidPayload": "We could not accept the registration data.",
+      "requestFailed": "We could not update your registration."
+    },
+    "training": {
+      "generationFailed": "Workout generation failed. You can try again.",
+      "generationUnavailable": "We could not check the workout generation.",
+      "monthlyPlanAlreadyActive": "You already have an active plan for this period.",
+      "requestFailed": "We could not update the training plan."
+    }
   },
   "dashboard": {
-    "eyebrow": "Today's plan",
-    "title": "Power",
-    "subtitle": "Volleyball • 90 min • intermediate",
-    "progressLabel": "Workout progress",
-    "nextBlockLabel": "Next block",
-    "nextBlock": "Controlled landing",
+    "activeTitle": "Active workout",
+    "openProfile": "View profile",
+    "openTraining": "View workout",
+    "profileCardTitle": "Athlete profile",
+    "requestDescription": "Request a monthly plan generated from your sport profile, availability, equipment, and restrictions.",
+    "requestTitle": "Request workout",
+    "shellTitle": "Athlete area",
+    "trainingBadge": "Monthly plan",
+    "welcomeEyebrow": "Hi, {{name}}",
+    "welcomeText": "Ready to train? Your plan stays organized here to make your routine easier.",
+    "welcomeTitle": "Ready to make your life easier?",
     "bottomNav": {
       "home": "Home",
       "workout": "Workout",
-      "history": "History",
       "profile": "Profile"
     }
   },
@@ -25,7 +79,21 @@
     "impactValue": "Safe"
   },
   "actions": {
+    "requestWorkout": "Request workout",
     "startWorkout": "Start workout"
+  },
+  "settings": {
+    "button": "Settings",
+    "title": "Settings"
+  },
+  "profile": {
+    "athleteDescription": "Data used to personalize workout requests.",
+    "athleteEmpty": "Your athletic profile will be created from the first requested plan.",
+    "athleteTitle": "Athletic profile",
+    "registrationDescription": "Main data from your Funcione account.",
+    "registrationEmpty": "Registration not found.",
+    "registrationTitle": "Registration",
+    "title": "Athlete profile"
   },
   "training": {
     "active": {
@@ -48,9 +116,17 @@
     },
     "activeTitle": "Active plan",
     "back": "Back",
+    "confirmGeneration": {
+      "cancel": "Cancel",
+      "confirm": "Confirm generation",
+      "message": "After confirming, this workout will become your active plan and can only be regenerated after 30 days.",
+      "title": "Confirm plan generation"
+    },
     "continue": "Continue",
     "errors": {
-      "requestFailed": "We could not update the training plan."
+      "generationFailed": "Workout generation failed. You can try again.",
+      "requestFailed": "We could not update the training plan.",
+      "sessionExpired": "Your session expired. Sign in again to generate the workout."
     },
     "fields": {
       "age": "Age",
@@ -75,10 +151,21 @@
     },
     "generate": "Generate plan",
     "generating": "Generating plan",
+    "generationFeedback": {
+      "connect": "Connecting to the AI",
+      "longRunning": "The AI is still building the workout. Keep this screen open.",
+      "prepare": "Preparing data",
+      "save": "Saving plan",
+      "statusLabel": "Generation progress",
+      "subtitle": "This may take a few seconds.",
+      "title": "Generating your monthly plan"
+    },
     "loading": "Loading training plan",
+    "loadingDescription": "Checking your active plan and recent history.",
     "monthlyLimitNotice": "You can generate another plan after 30 days.",
     "newTitle": "New training plan",
-    "pendingMessage": "A generation is already in progress. Refresh its status before trying again.",
+    "pendingDescription": "We are preparing your plan without blocking your navigation.",
+    "pendingMessage": "Your workout was requested and is being processed. Once it finishes, the active plan will appear here.",
     "pendingTitle": "Generation in progress",
     "retry": "Try again",
     "options": {
@@ -170,6 +257,7 @@
     "continueWithGoogle": "Continue with Google",
     "email": "Email",
     "loading": "Loading Funcione",
+    "loadingDescription": "Preparing your experience.",
     "password": "Password",
     "signedInFallback": "Authenticated user",
     "signIn": "Sign in",

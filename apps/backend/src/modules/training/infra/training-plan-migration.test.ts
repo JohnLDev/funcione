@@ -34,6 +34,19 @@ function isMonthlySecurityMigration(sql: string) {
     /validate_training_monthly_plan_completion_payload/i.test(sql);
 }
 
+function isDurableGenerationJobMigration(sql: string) {
+  return /training_monthly_plan_generation_jobs/i.test(sql) &&
+    /claim_training_monthly_plan_generation_job/i.test(sql) &&
+    /for update skip locked/i.test(sql);
+}
+
+function isDurableGenerationJobClaimHardeningMigration(sql: string) {
+  return /claim_training_monthly_plan_generation_job/i.test(sql) &&
+    /attempt_count\s+>=\s+job\.max_attempts/i.test(sql) &&
+    /status\s*=\s*'failed'/i &&
+    /released_at\s*=\s*p_claimed_at/i;
+}
+
 async function readMonthlySecurityMigrationTargets() {
   const [baseSql, forwardMigrations] = await Promise.all([
     readMigration(),
@@ -52,6 +65,19 @@ async function readMonthlySecurityMigrationTargets() {
     { fileName: baseMigrationName, sql: baseSql },
     securityMigration,
   ];
+}
+
+async function readDurableGenerationJobMigration() {
+  const durableMigration = (await readForwardMigrations()).find(({ sql }) =>
+    isDurableGenerationJobMigration(sql),
+  );
+
+  assert.ok(
+    durableMigration,
+    'Missing durable monthly training generation job migration.',
+  );
+
+  return durableMigration;
 }
 
 function getFunctionDefinition(sql: string, functionName: string) {
@@ -77,6 +103,18 @@ describe('training plan Supabase migration security', () => {
     assert.ok(
       securityMigration,
       'Missing forward migration for existing monthly training plan deployments.',
+    );
+  });
+
+  it('adds a forward migration to fail exhausted durable generation jobs', async () => {
+    const forwardMigrations = await readForwardMigrations();
+    const hardeningMigration = forwardMigrations.find(({ sql }) =>
+      isDurableGenerationJobClaimHardeningMigration(sql),
+    );
+
+    assert.ok(
+      hardeningMigration,
+      'Missing forward migration for exhausted durable generation jobs.',
     );
   });
 
@@ -395,6 +433,102 @@ describe('training plan Supabase migration security', () => {
         validationDefinition,
         /jsonb_typeof\(attempt\.value -> 'error'\) is distinct from 'string'/i,
         fileName,
+      );
+    }
+  });
+
+  it('creates a durable monthly generation jobs table protected by RLS', async () => {
+    const { sql } = await readDurableGenerationJobMigration();
+
+    assert.match(
+      sql,
+      /create table if not exists public\.training_monthly_plan_generation_jobs/i,
+    );
+    assert.match(sql, /reservation_id\s+uuid\s+not null/i);
+    assert.match(sql, /snapshot\s+jsonb\s+not null/i);
+    assert.match(sql, /athletic_profile\s+jsonb\s+not null/i);
+    assert.match(sql, /status\s+text\s+not null/i);
+    assert.match(sql, /status[\s\S]*queued[\s\S]*running[\s\S]*completed[\s\S]*failed/i);
+    assert.match(sql, /lock_expires_at\s+timestamptz/i);
+    assert.match(
+      sql,
+      /alter table public\.training_monthly_plan_generation_jobs\s+enable row level security/i,
+    );
+    assert.match(
+      sql,
+      /grant\s+select\s+on\s+public\.training_monthly_plan_generation_jobs\s+to\s+authenticated/i,
+    );
+    assert.match(
+      sql,
+      /grant\s+all\s+on\s+public\.training_monthly_plan_generation_jobs\s+to\s+service_role/i,
+    );
+    assert.match(
+      sql,
+      /revoke\s+insert,\s*update,\s*delete\s+on(?:\s+table)?\s+public\.training_monthly_plan_generation_jobs\s+from\s+public,\s*anon,\s*authenticated/i,
+    );
+  });
+
+  it('protects durable generation job RPCs with user or service-role scope', async () => {
+    const { sql } = await readDurableGenerationJobMigration();
+    const enqueueDefinition = getFunctionDefinition(
+      sql,
+      'enqueue_training_monthly_plan_generation_job',
+    );
+    const claimDefinition = getFunctionDefinition(
+      sql,
+      'claim_training_monthly_plan_generation_job',
+    );
+    const completeDefinition = getFunctionDefinition(
+      sql,
+      'complete_training_monthly_plan_generation_job',
+    );
+    const completeAsWorkerDefinition = getFunctionDefinition(
+      sql,
+      'complete_training_monthly_plan_generation_as_worker',
+    );
+    const failDefinition = getFunctionDefinition(
+      sql,
+      'fail_training_monthly_plan_generation_job',
+    );
+
+    assert.match(enqueueDefinition, /security definer/i);
+    assert.match(enqueueDefinition, /auth\.uid\(\)\s+is distinct from\s+p_user_id/i);
+    assert.match(claimDefinition, /for update skip locked/i);
+    assert.match(claimDefinition, /status in \('queued', 'running'\)/i);
+    assert.match(claimDefinition, /lock_expires_at\s+<=\s*p_claimed_at/i);
+    assert.match(claimDefinition, /attempt_count\s+>=\s+job\.max_attempts/i);
+    assert.match(claimDefinition, /status\s*=\s*'failed'/i);
+    assert.match(claimDefinition, /released_at\s*=\s*p_claimed_at/i);
+    assert.match(
+      completeAsWorkerDefinition,
+      /validate_training_monthly_plan_completion_payload/i,
+    );
+    assert.match(completeDefinition, /completed_at\s*=\s*p_completed_at/i);
+    assert.match(failDefinition, /released_at\s*=\s*p_failed_at/i);
+
+    assert.match(
+      sql,
+      /grant execute[\s\S]*public\.enqueue_training_monthly_plan_generation_job\([^;]*?to\s+authenticated/i,
+    );
+
+    for (const functionName of [
+      'claim_training_monthly_plan_generation_job',
+      'complete_training_monthly_plan_generation_job',
+      'fail_training_monthly_plan_generation_job',
+    ]) {
+      assert.match(
+        sql,
+        new RegExp(
+          `grant execute[\\s\\S]*public\\.${functionName}\\([^;]*?to\\s+service_role`,
+          'i',
+        ),
+      );
+      assert.match(
+        sql,
+        new RegExp(
+          `revoke execute[\\s\\S]*public\\.${functionName}\\([^;]*?from\\s+public,\\s*anon,\\s*authenticated`,
+          'i',
+        ),
       );
     }
   });

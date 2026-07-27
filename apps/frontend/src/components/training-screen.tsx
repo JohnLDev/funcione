@@ -1,11 +1,11 @@
-import { AlertCircle, Clock3, Dumbbell, RefreshCw } from 'lucide-react';
+import { AlertCircle, Dumbbell, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
+import { AppLoading } from './app-loading.js';
 import { TrainingActivePlan } from './training-active-plan.js';
 import { TrainingPlanWizard } from './training-plan-wizard.js';
 import { Button } from './ui/button.js';
-import { Card, CardContent } from './ui/card.js';
 
 function TrainingScreenContent() {
   const { t } = useTranslation();
@@ -14,9 +14,11 @@ function TrainingScreenContent() {
   if (isLoading && !state) {
     return (
       <section className="mt-5">
-        <p className="text-sm font-bold text-muted-foreground">
-          {t('training.loading')}
-        </p>
+        <AppLoading
+          className="min-h-56"
+          description={t('training.loadingDescription')}
+          label={t('training.loading')}
+        />
       </section>
     );
   }
@@ -51,7 +53,7 @@ function TrainingScreenContent() {
           </p>
           <Button
             className="shrink-0"
-            onClick={() => void reload()}
+            onClick={() => void reload({ force: true })}
             type="button"
             variant="outline"
           >
@@ -65,20 +67,26 @@ function TrainingScreenContent() {
       ) : state?.canGenerate ? (
         <TrainingPlanWizard />
       ) : state ? (
-        <Card className="rounded-2xl">
-          <CardContent className="grid justify-items-start gap-3 p-4">
-            <Clock3 aria-hidden className="text-primary" size={24} />
-            <p className="text-sm font-bold text-muted-foreground">
-              {t('training.pendingMessage')}
-            </p>
-            {!errorMessage ? (
-              <Button onClick={() => void reload()} type="button" variant="outline">
-                <RefreshCw aria-hidden size={16} />
-                {t('training.retry')}
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
+        <div className="grid gap-3">
+          <AppLoading
+            description={t('training.pendingDescription')}
+            label={t('training.pendingTitle')}
+          />
+          <p className="rounded-2xl border border-primary/25 bg-primary/10 p-4 text-sm font-bold text-muted-foreground">
+            {t('training.pendingMessage')}
+          </p>
+          {!errorMessage ? (
+            <Button
+              className="justify-self-start"
+              onClick={() => void reload({ force: true })}
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw aria-hidden size={16} />
+              {t('training.retry')}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

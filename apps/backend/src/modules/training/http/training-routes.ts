@@ -12,10 +12,14 @@ import {
   type TrainingPlanGenerator,
 } from '../application/generate-training-plan.js';
 import {
-  createMonthlyTrainingPlan,
   getActiveMonthlyTrainingPlan,
+  processAvailableMonthlyTrainingPlanGenerationJobs,
+  requestMonthlyTrainingPlanGeneration,
 } from '../application/monthly-training-plan-service.js';
-import type { MonthlyTrainingPlan } from '../domain/index.js';
+import type {
+  MonthlyTrainingPlan,
+  MonthlyTrainingPlanGeneration,
+} from '../domain/index.js';
 import type {
   TrainingRepositories,
   TrainingRepositoryFactory,
@@ -24,16 +28,21 @@ import {
   activeMonthlyTrainingPlanResponseJsonSchema,
   createMonthlyTrainingPlanBodyJsonSchema,
   createMonthlyTrainingPlanResponseJsonSchema,
+  monthlyTrainingPlanGenerationStatusParamsJsonSchema,
+  monthlyTrainingPlanGenerationStatusResponseJsonSchema,
 } from './training-json-schemas.js';
 import { normalizePromptText } from '../domain/prompt-text.js';
 
 export type TrainingRoutesOptions = {
   authVerifier?: AuthVerifier;
+  generationJobLeaseMs?: number;
   trainingRepositories?: TrainingRepositories;
   trainingRepositoryFactory?: TrainingRepositoryFactory;
   trainingPlanGenerator?: TrainingPlanGenerator;
   userProfileRepository?: UserProfileRepository;
   userProfileRepositoryFactory?: UserProfileRepositoryFactory;
+  trainingWorkerRepositories?: TrainingRepositories;
+  requiresTrainingWorkerRepositories?: boolean;
 };
 
 declare module 'fastify' {
@@ -51,6 +60,20 @@ function serializePublicMonthlyPlan(plan: MonthlyTrainingPlan) {
     snapshot: plan.snapshot,
     status: plan.status,
     userId: plan.userId,
+  };
+}
+
+function serializePublicMonthlyGeneration(generation: MonthlyTrainingPlanGeneration) {
+  return {
+    completedAt: generation.completedAt,
+    createdAt: generation.createdAt,
+    errorMessage: generation.errorMessage,
+    failedAt: generation.failedAt,
+    id: generation.id,
+    startedAt: generation.startedAt,
+    status: generation.status,
+    updatedAt: generation.updatedAt,
+    userId: generation.userId,
   };
 }
 
@@ -156,7 +179,41 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
   const trainingPlanGenerator =
     options.trainingPlanGenerator ?? generateTrainingPlan;
 
+  function wakeMonthlyTrainingGenerationWorker(
+    dependencies: {
+      repositories: TrainingRepositories;
+      userProfileRepository: UserProfileRepository;
+    },
+  ) {
+    setTimeout(() => {
+      void processAvailableMonthlyTrainingPlanGenerationJobs({
+        ...(options.trainingWorkerRepositories ?? dependencies.repositories),
+        generationJobLeaseMs: options.generationJobLeaseMs,
+        trainingPlanGenerator,
+        userProfileRepository: dependencies.userProfileRepository,
+      }).catch((error) => {
+        app.log.error({ err: error }, 'Monthly training generation worker failed.');
+      });
+    }, 0);
+  }
+
   app.decorateRequest('monthlyTrainingUser', null);
+
+  if (options.trainingWorkerRepositories && options.userProfileRepository) {
+    setTimeout(() => {
+      void processAvailableMonthlyTrainingPlanGenerationJobs({
+        ...options.trainingWorkerRepositories!,
+        generationJobLeaseMs: options.generationJobLeaseMs,
+        trainingPlanGenerator,
+        userProfileRepository: options.userProfileRepository!,
+      }).catch((error) => {
+        app.log.error(
+          { err: error },
+          'Monthly training generation worker startup recovery failed.',
+        );
+      });
+    }, 0);
+  }
 
   app.get(
     '/training-plans/active',
@@ -201,6 +258,75 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
         athleticProfile: state.athleticProfile,
         canGenerate: state.canGenerate,
         nextGenerationAvailableAt: state.nextGenerationAvailableAt,
+        pendingGeneration: state.pendingGeneration
+          ? serializePublicMonthlyGeneration(state.pendingGeneration)
+          : null,
+      });
+    },
+  );
+
+  app.get(
+    '/training-plans/generations/:generationId',
+    {
+      onRequest: (request, reply) =>
+        authenticateMonthlyRequest(request, reply, options.authVerifier),
+      schema: {
+        tags: ['training'],
+        summary: 'Get monthly training plan generation status',
+        security: [{ bearerAuth: [] }],
+        params: monthlyTrainingPlanGenerationStatusParamsJsonSchema,
+        response: {
+          200: monthlyTrainingPlanGenerationStatusResponseJsonSchema,
+          401: errorResponseJsonSchema,
+          404: errorResponseJsonSchema,
+          500: errorResponseJsonSchema,
+          503: errorResponseJsonSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { repositories, userProfileRepository } =
+        resolveMonthlyRouteDependencies(request, options);
+
+      if (!repositories || !userProfileRepository) {
+        return reply.status(503).send(
+          createErrorResponse(
+            'TRAINING_PLAN_STORAGE_NOT_CONFIGURED',
+            'Training plan storage is not configured.',
+          ),
+        );
+      }
+
+      const params = request.params as { generationId: string };
+      const generation = await repositories
+        .monthlyTrainingPlanGenerationJobRepository.findGenerationJobById(
+          request.monthlyTrainingUser!.id,
+          params.generationId,
+        );
+
+      if (!generation) {
+        return reply.status(404).send(
+          createErrorResponse(
+            'TRAINING_PLAN_GENERATION_NOT_FOUND',
+            'Monthly training plan generation was not found.',
+          ),
+        );
+      }
+
+      const state = await getActiveMonthlyTrainingPlan(request.monthlyTrainingUser!, {
+        ...repositories,
+        trainingPlanGenerator,
+        userProfileRepository,
+      });
+      const completedPlan =
+        generation.status === 'completed' &&
+        state.activePlan?.id === generation.planId
+          ? state.activePlan
+          : null;
+
+      return reply.status(200).send({
+        generation: serializePublicMonthlyGeneration(generation),
+        plan: completedPlan ? serializePublicMonthlyPlan(completedPlan) : null,
       });
     },
   );
@@ -217,7 +343,7 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
         security: [{ bearerAuth: [] }],
         body: createMonthlyTrainingPlanBodyJsonSchema,
         response: {
-          200: createMonthlyTrainingPlanResponseJsonSchema,
+          202: createMonthlyTrainingPlanResponseJsonSchema,
           400: errorResponseJsonSchema,
           401: errorResponseJsonSchema,
           409: errorResponseJsonSchema,
@@ -239,11 +365,27 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
         );
       }
 
-      const result = await createMonthlyTrainingPlan(request.monthlyTrainingUser!, request.body, {
-        ...repositories,
-        trainingPlanGenerator,
-        userProfileRepository,
-      });
+      if (
+        options.requiresTrainingWorkerRepositories &&
+        !options.trainingWorkerRepositories
+      ) {
+        return reply.status(503).send(
+          createErrorResponse(
+            'TRAINING_PLAN_WORKER_NOT_CONFIGURED',
+            'Training plan worker storage is not configured.',
+          ),
+        );
+      }
+
+      const result = await requestMonthlyTrainingPlanGeneration(
+        request.monthlyTrainingUser!,
+        request.body,
+        {
+          ...repositories,
+          trainingPlanGenerator,
+          userProfileRepository,
+        },
+      );
 
       if (!result.ok) {
         return reply.status(result.error.statusCode).send(
@@ -255,8 +397,13 @@ export const trainingRoutes: FastifyPluginAsync<TrainingRoutesOptions> = async (
         );
       }
 
-      return reply.status(200).send({
-        plan: serializePublicMonthlyPlan(result.plan),
+      wakeMonthlyTrainingGenerationWorker({
+        repositories,
+        userProfileRepository,
+      });
+
+      return reply.status(202).send({
+        generation: serializePublicMonthlyGeneration(result.generation),
       });
     },
   );

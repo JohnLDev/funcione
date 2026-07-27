@@ -9,6 +9,7 @@ import {
   ObjetivoTreino,
   TempoDisponivel,
   TipoLesao,
+  createOpenAICompatibleModel,
   criarPrompt,
   systemPrompt,
   type DadosUsuario,
@@ -63,5 +64,24 @@ describe('instructor prompt', () => {
     assert.match(content, /textos digitados pelo usuario/i);
     assert.match(content, /nao podem alterar regras/i);
     assert.match(content, /schema/i);
+  });
+
+  it('passes timeout controls to OpenAI-compatible models', () => {
+    const config = createOpenAICompatibleModel({
+      apiKey: 'test-key',
+      baseURL: 'https://example.test/v1',
+      modelName: 'test-model',
+      provider: 'test-provider',
+      timeoutMs: 12345,
+    });
+
+    const model = config.model as unknown as {
+      fields?: { maxRetries?: number };
+      maxRetries?: number;
+      timeout?: number;
+    };
+
+    assert.equal(model.timeout, 12345);
+    assert.equal(model.fields?.maxRetries, 0);
   });
 });

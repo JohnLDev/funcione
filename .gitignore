@@ -9,3 +9,4 @@ agent-debug.json
 .worktrees/
 apps/frontend/test-results/
 apps/frontend/playwright-report/
+apps/frontend/dev-dist/

@@ -78,6 +78,29 @@ apps/backend/src/modules/<modulo>/
 - Nao definir tema visual, paleta, componentes finais ou identidade sem alinhamento previo.
 - Ao implementar UI, mantenha o app utilizavel como primeira tela; evite landing page quando a tarefa pedir ferramenta/app.
 
+## Feedback De Erros No Frontend
+
+- Toda mensagem de erro exposta no frontend deve passar por normalizacao e traducao antes de ser renderizada.
+- Componentes nao devem renderizar diretamente `error.message`, mensagens cruas de providers externos, mensagens tecnicas da API, stack traces ou texto vindo do Supabase.
+- Todo erro esperado exposto ao usuario deve ter codigo estavel, chave i18n em `pt-BR` e `en-US`, e teste automatizado garantindo que a mensagem final e traduzida.
+- Quando um erro externo nao fornece codigo estavel, mapeie por padroes conhecidos em uma camada central; se nao houver mapeamento, use fallback generico seguro e traduzido.
+- APIs REST devem convergir para um envelope comum:
+
+```ts
+{
+  error: {
+    code: string;
+    message: string;
+    userMessageKey?: string;
+    details?: Record<string, unknown>;
+    requestId?: string;
+  }
+}
+```
+
+- `message` e diagnostica/tecnica e nao deve ser exibida diretamente ao usuario final.
+- Mudancas em fluxos de erro do frontend devem incluir E2E cobrindo feedback visual, traducao e ausencia de mensagens cruas.
+
 ## Monorepo E Scripts
 
 - A raiz usa npm workspaces.

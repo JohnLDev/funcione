@@ -1,20 +1,31 @@
 import { expect, test, type Page } from '@playwright/test';
 
 type TrainingScenario = {
+  createDelayMs?: number;
+  createError?: string;
+  createErrorCode?: string;
   createThrows?: string;
+  generationError?: string;
+  generationPollsBeforeComplete?: number;
+  getDelayMs?: number;
   getError?: string;
+  getErrorCode?: string;
   pending?: boolean;
 };
 
 async function signUp(page: Page, email: string) {
   await page.goto('/signup');
-  await page.getByLabel(/^nome$/i).fill('Estado');
-  await page.getByLabel(/sobrenome/i).fill('Treino');
-  await page.getByLabel(/cpf/i).fill('52998224725');
-  await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-  await page.getByLabel(/telefone/i).fill('11999999999');
-  await page.getByLabel(/e-mail/i).fill(email);
-  await page.getByLabel(/senha/i).fill('StrongPass123!');
+  await expect(
+    page.getByRole('heading', { name: /criar cadastro/i }),
+  ).toBeVisible();
+  await page.locator('#signup-firstName').fill('Estado');
+  await expect(page.locator('#signup-firstName')).toHaveValue('Estado');
+  await page.locator('#signup-lastName').fill('Treino');
+  await page.locator('#signup-cpf').fill('52998224725');
+  await page.locator('#signup-birthDate').fill('1996-07-20');
+  await page.locator('#signup-phoneNumber').fill('11999999999');
+  await page.locator('#signup-email').fill(email);
+  await page.locator('#signup-password').fill('StrongPass123!');
   await page.getByRole('button', { name: /^criar conta$/i }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
@@ -40,6 +51,63 @@ async function setTrainingScenario(
   }, scenario);
 }
 
+async function readTrainingPlanCache(page: Page) {
+  return page.evaluate(() => {
+    const session = JSON.parse(
+      window.localStorage.getItem('funcione-mock-session') ?? '{}',
+    ) as { user?: { id?: string } };
+    const userId = session.user?.id;
+
+    if (!userId) {
+      return null;
+    }
+
+    return window.localStorage.getItem(`funcione-training-plan-cache:${userId}`);
+  });
+}
+
+async function expireTrainingPlanCache(page: Page) {
+  await page.evaluate(() => {
+    const session = JSON.parse(
+      window.localStorage.getItem('funcione-mock-session') ?? '{}',
+    ) as { user?: { id?: string } };
+    const userId = session.user?.id;
+
+    if (!userId) {
+      return;
+    }
+
+    const cacheKey = `funcione-training-plan-cache:${userId}`;
+    const storedCache = window.localStorage.getItem(cacheKey);
+
+    if (!storedCache) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      cacheKey,
+      JSON.stringify({
+        ...JSON.parse(storedCache),
+        cachedAt: Date.now() - 5 * 60 * 1000 - 1,
+      }),
+    );
+  });
+}
+
+async function generatePlanWithConfirmation(page: Page) {
+  await page.getByRole('button', { name: /gerar plano/i }).click();
+
+  const confirmation = page.getByRole('alertdialog', {
+    name: /confirmar geracao do plano/i,
+  });
+
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText(/30 dias/i);
+  await confirmation
+    .getByRole('button', { name: /confirmar geracao/i })
+    .click();
+}
+
 test.describe('monthly training plan route', () => {
   test('normalizes bounded free text and deduplicates hydrated selection types', async ({
     page,
@@ -51,6 +119,7 @@ test.describe('monthly training plan route', () => {
         '/src/components/training-plan-wizard.tsx'
       )) as unknown as {
         finalizeFreeText: (value: string, maxLength: number) => string;
+        getGenerationFeedbackPhase: (elapsedMs: number) => number;
         normalizeFreeText: (value: string, maxLength: number) => string;
         uniqueTypes: <T extends string>(types: T[]) => T[];
       };
@@ -62,6 +131,11 @@ test.describe('monthly training plan route', () => {
         ),
         customInjury: wizard.finalizeFreeText(`\u0002${'i'.repeat(140)}`, 120),
         editingValue: wizard.normalizeFreeText('dor ', 80),
+        generationFeedbackPhases: [
+          wizard.getGenerationFeedbackPhase(0),
+          wizard.getGenerationFeedbackPhase(6_000),
+          wizard.getGenerationFeedbackPhase(18_000),
+        ],
         injuryObservation: wizard.finalizeFreeText(`\u0003${'o'.repeat(200)}`, 180),
         types: wizard.uniqueTypes([
           'halteres',
@@ -75,6 +149,7 @@ test.describe('monthly training plan route', () => {
     expect(result.customEquipment).toBe('e'.repeat(80));
     expect(result.customInjury).toBe('i'.repeat(120));
     expect(result.editingValue).toBe('dor ');
+    expect(result.generationFeedbackPhases).toEqual([0, 1, 2]);
     expect(result.injuryObservation).toBe('o'.repeat(180));
     expect(result.types).toEqual(['halteres', 'customizado']);
   });
@@ -94,15 +169,35 @@ test.describe('monthly training plan route', () => {
     await expect(
       page.getByRole('link', { name: /inicio/i }),
     ).toHaveAttribute('aria-current', 'page');
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     await expect(page).toHaveURL(/\/training$/);
     await expect(
       page.getByRole('heading', { name: /novo plano de treino/i }),
     ).toBeVisible();
     await expect(
-      page.getByRole('link', { name: /treino/i }),
+      page.getByRole('link', { name: /^treino$/i }),
     ).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('shows the app loading animation while loading the active plan', async ({
+    page,
+  }) => {
+    await signUp(page, 'plan-loading@funcione.app');
+    await setTrainingScenario(page, { getDelayMs: 3_000 });
+    await expireTrainingPlanCache(page);
+
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    const loadingStatus = page.getByRole('status', {
+      name: /carregando plano de treino/i,
+    });
+    await expect(loadingStatus).toBeVisible();
+    await expect(loadingStatus).toContainText(/buscando seu plano ativo/i);
+    await expect(page.getByTestId('app-loading-sport-icon')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /novo plano de treino/i }),
+    ).toBeVisible();
   });
 
   test('shows a pending generation state and recovers through retry', async ({
@@ -110,7 +205,8 @@ test.describe('monthly training plan route', () => {
   }) => {
     await signUp(page, 'pending@funcione.app');
     await setTrainingScenario(page, { pending: true });
-    await page.getByRole('link', { name: /treino/i }).click();
+    await expireTrainingPlanCache(page);
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     await expect(
       page.getByRole('heading', { name: /geracao em andamento/i }),
@@ -126,19 +222,46 @@ test.describe('monthly training plan route', () => {
     ).toBeVisible();
   });
 
-  test('shows stored load errors and retries the active-plan request', async ({
+  test('maps stored load errors and retries the active-plan request', async ({
     page,
   }) => {
     await signUp(page, 'load-error@funcione.app');
     await setTrainingScenario(page, { getError: 'Falha armazenada do plano.' });
-    await page.getByRole('link', { name: /treino/i }).click();
+    await expireTrainingPlanCache(page);
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     await expect(page.getByRole('alert')).toContainText(
-      'Falha armazenada do plano.',
+      /Nao foi possivel atualizar o plano de treino/i,
     );
+    await expect(page.getByText(/Falha armazenada do plano/i)).toHaveCount(0);
 
     await setTrainingScenario(page, null);
     await page.getByRole('button', { name: /tentar novamente/i }).click();
+
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { name: /novo plano de treino/i }),
+    ).toBeVisible();
+  });
+
+  test('uses a five-minute frontend cache for active-plan state', async ({
+    page,
+  }) => {
+    await signUp(page, 'cached-plan@funcione.app');
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    await expect(
+      page.getByRole('heading', { name: /novo plano de treino/i }),
+    ).toBeVisible();
+    await expect(readTrainingPlanCache(page)).resolves.toContain(
+      '"canGenerate":true',
+    );
+
+    await setTrainingScenario(page, {
+      getError: 'Erro que nao deve aparecer por causa do cache.',
+    });
+    await page.getByRole('link', { name: /^inicio$/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect(
@@ -153,12 +276,12 @@ test.describe('monthly training plan route', () => {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await signUp(page, 'create-error@funcione.app');
     await setTrainingScenario(page, { createThrows: 'connection reset' });
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     for (let step = 0; step < 4; step += 1) {
       await page.getByRole('button', { name: /continuar/i }).click();
     }
-    await page.getByRole('button', { name: /gerar plano/i }).click();
+    await generatePlanWithConfirmation(page);
 
     await expect(page.getByRole('alert')).toContainText(
       /nao foi possivel atualizar o plano de treino/i,
@@ -168,8 +291,93 @@ test.describe('monthly training plan route', () => {
 
     await setTrainingScenario(page, null);
     await page.getByRole('button', { name: /tentar novamente/i }).click();
-    await page.getByRole('button', { name: /gerar plano/i }).click();
+    await generatePlanWithConfirmation(page);
 
+    await expect(
+      page.getByRole('heading', { name: /plano ativo/i }),
+    ).toBeVisible();
+  });
+
+  test('shows a translated sport toast for training failures and keeps retry available', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 844, width: 390 });
+    await signUp(page, 'training-toast-error@funcione.app');
+    await setTrainingScenario(page, { createThrows: 'connection reset' });
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    for (let step = 0; step < 4; step += 1) {
+      await page.getByRole('button', { name: /continuar/i }).click();
+    }
+
+    await generatePlanWithConfirmation(page);
+
+    const toast = page.getByRole('status', {
+      name: /feedback do sistema/i,
+    });
+    await expect(toast).toContainText(
+      /Nao foi possivel atualizar o plano de treino/i,
+    );
+    await expect(page.getByTestId('app-toast-sport-icon')).toBeVisible();
+    await expect(page.getByText(/connection reset/i)).toHaveCount(0);
+    await expect(page.getByRole('alert')).toContainText(
+      /Nao foi possivel atualizar o plano de treino/i,
+    );
+    await expect(page.getByRole('button', { name: /gerar plano/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /tentar novamente/i })).toBeVisible();
+
+    const scrollWidth = await page.evaluate(
+      () => document.documentElement.scrollWidth,
+    );
+    const viewportWidth = await page.evaluate(() => window.innerWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
+  });
+
+  test('shows staged generation feedback while creating a monthly plan', async ({
+    page,
+  }) => {
+    await signUp(page, 'generation-feedback@funcione.app');
+    await setTrainingScenario(page, { createDelayMs: 3_000 });
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    for (let step = 0; step < 4; step += 1) {
+      await page.getByRole('button', { name: /continuar/i }).click();
+    }
+
+    await generatePlanWithConfirmation(page);
+
+    const generationStatus = page.getByRole('status', {
+      name: /andamento da geracao/i,
+    });
+    await expect(generationStatus).toContainText(/preparando dados/i);
+    await expect(generationStatus).toContainText(/conectando com a ia/i);
+    await expect(generationStatus).toContainText(/salvando plano/i);
+    await expect(
+      page.getByRole('button', { name: /gerando plano/i }),
+    ).toBeDisabled();
+
+    await expect(
+      page.getByRole('heading', { name: /plano ativo/i }),
+    ).toBeVisible();
+  });
+
+  test('shows an async generation state after accepting a monthly plan request', async ({
+    page,
+  }) => {
+    await signUp(page, 'async-generation@example.com');
+    await setTrainingScenario(page, { generationPollsBeforeComplete: 2 });
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    for (let step = 0; step < 4; step += 1) {
+      await page.getByRole('button', { name: /continuar/i }).click();
+    }
+
+    await generatePlanWithConfirmation(page);
+
+    await expect(
+      page.getByRole('heading', { name: /geracao em andamento/i }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /gerar plano/i })).toHaveCount(0);
     await expect(
       page.getByRole('heading', { name: /plano ativo/i }),
     ).toBeVisible();
@@ -186,7 +394,7 @@ test.describe('monthly training plan route', () => {
     await page.getByLabel(/senha/i).fill('StrongPass123!');
     await page.getByRole('button', { name: /^criar conta$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page).toHaveURL(/\/training$/);
 
     await page.getByRole('button', { name: /volei/i }).click();
@@ -227,6 +435,15 @@ test.describe('monthly training plan route', () => {
       page.getByText(/voce podera gerar outro plano depois de 30 dias/i),
     ).toBeVisible();
     await page.getByRole('button', { name: /gerar plano/i }).click();
+    const confirmation = page.getByRole('alertdialog', {
+      name: /confirmar geracao do plano/i,
+    });
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation).toContainText(/30 dias/i);
+    await confirmation.getByRole('button', { name: /cancelar/i }).click();
+    await expect(confirmation).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /plano ativo/i })).toHaveCount(0);
+    await generatePlanWithConfirmation(page);
 
     await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
 
@@ -248,7 +465,7 @@ test.describe('monthly training plan route', () => {
     await page.getByLabel(/senha/i).fill('StrongPass123!');
     await page.getByRole('button', { name: /^criar conta$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page).toHaveURL(/\/training$/);
 
     await page.getByRole('button', { name: /volei/i }).click();
@@ -282,7 +499,7 @@ test.describe('monthly training plan route', () => {
 
     await expect(page.getByText(/moderada.*evitar impacto repetido/i)).toBeVisible();
     await expect(page.getByText(/alta.*evitar saltos altos/i)).toBeVisible();
-    await page.getByRole('button', { name: /gerar plano/i }).click();
+    await generatePlanWithConfirmation(page);
 
     await expect(
       page.getByRole('heading', { name: /plano ativo/i }),
@@ -332,7 +549,7 @@ test.describe('monthly training plan route', () => {
     await page.getByLabel(/e-mail/i).fill('blank-custom@funcione.app');
     await page.getByLabel(/senha/i).fill('StrongPass123!');
     await page.getByRole('button', { name: /^criar conta$/i }).click();
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     await page.getByRole('button', { name: /continuar/i }).click();
     await page.getByRole('button', { name: /continuar/i }).click();
@@ -397,7 +614,7 @@ test.describe('monthly training plan route', () => {
     await page.getByLabel(/senha/i).fill(password);
     await page.getByRole('button', { name: /^criar conta$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
 
     await page.getByRole('button', { name: /volei/i }).click();
     await page.getByRole('button', { name: /performance/i }).click();
@@ -413,7 +630,7 @@ test.describe('monthly training plan route', () => {
     await page.getByRole('button', { name: /halteres/i }).click();
     await page.getByRole('button', { name: /sem lesoes/i }).click();
     await page.getByRole('button', { name: /continuar/i }).click();
-    await page.getByRole('button', { name: /gerar plano/i }).click();
+    await generatePlanWithConfirmation(page);
 
     await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
     const nextGenerationDate = new Date();
@@ -465,7 +682,7 @@ test.describe('monthly training plan route', () => {
     await page.getByLabel(/senha/i).fill(password);
     await page.getByRole('button', { name: /^entrar$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /gerar plano/i })).toHaveCount(0);
   });
@@ -481,7 +698,7 @@ test.describe('monthly training plan route', () => {
     await page.getByLabel(/senha/i).fill('StrongPass123!');
     await page.getByRole('button', { name: /^criar conta$/i }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('link', { name: /treino/i }).click();
+    await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page).toHaveURL(/\/training$/);
 
     await page.getByRole('button', { name: /continuar/i }).click();

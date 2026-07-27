@@ -64,11 +64,38 @@ export type MonthlyTrainingPlan = {
   userId: string;
 };
 
+export type MonthlyTrainingPlanGenerationStatus =
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+export type MonthlyTrainingPlanGeneration = {
+  attemptCount: number;
+  athleticProfile: AthleticProfileInput;
+  completedAt: string | null;
+  createdAt: string;
+  errorMessage: string | null;
+  failedAt: string | null;
+  id: string;
+  lockExpiresAt: string | null;
+  lockedAt: string | null;
+  maxAttempts: number;
+  planId: string | null;
+  reservationId: string;
+  snapshot: DadosUsuario;
+  startedAt: string | null;
+  status: MonthlyTrainingPlanGenerationStatus;
+  updatedAt: string;
+  userId: string;
+};
+
 export type MonthlyTrainingPlanState = {
   activePlan: MonthlyTrainingPlan | null;
   athleticProfile: AthleticProfile | null;
   canGenerate: boolean;
   nextGenerationAvailableAt: string | null;
+  pendingGeneration: MonthlyTrainingPlanGeneration | null;
 };
 
 export type CreateMonthlyTrainingPlanPayload = CreateMonthlyTrainingPlanRequest;

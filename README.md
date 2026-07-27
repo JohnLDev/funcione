@@ -119,6 +119,10 @@ OPENROUTER_SITE_URL=http://localhost
 OPENROUTER_SITE_NAME=LangChain Training Plan
 
 PRIMARY_PROVIDER=nvidia
+TRAINING_PLAN_MODEL_TIMEOUT_MS=600000
+TRAINING_PLAN_JOB_LEASE_MS=1500000
+TRAINING_PLAN_WORKER_INTERVAL_MS=5000
+TRAINING_PLAN_WORKER_RUN_ONCE=false
 ```
 
 Supabase Auth no backend:
@@ -126,7 +130,11 @@ Supabase Auth no backend:
 ```bash
 SUPABASE_URL=
 SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
 ```
+
+`SUPABASE_SECRET_KEY` e usada somente no backend pelo worker duravel de
+geracao de treino. Nunca exponha essa chave no frontend.
 
 Supabase Auth no frontend:
 
@@ -250,6 +258,33 @@ supabase db push
 O frontend usa `/training` como fluxo autenticado para criar e consultar o
 plano mensal.
 
+## PWA E Instalabilidade
+
+O frontend e preparado como PWA instalavel usando `vite-plugin-pwa`.
+
+- O manifesto vive em `apps/frontend/public/manifest.webmanifest` e e servido
+  em `/manifest.webmanifest`.
+- O service worker e gerado em `/sw.js` e usa atualizacao controlada para nao
+  recarregar o app durante formularios.
+- Em desenvolvimento, o app nao registra service worker; o dev server valida
+  apenas manifesto e icones para evitar erros com `apps/frontend/dev-dist`.
+- Ainda em desenvolvimento, service workers antigos do mesmo origin sao
+  desregistrados automaticamente para limpar estado local antigo.
+- Os icones de instalacao ficam em `apps/frontend/public/icons/`.
+- O cache deve ficar limitado ao app shell e assets estaticos.
+- Rotas autenticadas e dados sensiveis nao devem ser cacheados no service
+  worker.
+- `/api`, `/documentation` e `/healthz` devem permanecer fora de runtime cache.
+
+Validacao direcionada:
+
+```bash
+npm run test:e2e --workspace @langchain-training/frontend -- --project=desktop-chromium apps/frontend/e2e/pwa-installability.spec.ts
+```
+
+Em producao, a instalacao exige HTTPS. Em desenvolvimento, `localhost` e
+`127.0.0.1` sao contextos aceitos pelos navegadores para testes PWA.
+
 ## Plugins Necessarios Para Desenvolvimento
 
 Estes plugins/skills sao parte do modo de trabalho do projeto no Codex.
@@ -368,3 +403,51 @@ Inspecionar OpenAPI:
 http://localhost:3000/documentation
 http://localhost:3000/documentation/json
 ```
+
+## Docker
+
+O projeto possui imagens de producao para backend e frontend e um Compose para
+validacao local.
+
+Build das imagens:
+
+```bash
+npm run docker:build
+```
+
+Subir backend e frontend:
+
+```bash
+npm run docker:up
+```
+
+URLs locais:
+
+```txt
+http://localhost:8080
+http://localhost:3000/healthz
+http://localhost:3000/documentation
+```
+
+Rodar validacao contra os containers:
+
+```bash
+npm run docker:test
+```
+
+Parar o ambiente:
+
+```bash
+npm run docker:down
+```
+
+O worker de geracao IA e opcional no Compose para evitar consumo involuntario
+de providers durante testes locais:
+
+```bash
+docker compose --profile worker up -d worker
+```
+
+O frontend recebe somente variaveis `VITE_*` durante o build. Variaveis
+sensíveis, como `SUPABASE_SECRET_KEY`, devem ficar somente em `backend` e
+`worker`.

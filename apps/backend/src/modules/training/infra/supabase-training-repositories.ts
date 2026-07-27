@@ -1,11 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AthleticProfileRepository } from '../application/athletic-profile-repository.js';
+import type {
+  ClaimMonthlyTrainingPlanGenerationJobInput,
+  CompleteMonthlyTrainingPlanGenerationJobInput,
+  EnqueueMonthlyTrainingPlanGenerationJobInput,
+  FailMonthlyTrainingPlanGenerationJobInput,
+  MonthlyTrainingPlanGenerationJobRepository,
+} from '../application/monthly-training-plan-generation-job-repository.js';
 import type { MonthlyTrainingPlanRepository } from '../application/monthly-training-plan-repository.js';
 import type { TrainingRepositories } from '../application/training-repository-factory.js';
 import { MonthlyTrainingPlanStatus } from '../domain/enums.js';
 import type {
   AthleticProfile,
   AthleticProfileInput,
+  MonthlyTrainingPlanGeneration,
+  MonthlyTrainingPlanGenerationStatus,
   MonthlyTrainingPlan,
   MonthlyTrainingPlanMetadata,
 } from '../domain/monthly-plan.js';
@@ -16,11 +25,16 @@ import type {
   PlanoTreino,
 } from '../domain/schemas.js';
 import {
+  createServiceSupabaseClient,
+  type ServiceSupabaseClientConfig,
+} from './supabase-service-client.js';
+import {
   createUserScopedSupabaseClient,
   type UserScopedSupabaseClientConfig,
 } from './supabase-user-scoped-client.js';
 
 export type SupabaseTrainingRepositoriesConfig = UserScopedSupabaseClientConfig;
+export type SupabaseTrainingWorkerRepositoriesConfig = ServiceSupabaseClientConfig;
 
 type AthleticProfileRow = {
   altura_cm: number;
@@ -48,6 +62,31 @@ type MonthlyPlanRow = {
   user_id: string;
 };
 
+type AthleticProfilePayload = Omit<
+  AthleticProfileRow,
+  'created_at' | 'updated_at' | 'user_id'
+>;
+
+type MonthlyTrainingPlanGenerationJobRow = {
+  attempt_count: number;
+  athletic_profile: AthleticProfilePayload;
+  completed_at: string | null;
+  created_at: string;
+  error_message: string | null;
+  failed_at: string | null;
+  id: string;
+  lock_expires_at: string | null;
+  locked_at: string | null;
+  max_attempts: number;
+  plan_id: string | null;
+  reservation_id: string;
+  snapshot: DadosUsuario;
+  started_at: string | null;
+  status: MonthlyTrainingPlanGenerationStatus;
+  updated_at: string;
+  user_id: string;
+};
+
 type ActiveGenerationStateRow = {
   active_plan: MonthlyPlanRow | null;
   has_pending_generation: boolean;
@@ -57,6 +96,77 @@ function throwIfError(error: { message: string } | null): void {
   if (error) {
     throw new Error(error.message);
   }
+}
+
+function toAthleticProfileInput(row: AthleticProfilePayload): AthleticProfileInput {
+  return {
+    alturaCm: row.altura_cm,
+    equipamentosDisponiveis: row.equipamentos_disponiveis,
+    lesoesRecorrentes: row.lesoes_recorrentes,
+    localTreinoComum: row.local_treino_comum,
+    modalidadePreferida: row.modalidade_preferida,
+    nivelExperiencia: row.nivel_experiencia,
+    pesoKg: row.peso_kg,
+  };
+}
+
+function toMonthlyTrainingPlanGeneration(
+  row: MonthlyTrainingPlanGenerationJobRow,
+): MonthlyTrainingPlanGeneration {
+  return {
+    attemptCount: row.attempt_count,
+    athleticProfile: toAthleticProfileInput(row.athletic_profile),
+    completedAt: row.completed_at,
+    createdAt: row.created_at,
+    errorMessage: row.error_message,
+    failedAt: row.failed_at,
+    id: row.id,
+    lockExpiresAt: row.lock_expires_at,
+    lockedAt: row.locked_at,
+    maxAttempts: row.max_attempts,
+    planId: row.plan_id,
+    reservationId: row.reservation_id,
+    snapshot: row.snapshot,
+    startedAt: row.started_at,
+    status: row.status,
+    updatedAt: row.updated_at,
+    userId: row.user_id,
+  };
+}
+
+function isGenerationJobRow(
+  row: unknown,
+): row is MonthlyTrainingPlanGenerationJobRow {
+  return Boolean(
+    row &&
+      typeof row === 'object' &&
+      typeof (row as Partial<MonthlyTrainingPlanGenerationJobRow>).id ===
+        'string',
+  );
+}
+
+function isPendingGenerationJobRow(
+  row: MonthlyTrainingPlanGenerationJobRow,
+  observedAt: string,
+): boolean {
+  if (row.status === 'queued') {
+    return row.attempt_count < row.max_attempts;
+  }
+
+  if (row.status !== 'running') {
+    return false;
+  }
+
+  const observedAtMs = new Date(observedAt).getTime();
+  const lockExpiresAtMs = row.lock_expires_at
+    ? new Date(row.lock_expires_at).getTime()
+    : null;
+
+  if (lockExpiresAtMs !== null && lockExpiresAtMs > observedAtMs) {
+    return true;
+  }
+
+  return row.attempt_count < row.max_attempts;
 }
 
 function toAthleticProfile(row: AthleticProfileRow): AthleticProfile {
@@ -101,7 +211,7 @@ function toAthleticProfileRow(
 
 function toAthleticProfilePayload(
   input: AthleticProfileInput,
-): Omit<AthleticProfileRow, 'created_at' | 'updated_at' | 'user_id'> {
+): AthleticProfilePayload {
   return {
     altura_cm: input.alturaCm,
     equipamentos_disponiveis: input.equipamentosDisponiveis,
@@ -154,28 +264,54 @@ function createAthleticProfileRepository(
 
 function createMonthlyTrainingPlanRepository(
   client: SupabaseClient,
+  options: {
+    completeRpcName?: string;
+    releaseRpcName?: string;
+    workerMode?: boolean;
+  } = {},
 ): MonthlyTrainingPlanRepository {
+  const completeRpcName =
+    options.completeRpcName ?? 'complete_training_monthly_plan_generation';
+  const releaseRpcName =
+    options.releaseRpcName ?? 'release_training_monthly_plan_generation';
+
   return {
     completeActiveGeneration: async (
       reservationId,
       plan,
       athleticProfile,
     ) => {
+      const rpcPayload = options.workerMode
+        ? {
+            p_athletic_profile: toAthleticProfilePayload(athleticProfile),
+            p_completed_at: plan.generatedAt,
+            p_plan: {
+              available_for_regeneration_at: plan.availableForRegenerationAt,
+              generated_at: plan.generatedAt,
+              metadata: plan.metadata,
+              result: plan.result,
+              snapshot: plan.snapshot,
+              status: plan.status,
+              user_id: plan.userId,
+            },
+            p_reservation_id: reservationId,
+          }
+        : {
+            p_athletic_profile: toAthleticProfilePayload(athleticProfile),
+            p_plan: {
+              available_for_regeneration_at: plan.availableForRegenerationAt,
+              generated_at: plan.generatedAt,
+              metadata: plan.metadata,
+              result: plan.result,
+              snapshot: plan.snapshot,
+              status: plan.status,
+              user_id: plan.userId,
+            },
+            p_reservation_id: reservationId,
+          };
       const { data, error } = await client.rpc(
-        'complete_training_monthly_plan_generation',
-        {
-          p_athletic_profile: toAthleticProfilePayload(athleticProfile),
-          p_plan: {
-            available_for_regeneration_at: plan.availableForRegenerationAt,
-            generated_at: plan.generatedAt,
-            metadata: plan.metadata,
-            result: plan.result,
-            snapshot: plan.snapshot,
-            status: plan.status,
-            user_id: plan.userId,
-          },
-          p_reservation_id: reservationId,
-        },
+        completeRpcName,
+        rpcPayload,
       );
 
       throwIfError(error);
@@ -208,10 +344,12 @@ function createMonthlyTrainingPlanRepository(
       };
     },
     releaseActiveGeneration: async (reservationId, releasedAt) => {
-      void releasedAt;
+      const rpcPayload = options.workerMode
+        ? { p_released_at: releasedAt, p_reservation_id: reservationId }
+        : { p_reservation_id: reservationId };
       const { error } = await client.rpc(
-        'release_training_monthly_plan_generation',
-        { p_reservation_id: reservationId },
+        releaseRpcName,
+        rpcPayload,
       );
 
       throwIfError(error);
@@ -235,6 +373,124 @@ function createMonthlyTrainingPlanRepository(
   };
 }
 
+function createMonthlyTrainingPlanGenerationJobRepository(
+  client: SupabaseClient,
+): MonthlyTrainingPlanGenerationJobRepository {
+  return {
+    claimNextGenerationJob: async (
+      input: ClaimMonthlyTrainingPlanGenerationJobInput,
+    ) => {
+      const { data, error } = await client.rpc(
+        'claim_training_monthly_plan_generation_job',
+        {
+          p_claimed_at: input.claimedAt,
+          p_lease_expires_at: input.leaseExpiresAt,
+        },
+      );
+
+      throwIfError(error);
+
+      return isGenerationJobRow(data)
+        ? toMonthlyTrainingPlanGeneration(data)
+        : null;
+    },
+    completeGenerationJob: async (
+      generationId: string,
+      input: CompleteMonthlyTrainingPlanGenerationJobInput,
+    ) => {
+      const { data, error } = await client.rpc(
+        'complete_training_monthly_plan_generation_job',
+        {
+          p_completed_at: input.completedAt,
+          p_generation_id: generationId,
+          p_plan_id: input.planId,
+        },
+      );
+
+      throwIfError(error);
+
+      return isGenerationJobRow(data)
+        ? toMonthlyTrainingPlanGeneration(data)
+        : null;
+    },
+    enqueueGenerationJob: async (
+      input: EnqueueMonthlyTrainingPlanGenerationJobInput,
+    ) => {
+      const { data, error } = await client.rpc(
+        'enqueue_training_monthly_plan_generation_job',
+        {
+          p_athletic_profile: toAthleticProfilePayload(input.athleticProfile),
+          p_created_at: input.createdAt,
+          p_reservation_id: input.reservationId,
+          p_snapshot: input.snapshot,
+          p_user_id: input.userId,
+        },
+      );
+
+      throwIfError(error);
+
+      if (!isGenerationJobRow(data)) {
+        throw new Error('Supabase generation job enqueue returned no row.');
+      }
+
+      return toMonthlyTrainingPlanGeneration(data);
+    },
+    failGenerationJob: async (
+      generationId: string,
+      input: FailMonthlyTrainingPlanGenerationJobInput,
+    ) => {
+      const { data, error } = await client.rpc(
+        'fail_training_monthly_plan_generation_job',
+        {
+          p_error_message: input.errorMessage,
+          p_failed_at: input.failedAt,
+          p_generation_id: generationId,
+        },
+      );
+
+      throwIfError(error);
+
+      return isGenerationJobRow(data)
+        ? toMonthlyTrainingPlanGeneration(data)
+        : null;
+    },
+    findGenerationJobById: async (userId, generationId) => {
+      const { data, error } = await client
+        .from('training_monthly_plan_generation_jobs')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('id', generationId)
+        .maybeSingle<MonthlyTrainingPlanGenerationJobRow>();
+
+      throwIfError(error);
+
+      return isGenerationJobRow(data) ? toMonthlyTrainingPlanGeneration(data) : null;
+    },
+    findPendingGenerationByUserId: async (userId, observedAt) => {
+      const { data, error } = await client
+        .from('training_monthly_plan_generation_jobs')
+        .select('*')
+        .eq('user_id', userId)
+        .in('status', ['queued', 'running'])
+        .order('created_at', { ascending: true })
+        .limit(20);
+
+      throwIfError(error);
+
+      const rows = Array.isArray(data)
+        ? data.filter(isGenerationJobRow)
+        : isGenerationJobRow(data)
+          ? [data]
+          : [];
+      const pendingRow = rows.find((row) =>
+        isPendingGenerationJobRow(row, observedAt),
+      );
+
+      return pendingRow ? toMonthlyTrainingPlanGeneration(pendingRow) : null;
+    },
+  };
+}
+
 export function createSupabaseTrainingRepositories(
   config: SupabaseTrainingRepositoriesConfig,
 ): TrainingRepositories {
@@ -242,6 +498,25 @@ export function createSupabaseTrainingRepositories(
 
   return {
     athleticProfileRepository: createAthleticProfileRepository(client),
+    monthlyTrainingPlanGenerationJobRepository:
+      createMonthlyTrainingPlanGenerationJobRepository(client),
     monthlyTrainingPlanRepository: createMonthlyTrainingPlanRepository(client),
+  };
+}
+
+export function createSupabaseTrainingWorkerRepositories(
+  config: SupabaseTrainingWorkerRepositoriesConfig,
+): TrainingRepositories {
+  const client = createServiceSupabaseClient(config);
+
+  return {
+    athleticProfileRepository: createAthleticProfileRepository(client),
+    monthlyTrainingPlanGenerationJobRepository:
+      createMonthlyTrainingPlanGenerationJobRepository(client),
+    monthlyTrainingPlanRepository: createMonthlyTrainingPlanRepository(client, {
+      completeRpcName: 'complete_training_monthly_plan_generation_as_worker',
+      releaseRpcName: 'release_training_monthly_plan_generation_as_worker',
+      workerMode: true,
+    }),
   };
 }
