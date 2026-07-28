@@ -48,8 +48,8 @@
       "requestFailed": "Nao foi possivel atualizar seu cadastro."
     },
     "training": {
-      "generationFailed": "A geracao do treino falhou. Voce pode tentar novamente.",
-      "generationUnavailable": "Nao foi possivel consultar a geracao do treino.",
+      "generationFailed": "O preparo do treino falhou. Voce pode tentar novamente.",
+      "generationUnavailable": "Nao foi possivel consultar o preparo do treino.",
       "monthlyPlanAlreadyActive": "Voce ja tem um plano ativo neste periodo.",
       "requestFailed": "Nao foi possivel atualizar o plano de treino."
     }
@@ -104,7 +104,7 @@
       "exercises": "Exercicios principais",
       "generated": "Gerado em {{date}}",
       "minutes": "min",
-      "nextGeneration": "Proxima geracao disponivel em {{date}}",
+      "nextGeneration": "Proxima solicitacao de treino apenas em {{date}}",
       "observations": "Observacoes",
       "openDetails": "Abrir detalhes",
       "openDetailsLabel": "Abrir detalhes de {{session}}",
@@ -118,15 +118,15 @@
     "back": "Voltar",
     "confirmGeneration": {
       "cancel": "Cancelar",
-      "confirm": "Confirmar geracao",
-      "message": "Ao confirmar, este treino sera gerado como seu plano ativo e so podera ser regerado depois de 30 dias.",
-      "title": "Confirmar geracao do plano"
+      "confirm": "Preparar treino",
+      "message": "Ao confirmar, este treino sera preparado como seu plano ativo e uma nova solicitacao so podera acontecer depois de 30 dias.",
+      "title": "Confirmar solicitacao do treino"
     },
     "continue": "Continuar",
     "errors": {
-      "generationFailed": "A geracao do treino falhou. Voce pode tentar novamente.",
+      "generationFailed": "O preparo do treino falhou. Voce pode tentar novamente.",
       "requestFailed": "Nao foi possivel atualizar o plano de treino.",
-      "sessionExpired": "Sua sessao expirou. Entre novamente para gerar o treino."
+      "sessionExpired": "Sua sessao expirou. Entre novamente para preparar o treino."
     },
     "fields": {
       "age": "Idade",
@@ -149,24 +149,30 @@
       "safety": "Ambiente e seguranca",
       "weight": "Peso em kg"
     },
-    "generate": "Gerar plano",
-    "generating": "Gerando plano",
+    "generate": "Solicitar treino",
+    "generating": "Preparando treino",
     "generationFeedback": {
-      "connect": "Conectando com a IA",
-      "longRunning": "A IA ainda esta montando o treino. Mantenha esta tela aberta.",
-      "prepare": "Preparando dados",
-      "save": "Salvando plano",
-      "statusLabel": "Andamento da geracao",
+      "connect": "Conferindo rotina",
+      "longRunning": "Ainda estamos preparando seu treino. Mantenha esta tela aberta.",
+      "prepare": "Organizando perfil",
+      "save": "Finalizando plano",
+      "statusLabel": "Andamento do preparo",
       "subtitle": "Isso pode levar alguns segundos.",
-      "title": "Gerando seu plano mensal"
+      "title": "Preparando seu treino"
     },
     "loading": "Carregando plano de treino",
     "loadingDescription": "Buscando seu plano ativo e historico recente.",
-    "monthlyLimitNotice": "Voce podera gerar outro plano depois de 30 dias.",
+    "monthlyLimitNotice": "Proxima solicitacao de treino apenas depois de 30 dias.",
     "newTitle": "Novo plano de treino",
-    "pendingDescription": "Estamos preparando seu plano sem travar sua navegacao.",
-    "pendingMessage": "Seu treino foi solicitado e esta sendo processado. Assim que terminar, o plano ativo aparecera aqui.",
-    "pendingTitle": "Geracao em andamento",
+    "pendingDescription": "Estamos preparando seu treino sem travar sua navegacao.",
+    "pendingMessage": "Seu treino esta sendo preparado. Assim que terminar, ele aparece aqui.",
+    "pendingTitle": "Preparando seu treino",
+    "preparationProgress": {
+      "attempt": "Tentativa {{current}} de {{total}}",
+      "extended": "Ainda estamos nos ultimos ajustes.",
+      "remaining": "Tempo estimado: {{time}}",
+      "statusLabel": "Preparo estimado do treino"
+    },
     "retry": "Tentar novamente",
     "options": {
       "availability": {

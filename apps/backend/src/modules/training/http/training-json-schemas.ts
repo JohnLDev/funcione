@@ -276,11 +276,13 @@ export const monthlyTrainingPlanPublicJsonSchema = {
 export const monthlyTrainingPlanGenerationPublicJsonSchema = {
   type: 'object',
   required: [
+    'attemptCount',
     'completedAt',
     'createdAt',
     'errorMessage',
     'failedAt',
     'id',
+    'maxAttempts',
     'startedAt',
     'status',
     'updatedAt',
@@ -288,6 +290,7 @@ export const monthlyTrainingPlanGenerationPublicJsonSchema = {
   ],
   additionalProperties: false,
   properties: {
+    attemptCount: { type: 'number' },
     completedAt: {
       anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
     },
@@ -299,6 +302,7 @@ export const monthlyTrainingPlanGenerationPublicJsonSchema = {
       anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
     },
     id: { type: 'string' },
+    maxAttempts: { type: 'number' },
     startedAt: {
       anyOf: [{ type: 'string', format: 'date-time' }, { type: 'null' }],
     },

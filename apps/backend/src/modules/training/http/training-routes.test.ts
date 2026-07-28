@@ -469,6 +469,8 @@ describe('training routes', () => {
 
     assert.equal(response.statusCode, 202);
     assert.equal(response.json().generation.status, 'queued');
+    assert.equal(response.json().generation.attemptCount, 0);
+    assert.equal(response.json().generation.maxAttempts, 3);
     assert.equal(generatorInput, undefined);
 
     const pendingResponse = await app.inject({
@@ -479,6 +481,8 @@ describe('training routes', () => {
 
     assert.equal(pendingResponse.statusCode, 200);
     assert.match(pendingResponse.json().generation.status, /^(queued|running)$/);
+    assert.equal(typeof pendingResponse.json().generation.attemptCount, 'number');
+    assert.equal(pendingResponse.json().generation.maxAttempts, 3);
 
     releaseGeneration?.();
     const completedPayload = await waitForGenerationStatus(
@@ -720,6 +724,10 @@ describe('training routes', () => {
       'completed',
       'failed',
     ]);
+    assert.equal(generationSchema.properties.attemptCount.type, 'number');
+    assert.equal(generationSchema.properties.maxAttempts.type, 'number');
+    assert.equal(generationSchema.required.includes('attemptCount'), true);
+    assert.equal(generationSchema.required.includes('maxAttempts'), true);
     assert.equal(monthlyPlanSchema.properties.metadata, undefined);
     assert.ok(activeRoute.responses['401']);
     assert.ok(activeRoute.responses['500']);

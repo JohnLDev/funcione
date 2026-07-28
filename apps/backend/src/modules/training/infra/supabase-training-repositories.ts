@@ -488,6 +488,45 @@ function createMonthlyTrainingPlanGenerationJobRepository(
 
       return pendingRow ? toMonthlyTrainingPlanGeneration(pendingRow) : null;
     },
+    recordGenerationAttemptLog: async (input) => {
+      const { error } = await client
+        .from('training_monthly_plan_generation_attempt_logs')
+        .insert({
+          attempt_number: input.attemptNumber,
+          duration_ms: input.durationMs,
+          error_message: input.errorMessage,
+          generation_id: input.generationId,
+          is_timeout: input.isTimeout,
+          model: input.model,
+          provider: input.provider,
+          provider_attempt_number: input.providerAttemptNumber,
+          recorded_at: input.recordedAt,
+          role: input.role,
+          status: input.status,
+        });
+
+      throwIfError(error);
+    },
+    retryGenerationJob: async (generationId, { errorMessage, retryAt }) => {
+      const { data, error } = await client
+        .from('training_monthly_plan_generation_jobs')
+        .update({
+          error_message: errorMessage,
+          failed_at: null,
+          lock_expires_at: null,
+          locked_at: null,
+          status: 'queued',
+          updated_at: retryAt,
+        })
+        .eq('id', generationId)
+        .in('status', ['queued', 'running'])
+        .select('*')
+        .maybeSingle<MonthlyTrainingPlanGenerationJobRow>();
+
+      throwIfError(error);
+
+      return isGenerationJobRow(data) ? toMonthlyTrainingPlanGeneration(data) : null;
+    },
   };
 }
 

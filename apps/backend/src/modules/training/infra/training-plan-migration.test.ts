@@ -47,6 +47,12 @@ function isDurableGenerationJobClaimHardeningMigration(sql: string) {
     /released_at\s*=\s*p_claimed_at/i;
 }
 
+function isGenerationAttemptLogMigration(sql: string) {
+  return /training_monthly_plan_generation_attempt_logs/i.test(sql) &&
+    /generation_id\s+uuid\s+not null/i.test(sql) &&
+    /provider_attempt_number\s+integer\s+not null/i.test(sql);
+}
+
 async function readMonthlySecurityMigrationTargets() {
   const [baseSql, forwardMigrations] = await Promise.all([
     readMigration(),
@@ -78,6 +84,19 @@ async function readDurableGenerationJobMigration() {
   );
 
   return durableMigration;
+}
+
+async function readGenerationAttemptLogMigration() {
+  const attemptLogMigration = (await readForwardMigrations()).find(({ sql }) =>
+    isGenerationAttemptLogMigration(sql),
+  );
+
+  assert.ok(
+    attemptLogMigration,
+    'Missing monthly training generation attempt log migration.',
+  );
+
+  return attemptLogMigration;
 }
 
 function getFunctionDefinition(sql: string, functionName: string) {
@@ -531,5 +550,46 @@ describe('training plan Supabase migration security', () => {
         ),
       );
     }
+  });
+
+  it('creates provider attempt logs for monthly generation observability', async () => {
+    const { sql } = await readGenerationAttemptLogMigration();
+
+    assert.match(
+      sql,
+      /create table if not exists public\.training_monthly_plan_generation_attempt_logs/i,
+    );
+    assert.match(
+      sql,
+      /generation_id\s+uuid\s+not null references public\.training_monthly_plan_generation_jobs\(id\) on delete cascade/i,
+    );
+    assert.match(sql, /attempt_number\s+integer\s+not null/i);
+    assert.match(sql, /provider_attempt_number\s+integer\s+not null/i);
+    assert.match(sql, /provider\s+text\s+not null/i);
+    assert.match(sql, /model\s+text\s+not null/i);
+    assert.match(sql, /role\s+text\s+not null/i);
+    assert.match(sql, /status\s+text\s+not null/i);
+    assert.match(sql, /duration_ms\s+integer\s+not null/i);
+    assert.match(sql, /is_timeout\s+boolean\s+not null/i);
+    assert.match(
+      sql,
+      /alter table public\.training_monthly_plan_generation_attempt_logs\s+enable row level security/i,
+    );
+    assert.match(
+      sql,
+      /revoke\s+all\s+on(?:\s+table)?\s+public\.training_monthly_plan_generation_attempt_logs\s+from\s+public,\s*anon,\s*authenticated/i,
+    );
+    assert.match(
+      sql,
+      /grant\s+all\s+on\s+public\.training_monthly_plan_generation_attempt_logs\s+to\s+service_role/i,
+    );
+    assert.match(
+      sql,
+      /training_monthly_plan_generation_attempt_logs_generation_idx/i,
+    );
+    assert.match(
+      sql,
+      /training_monthly_plan_generation_attempt_logs_status_idx/i,
+    );
   });
 });

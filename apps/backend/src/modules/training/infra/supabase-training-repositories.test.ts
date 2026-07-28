@@ -498,6 +498,77 @@ describe('Supabase training repositories', () => {
     });
   });
 
+  it('records attempt logs and requeues retryable durable generation jobs', async () => {
+    const retryableJobRow = {
+      ...generationJobRow,
+      attempt_count: 1,
+      error_message: 'provider failed',
+      lock_expires_at: null,
+      locked_at: null,
+      status: 'queued',
+      updated_at: '2026-07-23T12:02:00.000Z',
+    };
+    const responses = [null, retryableJobRow];
+    const { repositories, requests } = createWorkerRepositories(() =>
+      Response.json(responses.shift() ?? null),
+    );
+    const repository = repositories.monthlyTrainingPlanGenerationJobRepository;
+
+    await repository.recordGenerationAttemptLog({
+      attemptNumber: 1,
+      durationMs: 1200,
+      errorMessage: 'provider failed',
+      generationId: 'generation-123',
+      isTimeout: false,
+      model: 'openai/gpt-oss-120b',
+      provider: 'openrouter',
+      providerAttemptNumber: 1,
+      recordedAt: '2026-07-23T12:01:00.000Z',
+      role: 'primary',
+      status: 'error',
+    });
+    const retryable = await repository.retryGenerationJob('generation-123', {
+      errorMessage: 'provider failed',
+      retryAt: '2026-07-23T12:02:00.000Z',
+    });
+
+    assert.equal(retryable?.status, 'queued');
+    assert.equal(retryable?.errorMessage, 'provider failed');
+    assert.match(
+      requests[0]?.url ?? '',
+      /\/rest\/v1\/training_monthly_plan_generation_attempt_logs$/,
+    );
+    assert.equal(requests[0]?.method, 'POST');
+    assert.deepEqual(requests[0]?.body, {
+      attempt_number: 1,
+      duration_ms: 1200,
+      error_message: 'provider failed',
+      generation_id: 'generation-123',
+      is_timeout: false,
+      model: 'openai/gpt-oss-120b',
+      provider: 'openrouter',
+      provider_attempt_number: 1,
+      recorded_at: '2026-07-23T12:01:00.000Z',
+      role: 'primary',
+      status: 'error',
+    });
+    assert.match(
+      requests[1]?.url ?? '',
+      /\/rest\/v1\/training_monthly_plan_generation_jobs/,
+    );
+    assert.equal(requests[1]?.method, 'PATCH');
+    assert.match(requests[1]?.url ?? '', /id=eq.generation-123/);
+    assert.match(requests[1]?.url ?? '', /status=in.%28queued%2Crunning%29/);
+    assert.deepEqual(requests[1]?.body, {
+      error_message: 'provider failed',
+      failed_at: null,
+      lock_expires_at: null,
+      locked_at: null,
+      status: 'queued',
+      updated_at: '2026-07-23T12:02:00.000Z',
+    });
+  });
+
   it('treats a null composite claim response as no available generation job', async () => {
     const nullCompositeJobRow = Object.fromEntries(
       Object.keys(generationJobRow).map((key) => [key, null]),

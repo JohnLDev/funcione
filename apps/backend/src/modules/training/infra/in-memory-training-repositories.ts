@@ -172,6 +172,27 @@ export function createInMemoryTrainingRepositories(): {
 
         return failedJob;
       },
+      retryGenerationJob: async (generationId, { errorMessage, retryAt }) => {
+        const job = generationJobs.get(generationId);
+
+        if (!job) {
+          return null;
+        }
+
+        const retryableJob: MonthlyTrainingPlanGeneration = {
+          ...job,
+          errorMessage,
+          failedAt: null,
+          lockExpiresAt: null,
+          lockedAt: null,
+          status: 'queued',
+          updatedAt: retryAt,
+        };
+
+        generationJobs.set(generationId, retryableJob);
+
+        return retryableJob;
+      },
       findGenerationJobById: async (userId, generationId) => {
         const job = generationJobs.get(generationId);
 
@@ -193,6 +214,7 @@ export function createInMemoryTrainingRepositories(): {
       },
       listByStatus: async (status) =>
         Array.from(generationJobs.values()).filter((job) => job.status === status),
+      recordGenerationAttemptLog: async () => undefined,
     },
     monthlyTrainingPlanRepository: {
       completeActiveGeneration: async (reservationId, planInput, profileInput) => {

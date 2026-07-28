@@ -144,11 +144,13 @@ export type MonthlyTrainingPlanGenerationStatus =
   | 'failed';
 
 export type MonthlyTrainingPlanGeneration = {
+  attemptCount: number;
   completedAt: string | null;
   createdAt: string;
   errorMessage: string | null;
   failedAt: string | null;
   id: string;
+  maxAttempts: number;
   planId?: string | null;
   startedAt: string | null;
   status: MonthlyTrainingPlanGenerationStatus;

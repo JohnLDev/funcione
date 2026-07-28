@@ -158,7 +158,7 @@ describe('monthly training plan service', () => {
     assert.equal(state.canGenerate, false);
   });
 
-  it('marks a failed async generation job as failed, releases the reservation and permits retry', async () => {
+  it('requeues a failed async generation job when attempts remain', async () => {
     const dependencies = await createDependencies();
     let currentNow = new Date('2026-07-23T12:00:00.000Z');
     dependencies.now = () => currentNow;
@@ -202,38 +202,52 @@ describe('monthly training plan service', () => {
     );
     assert.equal(requestResult.ok, true);
 
-    const failedProcessResult = await processNextMonthlyTrainingPlanGenerationJob(
+    const retryableProcessResult = await processNextMonthlyTrainingPlanGenerationJob(
       dependencies,
     );
 
-    assert.equal(failedProcessResult.ok, false);
-    if (failedProcessResult.ok) {
+    assert.equal(retryableProcessResult.ok, false);
+    if (retryableProcessResult.ok) {
       return;
     }
-    assert.equal(failedProcessResult.error.code, 'TRAINING_PLAN_GENERATION_FAILED');
+    assert.equal(
+      retryableProcessResult.error.code,
+      'TRAINING_PLAN_GENERATION_FAILED',
+    );
 
-    const failedGeneration = await dependencies
+    const retryableGeneration = await dependencies
       .monthlyTrainingPlanGenerationJobRepository.findGenerationJobById(
         user.id,
         requestResult.generation.id,
       );
-    assert.equal(failedGeneration?.status, 'failed');
+    assert.equal(retryableGeneration?.status, 'queued');
+    assert.equal(retryableGeneration?.attemptCount, 1);
     assert.equal(
-      failedGeneration?.errorMessage,
+      retryableGeneration?.errorMessage,
       'test generation failure: test-provider/slow-model: provider timed out',
     );
-    assert.equal(failedGeneration?.failedAt, '2026-07-23T12:03:30.000Z');
+    assert.equal(retryableGeneration?.failedAt, null);
 
-    const stateAfterFailure = await getActiveMonthlyTrainingPlan(user, dependencies);
-    assert.equal(stateAfterFailure.canGenerate, true);
-    assert.equal(stateAfterFailure.pendingGeneration, null);
-
-    const retryRequest = await requestMonthlyTrainingPlanGeneration(
+    const stateAfterTransientFailure = await getActiveMonthlyTrainingPlan(
       user,
-      payload,
       dependencies,
     );
-    assert.equal(retryRequest.ok, true);
+    assert.equal(stateAfterTransientFailure.canGenerate, false);
+    assert.equal(
+      stateAfterTransientFailure.pendingGeneration?.id,
+      requestResult.generation.id,
+    );
+
+    currentNow = new Date('2026-07-23T12:03:45.000Z');
+    const completedProcessResult = await processNextMonthlyTrainingPlanGenerationJob(
+      dependencies,
+    );
+    assert.equal(completedProcessResult.ok, true);
+    assert.equal(generationCalls, 2);
+
+    const completedState = await getActiveMonthlyTrainingPlan(user, dependencies);
+    assert.equal(completedState.activePlan?.userId, user.id);
+    assert.equal(completedState.pendingGeneration, null);
   });
 
   it('keeps draining available generation jobs after a controlled job failure', async () => {
@@ -286,14 +300,106 @@ describe('monthly training plan service', () => {
       dependencies,
     );
 
-    assert.equal(results.length, 2);
+    assert.equal(results.length, 3);
     assert.equal(results[0]?.ok, false);
     assert.equal(results[1]?.ok, true);
-    assert.equal(generationCalls, 2);
+    assert.equal(results[2]?.ok, true);
+    assert.equal(generationCalls, 3);
 
     const secondState = await getActiveMonthlyTrainingPlan(secondUser, dependencies);
     assert.equal(secondState.activePlan?.userId, secondUser.id);
     assert.equal(secondState.pendingGeneration, null);
+  });
+
+  it('records provider attempt logs for async generation jobs', async () => {
+    const dependencies = await createDependencies();
+    const attemptLogs: Record<string, unknown>[] = [];
+
+    Object.assign(dependencies.monthlyTrainingPlanGenerationJobRepository, {
+      recordGenerationAttemptLog: async (input: Record<string, unknown>) => {
+        attemptLogs.push(input);
+      },
+    });
+    dependencies.trainingPlanGenerator = async () => ({
+      attempts: [
+        {
+          durationMs: 1200,
+          error: 'structured response missing',
+          model: 'openai/gpt-oss-120b',
+          provider: 'openrouter',
+          role: 'primary',
+          status: 'error',
+        },
+        {
+          durationMs: 900,
+          model: 'openai/gpt-oss-120b',
+          provider: 'nvidia',
+          role: 'fallback',
+          status: 'success',
+        },
+      ],
+      durationMs: 2100,
+      fallbackUsed: true,
+      model: 'openai/gpt-oss-120b',
+      provider: 'nvidia',
+      result: generatedPlan,
+    });
+
+    const requestResult = await requestMonthlyTrainingPlanGeneration(
+      user,
+      payload,
+      dependencies,
+    );
+    assert.equal(requestResult.ok, true);
+    if (!requestResult.ok) {
+      return;
+    }
+
+    const processResult = await processNextMonthlyTrainingPlanGenerationJob(
+      dependencies,
+    );
+    assert.equal(processResult.ok, true);
+
+    assert.deepEqual(
+      attemptLogs.map((log) => ({
+        attemptNumber: log.attemptNumber,
+        durationMs: log.durationMs,
+        errorMessage: log.errorMessage,
+        generationId: log.generationId,
+        isTimeout: log.isTimeout,
+        model: log.model,
+        provider: log.provider,
+        providerAttemptNumber: log.providerAttemptNumber,
+        role: log.role,
+        status: log.status,
+      })),
+      [
+        {
+          attemptNumber: 1,
+          durationMs: 1200,
+          errorMessage: 'structured response missing',
+          generationId: requestResult.generation.id,
+          isTimeout: false,
+          model: 'openai/gpt-oss-120b',
+          provider: 'openrouter',
+          providerAttemptNumber: 1,
+          role: 'primary',
+          status: 'error',
+        },
+        {
+          attemptNumber: 1,
+          durationMs: 900,
+          errorMessage: null,
+          generationId: requestResult.generation.id,
+          isTimeout: false,
+          model: 'openai/gpt-oss-120b',
+          provider: 'nvidia',
+          providerAttemptNumber: 2,
+          role: 'fallback',
+          status: 'success',
+        },
+      ],
+    );
   });
 
   it('uses a configured lease duration when claiming async generation jobs', async () => {

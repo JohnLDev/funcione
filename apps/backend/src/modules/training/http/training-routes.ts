@@ -65,11 +65,13 @@ function serializePublicMonthlyPlan(plan: MonthlyTrainingPlan) {
 
 function serializePublicMonthlyGeneration(generation: MonthlyTrainingPlanGeneration) {
   return {
+    attemptCount: generation.attemptCount,
     completedAt: generation.completedAt,
     createdAt: generation.createdAt,
     errorMessage: generation.errorMessage,
     failedAt: generation.failedAt,
     id: generation.id,
+    maxAttempts: generation.maxAttempts,
     startedAt: generation.startedAt,
     status: generation.status,
     updatedAt: generation.updatedAt,

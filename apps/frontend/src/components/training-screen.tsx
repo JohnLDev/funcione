@@ -4,6 +4,7 @@ import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
 import { AppLoading } from './app-loading.js';
 import { TrainingActivePlan } from './training-active-plan.js';
+import { TrainingPreparationProgress } from './training-preparation-progress.js';
 import { TrainingPlanWizard } from './training-plan-wizard.js';
 import { Button } from './ui/button.js';
 
@@ -66,12 +67,9 @@ function TrainingScreenContent() {
         <TrainingActivePlan plan={state.activePlan} />
       ) : state?.canGenerate ? (
         <TrainingPlanWizard />
-      ) : state ? (
+      ) : state?.pendingGeneration ? (
         <div className="grid gap-3">
-          <AppLoading
-            description={t('training.pendingDescription')}
-            label={t('training.pendingTitle')}
-          />
+          <TrainingPreparationProgress generation={state.pendingGeneration} />
           <p className="rounded-2xl border border-primary/25 bg-primary/10 p-4 text-sm font-bold text-muted-foreground">
             {t('training.pendingMessage')}
           </p>

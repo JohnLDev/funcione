@@ -16,6 +16,7 @@ import {
 import type { AthleticProfileRepository } from './athletic-profile-repository.js';
 import type {
   GenerateTrainingPlanResult,
+  ModelAttempt,
   TrainingPlanGenerator,
 } from './generate-training-plan.js';
 import type { MonthlyTrainingPlanGenerationJobRepository } from './monthly-training-plan-generation-job-repository.js';
@@ -188,6 +189,46 @@ function toProcessFailureFromGeneration(
   };
 }
 
+function hasRemainingGenerationAttempts(
+  generation: MonthlyTrainingPlanGeneration,
+): boolean {
+  return generation.attemptCount < generation.maxAttempts;
+}
+
+function isTimeoutAttempt(errorMessage: string | null): boolean {
+  return Boolean(errorMessage && /timeout|timed out/i.test(errorMessage));
+}
+
+async function recordGenerationAttemptLogsSafely(
+  generation: MonthlyTrainingPlanGeneration,
+  attempts: ModelAttempt[],
+  recordedAt: string,
+  dependencies: MonthlyTrainingPlanServiceDependencies,
+): Promise<void> {
+  try {
+    await Promise.all(
+      attempts.map((attempt, index) =>
+        dependencies.monthlyTrainingPlanGenerationJobRepository
+          .recordGenerationAttemptLog({
+            attemptNumber: generation.attemptCount,
+            durationMs: attempt.durationMs,
+            errorMessage: attempt.error ?? null,
+            generationId: generation.id,
+            isTimeout: isTimeoutAttempt(attempt.error ?? null),
+            model: attempt.model,
+            provider: attempt.provider,
+            providerAttemptNumber: index + 1,
+            recordedAt,
+            role: attempt.role,
+            status: attempt.status,
+          }),
+      ),
+    );
+  } catch {
+    // Observability must not block the user's workout preparation.
+  }
+}
+
 type PreparedMonthlyTrainingPlanRequest =
   | {
       athleticProfile: AthleticProfileInput;
@@ -325,6 +366,21 @@ async function failGenerationJobAndReleaseReservation(
   return failedGeneration ?? generation;
 }
 
+async function retryGenerationJob(
+  generation: MonthlyTrainingPlanGeneration,
+  errorMessage: string,
+  retryAt: string,
+  dependencies: MonthlyTrainingPlanServiceDependencies,
+): Promise<MonthlyTrainingPlanGeneration> {
+  const retryableGeneration = await dependencies
+    .monthlyTrainingPlanGenerationJobRepository.retryGenerationJob(generation.id, {
+      errorMessage,
+      retryAt,
+    });
+
+  return retryableGeneration ?? generation;
+}
+
 export async function requestMonthlyTrainingPlanGeneration(
   user: AuthenticatedUser,
   payload: unknown,
@@ -438,8 +494,26 @@ export async function processNextMonthlyTrainingPlanGenerationJob(
     };
   }
 
+  await recordGenerationAttemptLogsSafely(
+    generation,
+    generatedPlan.attempts,
+    (dependencies.now?.() ?? new Date()).toISOString(),
+    dependencies,
+  );
+
   if (!('result' in generatedPlan)) {
     const failedAt = dependencies.now?.() ?? new Date();
+    if (hasRemainingGenerationAttempts(generation)) {
+      const retryableGeneration = await retryGenerationJob(
+        generation,
+        generatedPlan.error,
+        failedAt.toISOString(),
+        dependencies,
+      );
+
+      return toProcessFailureFromGeneration(retryableGeneration, generatedPlan);
+    }
+
     const failedGeneration = await failGenerationJobAndReleaseReservation(
       generation,
       generatedPlan.error,

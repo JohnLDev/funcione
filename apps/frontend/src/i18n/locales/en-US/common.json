@@ -48,8 +48,8 @@
       "requestFailed": "We could not update your registration."
     },
     "training": {
-      "generationFailed": "Workout generation failed. You can try again.",
-      "generationUnavailable": "We could not check the workout generation.",
+      "generationFailed": "Workout preparation failed. You can try again.",
+      "generationUnavailable": "We could not check the workout preparation.",
       "monthlyPlanAlreadyActive": "You already have an active plan for this period.",
       "requestFailed": "We could not update the training plan."
     }
@@ -104,7 +104,7 @@
       "exercises": "Main exercises",
       "generated": "Generated on {{date}}",
       "minutes": "min",
-      "nextGeneration": "Next generation available on {{date}}",
+      "nextGeneration": "Next workout request available on {{date}}",
       "observations": "Notes",
       "openDetails": "Open details",
       "openDetailsLabel": "Open details for {{session}}",
@@ -118,15 +118,15 @@
     "back": "Back",
     "confirmGeneration": {
       "cancel": "Cancel",
-      "confirm": "Confirm generation",
-      "message": "After confirming, this workout will become your active plan and can only be regenerated after 30 days.",
-      "title": "Confirm plan generation"
+      "confirm": "Prepare workout",
+      "message": "After confirming, this workout will become your active plan and another request will only be available after 30 days.",
+      "title": "Confirm workout request"
     },
     "continue": "Continue",
     "errors": {
-      "generationFailed": "Workout generation failed. You can try again.",
+      "generationFailed": "Workout preparation failed. You can try again.",
       "requestFailed": "We could not update the training plan.",
-      "sessionExpired": "Your session expired. Sign in again to generate the workout."
+      "sessionExpired": "Your session expired. Sign in again to prepare the workout."
     },
     "fields": {
       "age": "Age",
@@ -149,24 +149,30 @@
       "safety": "Environment and safety",
       "weight": "Weight in kg"
     },
-    "generate": "Generate plan",
-    "generating": "Generating plan",
+    "generate": "Request workout",
+    "generating": "Preparing workout",
     "generationFeedback": {
-      "connect": "Connecting to the AI",
-      "longRunning": "The AI is still building the workout. Keep this screen open.",
-      "prepare": "Preparing data",
-      "save": "Saving plan",
-      "statusLabel": "Generation progress",
+      "connect": "Checking routine",
+      "longRunning": "We are still preparing your workout. Keep this screen open.",
+      "prepare": "Organizing profile",
+      "save": "Finishing plan",
+      "statusLabel": "Preparation progress",
       "subtitle": "This may take a few seconds.",
-      "title": "Generating your monthly plan"
+      "title": "Preparing your workout"
     },
     "loading": "Loading training plan",
     "loadingDescription": "Checking your active plan and recent history.",
-    "monthlyLimitNotice": "You can generate another plan after 30 days.",
+    "monthlyLimitNotice": "Next workout request available after 30 days.",
     "newTitle": "New training plan",
-    "pendingDescription": "We are preparing your plan without blocking your navigation.",
-    "pendingMessage": "Your workout was requested and is being processed. Once it finishes, the active plan will appear here.",
-    "pendingTitle": "Generation in progress",
+    "pendingDescription": "We are preparing your workout without blocking your navigation.",
+    "pendingMessage": "Your workout is being prepared. Once it finishes, it will appear here.",
+    "pendingTitle": "Preparing your workout",
+    "preparationProgress": {
+      "attempt": "Attempt {{current}} of {{total}}",
+      "extended": "We are still making the final adjustments.",
+      "remaining": "Estimated time: {{time}}",
+      "statusLabel": "Estimated workout preparation"
+    },
     "retry": "Try again",
     "options": {
       "availability": {

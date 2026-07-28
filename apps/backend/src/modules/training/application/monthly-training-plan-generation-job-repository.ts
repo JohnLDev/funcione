@@ -29,6 +29,25 @@ export type FailMonthlyTrainingPlanGenerationJobInput = {
   failedAt: string;
 };
 
+export type RetryMonthlyTrainingPlanGenerationJobInput = {
+  errorMessage: string;
+  retryAt: string;
+};
+
+export type RecordMonthlyTrainingPlanGenerationAttemptLogInput = {
+  attemptNumber: number;
+  durationMs: number;
+  errorMessage: string | null;
+  generationId: string;
+  isTimeout: boolean;
+  model: string;
+  provider: string;
+  providerAttemptNumber: number;
+  recordedAt: string;
+  role: 'primary' | 'fallback';
+  status: 'success' | 'error';
+};
+
 export type MonthlyTrainingPlanGenerationJobRepository = {
   claimNextGenerationJob: (
     input: ClaimMonthlyTrainingPlanGenerationJobInput,
@@ -55,4 +74,11 @@ export type MonthlyTrainingPlanGenerationJobRepository = {
   listByStatus?: (
     status: MonthlyTrainingPlanGenerationStatus,
   ) => Promise<MonthlyTrainingPlanGeneration[]>;
+  recordGenerationAttemptLog: (
+    input: RecordMonthlyTrainingPlanGenerationAttemptLogInput,
+  ) => Promise<void>;
+  retryGenerationJob: (
+    generationId: string,
+    input: RetryMonthlyTrainingPlanGenerationJobInput,
+  ) => Promise<MonthlyTrainingPlanGeneration | null>;
 };

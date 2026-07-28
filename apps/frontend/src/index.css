@@ -160,6 +160,30 @@ body {
   }
 }
 
+@keyframes training-prep-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  45% {
+    transform: translateY(-0.55rem) scale(1.03);
+  }
+}
+
+@keyframes training-prep-shadow {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scaleX(1);
+  }
+
+  45% {
+    opacity: 0.18;
+    transform: scaleX(0.72);
+  }
+}
+
 .animate-app-toast-in {
   animation: app-toast-in 180ms ease-out both;
 }

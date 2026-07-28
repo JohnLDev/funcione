@@ -140,11 +140,13 @@ function createMockGeneration(
   const now = new Date().toISOString();
 
   return {
+    attemptCount: 0,
     completedAt: null,
     createdAt: now,
     errorMessage: null,
     failedAt: null,
     id: `${accessToken}-monthly-generation-${Date.now()}`,
+    maxAttempts: 3,
     planId: null,
     startedAt: null,
     status: 'queued',
@@ -280,6 +282,7 @@ export function createMockTrainingPlanGateway(): TrainingPlanGateway {
       if (scenario?.generationError) {
         const failedGeneration = {
           ...storedGeneration.generation,
+          attemptCount: Math.max(storedGeneration.generation.attemptCount, 1),
           errorMessage: scenario.generationError,
           failedAt: now,
           status: 'failed' as const,
@@ -303,6 +306,7 @@ export function createMockTrainingPlanGateway(): TrainingPlanGateway {
       if (nextPollCount <= pollsBeforeComplete) {
         const runningGeneration = {
           ...storedGeneration.generation,
+          attemptCount: Math.max(storedGeneration.generation.attemptCount, 1),
           startedAt: storedGeneration.generation.startedAt ?? now,
           status: 'running' as const,
           updatedAt: now,
@@ -323,6 +327,7 @@ export function createMockTrainingPlanGateway(): TrainingPlanGateway {
       const plan = createMockPlan(accessToken, storedGeneration.payload);
       const completedGeneration = {
         ...storedGeneration.generation,
+        attemptCount: Math.max(storedGeneration.generation.attemptCount, 1),
         completedAt: now,
         planId: plan.id,
         startedAt: storedGeneration.generation.startedAt ?? now,
