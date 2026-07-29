@@ -42,10 +42,6 @@ export function TrainingPreparationProgress({
   const elapsedMs = Math.max(0, observedAtMs - createdAtMs);
   const remainingMs = Math.max(0, preparationEstimateMs - elapsedMs);
   const progress = getTrainingPreparationProgress(elapsedMs);
-  const displayedAttempt = Math.min(
-    Math.max(generation.attemptCount, 1),
-    generation.maxAttempts,
-  );
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -97,12 +93,6 @@ export function TrainingPreparationProgress({
                   time: formatRemainingTime(remainingMs),
                 })
               : t('training.preparationProgress.extended')}
-          </span>
-          <span>
-            {t('training.preparationProgress.attempt', {
-              current: displayedAttempt,
-              total: generation.maxAttempts,
-            })}
           </span>
         </div>
       </div>

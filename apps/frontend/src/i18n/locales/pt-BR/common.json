@@ -168,7 +168,6 @@
     "pendingMessage": "Seu treino esta sendo preparado. Assim que terminar, ele aparece aqui.",
     "pendingTitle": "Preparando seu treino",
     "preparationProgress": {
-      "attempt": "Tentativa {{current}} de {{total}}",
       "extended": "Ainda estamos nos ultimos ajustes.",
       "remaining": "Tempo estimado: {{time}}",
       "statusLabel": "Preparo estimado do treino"

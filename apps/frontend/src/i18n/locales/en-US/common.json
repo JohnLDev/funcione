@@ -168,7 +168,6 @@
     "pendingMessage": "Your workout is being prepared. Once it finishes, it will appear here.",
     "pendingTitle": "Preparing your workout",
     "preparationProgress": {
-      "attempt": "Attempt {{current}} of {{total}}",
       "extended": "We are still making the final adjustments.",
       "remaining": "Estimated time: {{time}}",
       "statusLabel": "Estimated workout preparation"

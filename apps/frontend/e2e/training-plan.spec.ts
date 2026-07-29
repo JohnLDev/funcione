@@ -227,6 +227,8 @@ test.describe('monthly training plan route', () => {
       page.getByRole('progressbar', { name: /preparo estimado do treino/i }),
     ).toBeVisible();
     await expect(page.getByTestId('training-preparation-bouncer')).toBeVisible();
+    await expect(page.getByText(/tentativa\s+\d+\s+de\s+\d+/i)).toHaveCount(0);
+    await expect(page.getByText(/attempt\s+\d+\s+of\s+\d+/i)).toHaveCount(0);
     await expect(page.getByRole('button', { name: /tentar novamente/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /solicitar treino/i })).toHaveCount(0);
 
@@ -396,6 +398,8 @@ test.describe('monthly training plan route', () => {
     await expect(
       page.getByRole('progressbar', { name: /preparo estimado do treino/i }),
     ).toBeVisible();
+    await expect(page.getByText(/tentativa\s+\d+\s+de\s+\d+/i)).toHaveCount(0);
+    await expect(page.getByText(/attempt\s+\d+\s+of\s+\d+/i)).toHaveCount(0);
     await expect(page.getByRole('button', { name: /solicitar treino/i })).toHaveCount(0);
     await expect(
       page.getByRole('heading', { name: /plano ativo/i }),
