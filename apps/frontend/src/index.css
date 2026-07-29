@@ -184,6 +184,44 @@ body {
   }
 }
 
+@keyframes workout-completion-ball {
+  0%,
+  100% {
+    transform: translate(-50%, 0) rotate(-8deg);
+  }
+
+  50% {
+    transform: translate(-50%, -0.9rem) rotate(14deg);
+  }
+}
+
+@keyframes workout-completion-goal {
+  0% {
+    transform: translateX(0) rotate(0);
+  }
+
+  50% {
+    transform: translateX(4.2rem) rotate(180deg);
+  }
+
+  100% {
+    transform: translateX(0) rotate(360deg);
+  }
+}
+
+@keyframes workout-completion-pulse {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: scaleX(0.9);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scaleX(1.05);
+  }
+}
+
 .animate-app-toast-in {
   animation: app-toast-in 180ms ease-out both;
 }

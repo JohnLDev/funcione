@@ -710,6 +710,91 @@ test.describe('monthly training plan route', () => {
     await expect(page.getByRole('button', { name: /solicitar treino/i })).toHaveCount(0);
   });
 
+  test('tracks workout execution progress in session storage and finishes with sport feedback', async ({
+    page,
+  }) => {
+    const email = 'execution@funcione.app';
+
+    await signUp(page, email);
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    await page.getByRole('button', { name: /volei/i }).click();
+    await page.getByRole('button', { name: /performance/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByLabel(/peso/i).fill('82');
+    await page.getByLabel(/altura/i).fill('180');
+    await page.getByRole('button', { name: /intermediario/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByRole('button', { name: /3x por semana/i }).click();
+    await page.getByRole('button', { name: /60 minutos/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await page.getByRole('button', { name: /casa/i }).click();
+    await page.getByRole('button', { name: /halteres/i }).click();
+    await page.getByRole('button', { name: /sem lesoes/i }).click();
+    await page.getByRole('button', { name: /continuar/i }).click();
+    await generatePlanWithConfirmation(page);
+
+    await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
+    await page
+      .getByRole('button', {
+        name: /comecar treino.*segunda-feira.*potencia/i,
+      })
+      .click();
+
+    await expect(page.getByText(/em andamento/i).first()).toBeVisible();
+    await expect(page.getByText(/0 de 2 concluidos/i).first()).toBeVisible();
+    await expect(page.getByText(/mobilidade de tornozelo/i)).toBeVisible();
+    await expect(page.getByText(/prepara tornozelos para aterrissagens/i)).toBeVisible();
+    await expect(page.getByText(/agachamento com salto controlado/i)).toBeVisible();
+    await expect(
+      page.getByText(/desenvolve potencia com controle de impacto/i),
+    ).toBeVisible();
+
+    await page.getByRole('checkbox', { name: /mobilidade de tornozelo/i }).check();
+    await expect(page.getByText(/1 de 2 concluidos/i).first()).toBeVisible();
+    await expect(
+      page.evaluate(() =>
+        Object.keys(window.sessionStorage).some((key) =>
+          key.startsWith('funcione-workout-execution:'),
+        ),
+      ),
+    ).resolves.toBe(true);
+
+    await page.reload();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByLabel(/e-mail/i).fill(email);
+    await page.getByLabel(/senha/i).fill('StrongPass123!');
+    await page.getByRole('button', { name: /^entrar$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('link', { name: /^treino$/i }).click();
+    await expect(page.getByText(/1 de 2 concluidos/i).first()).toBeVisible();
+    await expect(
+      page.getByRole('checkbox', { name: /mobilidade de tornozelo/i }),
+    ).toBeChecked();
+
+    await page.getByRole('button', { name: /finalizar treino/i }).click();
+    const pendingConfirmation = page.getByRole('alertdialog', {
+      name: /finalizar treino/i,
+    });
+    await expect(pendingConfirmation).toBeVisible();
+    await expect(pendingConfirmation).toContainText(/exercicios pendentes/i);
+    await pendingConfirmation.getByRole('button', { name: /^finalizar$/i }).click();
+
+    const completionFeedback = page.getByRole('alertdialog', {
+      name: /treino concluido/i,
+    });
+    await expect(completionFeedback).toBeVisible();
+    await expect(
+      page.getByText(/voce esta cada vez mais funcional/i),
+    ).toBeVisible();
+    await expect(page.getByTestId('workout-completion-sport-animation')).toHaveAttribute(
+      'data-sport',
+      'volei',
+    );
+    await completionFeedback.getByRole('button', { name: /voltar ao plano/i }).click();
+    await expect(completionFeedback).toHaveCount(0);
+  });
+
   test('requires positive numeric body measurements before continuing', async ({ page }) => {
     await page.goto('/signup');
     await page.getByLabel(/^nome$/i).fill('Joao');
