@@ -255,11 +255,36 @@ function SportCompletionAnimation({
       data-testid="workout-completion-sport-animation"
     >
       <span className="absolute inset-x-8 bottom-5 h-0.5 rounded-full bg-primary/35" />
-      <span className="absolute left-1/2 top-6 h-8 w-8 -translate-x-1/2 rounded-full border-2 border-primary bg-card shadow-lg animate-[workout-completion-ball_950ms_ease-in-out_infinite]" />
+      {modality === 'volei' ? null : (
+        <span className="absolute left-1/2 top-6 h-8 w-8 -translate-x-1/2 rounded-full border-2 border-primary bg-card shadow-lg animate-[workout-completion-ball_950ms_ease-in-out_infinite]" />
+      )}
       {modality === 'volei' ? (
         <>
-          <span className="absolute bottom-5 left-1/2 h-16 w-0.5 -translate-x-1/2 rounded-full bg-primary/45" />
-          <span className="absolute bottom-13 left-[32%] h-0.5 w-[36%] rounded-full bg-primary/35 animate-[workout-completion-pulse_1.2s_ease-in-out_infinite]" />
+          <span
+            aria-hidden="true"
+            className="volleyball-spike-player absolute -bottom-8 left-2 z-10 h-40 w-40"
+            data-testid="volleyball-spike-net"
+          >
+            <img
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-contain"
+              data-testid="volleyball-spike-player-asset"
+              decoding="async"
+              height={640}
+              src="/sports/volleyball-spike-attacker.png"
+              width={640}
+            />
+          </span>
+          <span
+            aria-hidden="true"
+            className="volleyball-spike-ball absolute left-[31%] top-[11%] z-20 h-4 w-4 rounded-full border-2 border-primary bg-card shadow-lg"
+            data-testid="volleyball-spike-ball"
+          />
+          <span
+            aria-hidden="true"
+            className="volleyball-spike-trail absolute left-[36%] top-[18%] z-10 h-0.5 w-[4.5rem] rounded-full bg-primary/40"
+          />
         </>
       ) : null}
       {modality === 'basquete' ? (

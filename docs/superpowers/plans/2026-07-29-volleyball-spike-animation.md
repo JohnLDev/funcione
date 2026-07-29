@@ -28,7 +28,7 @@
 - Consumes: existing `workout-completion-sport-animation` test id.
 - Produces: assertions for `volleyball-spike-player-asset`, `volleyball-spike-net`, and `volleyball-spike-ball`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add these assertions after the existing `data-sport="volei"` assertion:
 
@@ -38,7 +38,7 @@ await expect(page.getByTestId('volleyball-spike-net')).toBeVisible();
 await expect(page.getByTestId('volleyball-spike-ball')).toBeVisible();
 ```
 
-- [ ] **Step 2: Run the focused E2E test to verify RED**
+- [x] **Step 2: Run the focused E2E test to verify RED**
 
 Run:
 
@@ -56,7 +56,7 @@ Expected: FAIL because `volleyball-spike-player-asset` is not found.
 **Interfaces:**
 - Produces: `/sports/volleyball-spike-attacker.png`, consumed by `SportCompletionAnimation`.
 
-- [ ] **Step 1: Generate a bitmap asset**
+- [x] **Step 1: Generate a bitmap asset**
 
 Use the built-in image generation tool with this prompt:
 
@@ -70,7 +70,7 @@ Style: modern app illustration, crisp edges, bold silhouette, blue and white ath
 Avoid: text, logos, watermarks, photorealism, crowd, extra players, shadows, gradients in the background, #00ff00 in the subject.
 ```
 
-- [ ] **Step 2: Remove the chroma-key background**
+- [x] **Step 2: Remove the chroma-key background**
 
 Run:
 
@@ -85,7 +85,7 @@ python "${CODEX_HOME:-$HOME/.codex}/skills/.system/imagegen/scripts/remove_chrom
   --despill
 ```
 
-- [ ] **Step 3: Inspect the PNG**
+- [x] **Step 3: Inspect the PNG**
 
 Verify the saved asset has an alpha channel, transparent corners, and a clear
 attacker/net silhouette.
@@ -103,18 +103,18 @@ attacker/net silhouette.
   - `data-testid="volleyball-spike-net"`
   - `data-testid="volleyball-spike-ball"`
 
-- [ ] **Step 1: Replace the volleyball branch**
+- [x] **Step 1: Replace the volleyball branch**
 
 Render the PNG with `alt=""`, `aria-hidden="true"`, fixed width/height,
 and a volleyball-specific animation class. Keep the scene inside the existing
 container.
 
-- [ ] **Step 2: Add CSS keyframes**
+- [x] **Step 2: Add CSS keyframes**
 
 Add keyframes for the player jump and ball attack path. The ball starts near the
 attacking arm and crosses over the net.
 
-- [ ] **Step 3: Run focused verification**
+- [x] **Step 3: Run focused verification**
 
 Run:
 
@@ -131,7 +131,7 @@ Expected: all pass.
 **Files:**
 - All files changed in Tasks 1-3.
 
-- [ ] **Step 1: Run broader verification**
+- [x] **Step 1: Run broader verification**
 
 Run:
 
@@ -143,7 +143,7 @@ git diff --check
 
 Expected: all pass.
 
-- [ ] **Step 2: Commit locally**
+- [x] **Step 2: Commit locally**
 
 Run:
 

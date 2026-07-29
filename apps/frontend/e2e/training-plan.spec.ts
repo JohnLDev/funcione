@@ -791,6 +791,9 @@ test.describe('monthly training plan route', () => {
       'data-sport',
       'volei',
     );
+    await expect(page.getByTestId('volleyball-spike-player-asset')).toBeVisible();
+    await expect(page.getByTestId('volleyball-spike-net')).toBeVisible();
+    await expect(page.getByTestId('volleyball-spike-ball')).toBeVisible();
     await completionFeedback.getByRole('button', { name: /voltar ao plano/i }).click();
     await expect(completionFeedback).toHaveCount(0);
   });
