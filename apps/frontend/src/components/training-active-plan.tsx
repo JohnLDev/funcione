@@ -255,9 +255,6 @@ function SportCompletionAnimation({
       data-testid="workout-completion-sport-animation"
     >
       <span className="absolute inset-x-8 bottom-5 h-0.5 rounded-full bg-primary/35" />
-      {modality === 'volei' ? null : (
-        <span className="absolute left-1/2 top-6 h-8 w-8 -translate-x-1/2 rounded-full border-2 border-primary bg-card shadow-lg animate-[workout-completion-ball_950ms_ease-in-out_infinite]" />
-      )}
       {modality === 'volei' ? (
         <>
           <span
@@ -289,21 +286,89 @@ function SportCompletionAnimation({
       ) : null}
       {modality === 'basquete' ? (
         <>
-          <span className="absolute right-12 top-8 h-8 w-12 rounded-full border-2 border-primary/70" />
-          <span className="absolute right-10 top-12 h-10 w-0.5 rotate-6 rounded-full bg-primary/35" />
+          <span
+            aria-hidden="true"
+            className="basketball-shot-player absolute -bottom-7 left-9 z-10 h-40 w-40"
+            data-testid="basketball-shot-hoop"
+          >
+            <img
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-contain"
+              data-testid="basketball-shot-player-asset"
+              decoding="async"
+              height={640}
+              src="/sports/basketball-dunk-player.png"
+              width={640}
+            />
+          </span>
+          <span
+            aria-hidden="true"
+            className="basketball-shot-ball absolute left-[42%] top-[12%] z-20 h-4 w-4 rounded-full border-2"
+            data-testid="basketball-shot-ball"
+          />
+          <span
+            aria-hidden="true"
+            className="basketball-shot-trail absolute left-[45%] top-[20%] z-10 h-0.5 w-16 rounded-full bg-primary/40"
+          />
         </>
       ) : null}
       {modality === 'futebol_futsal' ? (
         <>
-          <span className="absolute bottom-5 right-10 h-12 w-16 rounded-t-2xl border-2 border-primary/60 border-b-0" />
-          <span className="absolute bottom-7 left-10 h-5 w-5 rounded-full border-2 border-primary bg-card animate-[workout-completion-goal_1.1s_ease-in-out_infinite]" />
+          <span
+            aria-hidden="true"
+            className="football-kick-player absolute -bottom-7 left-1 z-10 h-40 w-40"
+            data-testid="football-kick-goal"
+          >
+            <img
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-contain"
+              data-testid="football-kick-player-asset"
+              decoding="async"
+              height={640}
+              src="/sports/football-kick-player.png"
+              width={640}
+            />
+          </span>
+          <span
+            aria-hidden="true"
+            className="football-kick-ball absolute bottom-8 left-[39%] z-20 h-4 w-4 rounded-full border-2"
+            data-testid="football-kick-ball"
+          />
+          <span
+            aria-hidden="true"
+            className="football-kick-trail absolute bottom-9 left-[31%] z-10 h-0.5 w-[4.5rem] rounded-full bg-primary/40"
+          />
         </>
       ) : null}
       {modality === 'beach_tenis' ? (
         <>
-          <span className="absolute bottom-7 left-12 h-14 w-9 -rotate-12 rounded-full border-2 border-primary/70" />
-          <span className="absolute bottom-6 left-20 h-10 w-0.5 -rotate-45 rounded-full bg-primary/50" />
-          <span className="absolute inset-x-6 bottom-3 h-0.5 rounded-full bg-accent/60" />
+          <span
+            aria-hidden="true"
+            className="beach-tennis-swing-player absolute -bottom-1 left-2 z-10 h-[7.5rem] w-48"
+            data-testid="beach-tennis-swing-net"
+          >
+            <img
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-contain"
+              data-testid="beach-tennis-swing-player-asset"
+              decoding="async"
+              height={426}
+              src="/sports/beach-tennis-swing-player.png"
+              width={640}
+            />
+          </span>
+          <span
+            aria-hidden="true"
+            className="beach-tennis-swing-ball absolute left-[48%] top-[19%] z-20 h-3.5 w-3.5 rounded-full border-2"
+            data-testid="beach-tennis-swing-ball"
+          />
+          <span
+            aria-hidden="true"
+            className="beach-tennis-swing-trail absolute left-[43%] top-[28%] z-10 h-0.5 w-16 rounded-full bg-accent/55"
+          />
         </>
       ) : null}
     </div>

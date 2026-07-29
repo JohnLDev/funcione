@@ -298,6 +298,233 @@ body {
   transform-origin: left center;
 }
 
+@keyframes basketball-shot-player-rise {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  48% {
+    transform: translateY(-0.22rem) rotate(1deg);
+  }
+}
+
+@keyframes basketball-shot-ball-arc {
+  0% {
+    opacity: 0;
+    transform: translate(-0.25rem, 0.4rem) scale(0.74) rotate(0deg);
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  52% {
+    transform: translate(2.4rem, -0.8rem) scale(1) rotate(180deg);
+  }
+
+  84% {
+    opacity: 1;
+    transform: translate(5.8rem, 1.2rem) scale(0.84) rotate(350deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(6.4rem, 1.55rem) scale(0.7) rotate(430deg);
+  }
+}
+
+@keyframes basketball-shot-trail {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(0) scaleX(0.2) rotate(24deg);
+  }
+
+  46% {
+    opacity: 0.72;
+    transform: translateX(1.2rem) scaleX(0.9) rotate(24deg);
+  }
+
+  82% {
+    opacity: 0.16;
+    transform: translateX(4.1rem) scaleX(0.5) rotate(24deg);
+  }
+}
+
+@keyframes football-kick-player-drive {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  46% {
+    transform: translateX(0.2rem) rotate(1deg);
+  }
+}
+
+@keyframes football-kick-ball-drive {
+  0% {
+    opacity: 0;
+    transform: translate(-0.25rem, 0.15rem) scale(0.72) rotate(0deg);
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  72% {
+    opacity: 1;
+    transform: translate(7.2rem, -1rem) scale(0.86) rotate(430deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(8.2rem, -1.25rem) scale(0.68) rotate(520deg);
+  }
+}
+
+@keyframes football-kick-trail {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(0) scaleX(0.2) rotate(-10deg);
+  }
+
+  58% {
+    opacity: 0.72;
+    transform: translateX(2.4rem) scaleX(1) rotate(-10deg);
+  }
+
+  84% {
+    opacity: 0.16;
+    transform: translateX(5.8rem) scaleX(0.55) rotate(-10deg);
+  }
+}
+
+@keyframes beach-tennis-swing-player-reach {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateX(0.16rem) rotate(-1deg);
+  }
+}
+
+@keyframes beach-tennis-swing-ball-float {
+  0% {
+    opacity: 0;
+    transform: translate(-0.2rem, 0.35rem) scale(0.76) rotate(0deg);
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  54% {
+    transform: translate(2.3rem, -0.75rem) scale(1) rotate(170deg);
+  }
+
+  84% {
+    opacity: 1;
+    transform: translate(6.1rem, 0.5rem) scale(0.82) rotate(330deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(6.9rem, 0.85rem) scale(0.68) rotate(410deg);
+  }
+}
+
+@keyframes beach-tennis-swing-trail {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(0) scaleX(0.22) rotate(12deg);
+  }
+
+  48% {
+    opacity: 0.68;
+    transform: translateX(1.6rem) scaleX(0.94) rotate(12deg);
+  }
+
+  82% {
+    opacity: 0.16;
+    transform: translateX(4.4rem) scaleX(0.52) rotate(12deg);
+  }
+}
+
+.basketball-shot-player,
+.football-kick-player,
+.beach-tennis-swing-player {
+  filter: drop-shadow(0 0.75rem 1rem color-mix(in srgb, var(--primary) 22%, transparent));
+}
+
+.basketball-shot-player {
+  animation: basketball-shot-player-rise 1.2s ease-in-out infinite;
+  transform-origin: 46% 58%;
+}
+
+.basketball-shot-ball {
+  animation: basketball-shot-ball-arc 1.2s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 36% 28%, #fed7aa 0 18%, transparent 19%),
+    repeating-conic-gradient(from 20deg, #f97316 0 13deg, #7c2d12 14deg 18deg, #fb923c 19deg 36deg);
+  border-color: color-mix(in srgb, #f97316 72%, #ffffff);
+  box-shadow:
+    0 0 0 0.08rem color-mix(in srgb, var(--background) 90%, transparent),
+    0 0.45rem 1rem color-mix(in srgb, #f97316 38%, transparent);
+}
+
+.basketball-shot-trail {
+  animation: basketball-shot-trail 1.2s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+.football-kick-player {
+  animation: football-kick-player-drive 1.12s ease-in-out infinite;
+  transform-origin: 42% 62%;
+}
+
+.football-kick-ball {
+  animation: football-kick-ball-drive 1.12s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 50% 50%, #111827 0 18%, transparent 19%),
+    conic-gradient(from 36deg, #f8fafc 0 18%, #111827 19% 30%, #f8fafc 31% 52%, #111827 53% 64%, #f8fafc 65% 100%);
+  border-color: color-mix(in srgb, var(--primary) 52%, #ffffff);
+  box-shadow:
+    0 0 0 0.08rem color-mix(in srgb, var(--background) 90%, transparent),
+    0 0.45rem 1rem color-mix(in srgb, var(--primary) 34%, transparent);
+}
+
+.football-kick-trail {
+  animation: football-kick-trail 1.12s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+.beach-tennis-swing-player {
+  animation: beach-tennis-swing-player-reach 1.16s ease-in-out infinite;
+  transform-origin: 40% 56%;
+}
+
+.beach-tennis-swing-ball {
+  animation: beach-tennis-swing-ball-float 1.16s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 38% 30%, #fef3c7 0 22%, transparent 23%),
+    conic-gradient(from 22deg, #fde68a 0 38%, var(--primary) 39% 56%, #fef3c7 57% 100%);
+  border-color: color-mix(in srgb, #fde68a 72%, var(--primary));
+  box-shadow:
+    0 0 0 0.08rem color-mix(in srgb, var(--background) 90%, transparent),
+    0 0.45rem 1rem color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+.beach-tennis-swing-trail {
+  animation: beach-tennis-swing-trail 1.16s ease-in-out infinite;
+  transform-origin: left center;
+}
+
 .animate-app-toast-in {
   animation: app-toast-in 180ms ease-out both;
 }

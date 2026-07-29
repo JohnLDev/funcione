@@ -39,7 +39,7 @@
   - `beach-tennis-swing-net`
   - `beach-tennis-swing-ball`
 
-- [ ] **Step 1: Write the failing E2E test**
+- [x] **Step 1: Write the failing E2E test**
 
 Add a Playwright test named `uses sport-specific completion assets for every supported sport`. For each modality below, create a new account, generate a plan, start the first workout, finish it, and assert `data-sport` plus the three marker test ids:
 
@@ -75,7 +75,7 @@ const sportCompletionCases = [
 ] as const;
 ```
 
-- [ ] **Step 2: Run the focused E2E test to verify RED**
+- [x] **Step 2: Run the focused E2E test to verify RED**
 
 Run:
 
@@ -98,19 +98,19 @@ Expected: FAIL because the first new marker is not found.
   - `/sports/football-kick-player.png`
   - `/sports/beach-tennis-swing-player.png`
 
-- [ ] **Step 1: Generate basketball asset**
+- [x] **Step 1: Generate basketball asset**
 
 Use built-in `imagegen` with a flat `#00ff00` chroma-key background. The scene shows one basketball player attacking the basket, with hoop and ball visible, in a modern app illustration style.
 
-- [ ] **Step 2: Generate football/futsal asset**
+- [x] **Step 2: Generate football/futsal asset**
 
 Use built-in `imagegen` with a flat `#00ff00` chroma-key background. The scene shows one football/futsal player kicking a ball toward a goal, in a modern app illustration style.
 
-- [ ] **Step 3: Generate beach tennis asset**
+- [x] **Step 3: Generate beach tennis asset**
 
 Use built-in `imagegen` with a flat `#00ff00` chroma-key background. The scene shows one beach tennis athlete swinging a racket and sending a ball over a net, in a modern app illustration style.
 
-- [ ] **Step 4: Remove chroma-key backgrounds**
+- [x] **Step 4: Remove chroma-key backgrounds**
 
 For each generated source path printed by `imagegen`, run the chroma-key
 removal command with one of the fixed output paths below.
@@ -156,7 +156,7 @@ python "${CODEX_HOME:-$HOME/.codex}/skills/.system/imagegen/scripts/remove_chrom
 
 Then resize each PNG to max 640px with `sips -Z 640`.
 
-- [ ] **Step 5: Inspect saved PNGs**
+- [x] **Step 5: Inspect saved PNGs**
 
 Verify each asset has alpha, transparent corners, readable sport action, and no obvious green fringe.
 
@@ -170,23 +170,23 @@ Verify each asset has alpha, transparent corners, readable sport action, and no 
 - Consumes: the three new public PNG URLs.
 - Produces: DOM markers listed in Task 1.
 
-- [ ] **Step 1: Replace basketball CSS-only branch**
+- [x] **Step 1: Replace basketball CSS-only branch**
 
 Render `/sports/basketball-dunk-player.png`, a hoop marker, and an animated ball marker.
 
-- [ ] **Step 2: Replace football/futsal CSS-only branch**
+- [x] **Step 2: Replace football/futsal CSS-only branch**
 
 Render `/sports/football-kick-player.png`, a goal marker, and an animated ball marker.
 
-- [ ] **Step 3: Replace beach tennis CSS-only branch**
+- [x] **Step 3: Replace beach tennis CSS-only branch**
 
 Render `/sports/beach-tennis-swing-player.png`, a net marker, and an animated ball marker.
 
-- [ ] **Step 4: Add CSS keyframes and classes**
+- [x] **Step 4: Add CSS keyframes and classes**
 
 Add one small movement cycle per sport. The assets move subtly; the CSS ball carries most of the action.
 
-- [ ] **Step 5: Run focused verification**
+- [x] **Step 5: Run focused verification**
 
 Run:
 
@@ -203,7 +203,7 @@ Expected: all pass.
 **Files:**
 - All files changed by Tasks 1-3.
 
-- [ ] **Step 1: Run final verification**
+- [x] **Step 1: Run final verification**
 
 Run:
 
@@ -215,7 +215,7 @@ git diff --check
 
 Expected: all pass.
 
-- [ ] **Step 2: Commit locally**
+- [x] **Step 2: Commit locally**
 
 Run:
 

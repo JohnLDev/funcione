@@ -108,6 +108,80 @@ async function generatePlanWithConfirmation(page: Page) {
     .click();
 }
 
+async function completeStandardTrainingWizard(
+  page: Page,
+  modalityName: RegExp,
+) {
+  await page.getByRole('button', { name: modalityName }).click();
+  await page.getByRole('button', { name: /performance/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByLabel(/peso/i).fill('82');
+  await page.getByLabel(/altura/i).fill('180');
+  await page.getByRole('button', { name: /intermediario/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByRole('button', { name: /3x por semana/i }).click();
+  await page.getByRole('button', { name: /60 minutos/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByRole('button', { name: /casa/i }).click();
+  await page.getByRole('button', { name: /halteres/i }).click();
+  await page.getByRole('button', { name: /sem lesoes/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await generatePlanWithConfirmation(page);
+}
+
+async function finishFirstWorkout(page: Page) {
+  await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
+  await page
+    .getByRole('button', {
+      name: /comecar treino.*segunda-feira/i,
+    })
+    .click();
+  await page.getByRole('button', { name: /finalizar treino/i }).click();
+  const pendingConfirmation = page.getByRole('alertdialog', {
+    name: /finalizar treino/i,
+  });
+  await expect(pendingConfirmation).toBeVisible();
+  await pendingConfirmation.getByRole('button', { name: /^finalizar$/i }).click();
+
+  const completionFeedback = page.getByRole('alertdialog', {
+    name: /treino concluido/i,
+  });
+
+  await expect(completionFeedback).toBeVisible();
+
+  return completionFeedback;
+}
+
+const sportCompletionCases = [
+  {
+    markerIds: [
+      'basketball-shot-player-asset',
+      'basketball-shot-hoop',
+      'basketball-shot-ball',
+    ],
+    modality: 'basquete',
+    name: /basquete/i,
+  },
+  {
+    markerIds: [
+      'football-kick-player-asset',
+      'football-kick-goal',
+      'football-kick-ball',
+    ],
+    modality: 'futebol_futsal',
+    name: /futebol/i,
+  },
+  {
+    markerIds: [
+      'beach-tennis-swing-player-asset',
+      'beach-tennis-swing-net',
+      'beach-tennis-swing-ball',
+    ],
+    modality: 'beach_tenis',
+    name: /beach tenis/i,
+  },
+] as const;
+
 test.describe('monthly training plan route', () => {
   test('normalizes bounded free text and deduplicates hydrated selection types', async ({
     page,
@@ -797,6 +871,33 @@ test.describe('monthly training plan route', () => {
     await completionFeedback.getByRole('button', { name: /voltar ao plano/i }).click();
     await expect(completionFeedback).toHaveCount(0);
   });
+
+  for (const sportCase of sportCompletionCases) {
+    test(`uses sport-specific completion assets for ${sportCase.modality}`, async ({
+      page,
+    }, testInfo) => {
+      const email = `completion-${sportCase.modality}-${testInfo.project.name}-${Date.now()}@funcione.app`;
+
+      await signUp(page, email);
+      await page.getByRole('link', { name: /^treino$/i }).click();
+      await completeStandardTrainingWizard(page, sportCase.name);
+
+      const completionFeedback = await finishFirstWorkout(page);
+
+      await expect(
+        page.getByTestId('workout-completion-sport-animation'),
+      ).toHaveAttribute('data-sport', sportCase.modality);
+
+      for (const markerId of sportCase.markerIds) {
+        await expect(page.getByTestId(markerId)).toBeVisible();
+      }
+
+      await completionFeedback
+        .getByRole('button', { name: /voltar ao plano/i })
+        .click();
+      await expect(completionFeedback).toHaveCount(0);
+    });
+  }
 
   test('requires positive numeric body measurements before continuing', async ({ page }) => {
     await page.goto('/signup');
