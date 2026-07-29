@@ -224,7 +224,7 @@ git add apps/frontend/e2e/training-plan.spec.ts apps/frontend/src/components/tra
 git commit -m "feat(training): add sport completion assets"
 ```
 
-- [ ] **Step 3: Merge and push to main**
+- [x] **Step 3: Merge and push to main**
 
 Run:
 
