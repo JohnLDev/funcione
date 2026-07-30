@@ -152,6 +152,36 @@ async function finishFirstWorkout(page: Page) {
   return completionFeedback;
 }
 
+async function replaceFirstWorkoutFocus(page: Page, focus: string) {
+  await page.evaluate((nextFocus) => {
+    const session = JSON.parse(
+      window.localStorage.getItem('funcione-mock-session') ?? '{}',
+    ) as { accessToken?: string; user?: { id?: string } };
+    const accessToken = session.accessToken;
+    const userId = session.user?.id;
+
+    if (!accessToken || !userId) {
+      throw new Error('Mock session not found.');
+    }
+
+    const plans = JSON.parse(
+      window.localStorage.getItem('funcione-mock-training-plans') ?? '{}',
+    ) as Record<string, { result?: { treinos?: { foco?: string }[] } }>;
+    const plan = plans[accessToken];
+
+    if (!plan?.result?.treinos?.[0]) {
+      throw new Error('Mock training plan not found.');
+    }
+
+    plan.result.treinos[0].foco = nextFocus;
+    window.localStorage.setItem(
+      'funcione-mock-training-plans',
+      JSON.stringify(plans),
+    );
+    window.localStorage.removeItem(`funcione-training-plan-cache:${userId}`);
+  }, focus);
+}
+
 const sportCompletionCases = [
   {
     markerIds: [
@@ -870,6 +900,46 @@ test.describe('monthly training plan route', () => {
     await expect(page.getByTestId('volleyball-spike-ball')).toBeVisible();
     await completionFeedback.getByRole('button', { name: /voltar ao plano/i }).click();
     await expect(completionFeedback).toHaveCount(0);
+  });
+
+  test('keeps long workout card titles readable on mobile', async ({ page }) => {
+    await page.setViewportSize({ height: 852, width: 393 });
+    const email = 'mobile-card-layout@funcione.app';
+
+    await signUp(page, email);
+    await page.getByRole('link', { name: /^treino$/i }).click();
+    await completeStandardTrainingWizard(page, /volei/i);
+
+    const longFocus =
+      'Pliometria explosiva, agilidade lateral e forca de membros superiores';
+    await replaceFirstWorkoutFocus(page, longFocus);
+    await page.reload();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByLabel(/e-mail/i).fill(email);
+    await page.getByLabel(/senha/i).fill('StrongPass123!');
+    await page.getByRole('button', { name: /^entrar$/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('link', { name: /^treino$/i }).click();
+    await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
+
+    const title = page.getByRole('heading', { name: longFocus });
+    await expect(title).toBeVisible();
+
+    const layout = await title.evaluate((element) => {
+      const titleBox = element.getBoundingClientRect();
+      const metricsBox = element.nextElementSibling?.getBoundingClientRect();
+
+      return {
+        metricsTop: metricsBox?.top ?? 0,
+        titleHeight: titleBox.height,
+        titleTop: titleBox.top,
+        titleWidth: titleBox.width,
+      };
+    });
+
+    expect(layout.titleWidth).toBeGreaterThan(250);
+    expect(layout.titleHeight).toBeLessThan(140);
+    expect(layout.metricsTop).toBeGreaterThan(layout.titleTop);
   });
 
   for (const sportCase of sportCompletionCases) {

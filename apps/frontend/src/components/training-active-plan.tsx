@@ -632,7 +632,7 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
               key={`${session.dia}-${session.foco}`}
             >
               <CardContent className="grid gap-3 p-4">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-xs font-bold text-primary">{session.dia}</p>
@@ -668,12 +668,13 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
                       ) : null}
                     </p>
                   </div>
-                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                  <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:justify-end">
                     {!isInProgress ? (
                       <Button
                         aria-label={t('training.active.execution.startLabel', {
                           session: `${session.dia}: ${session.foco}`,
                         })}
+                        className="w-full justify-center sm:w-auto"
                         onClick={() => startWorkout(session, index)}
                         size="sm"
                         type="button"
@@ -688,6 +689,7 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
                           session: `${session.dia}: ${session.foco}`,
                         })}
                         aria-expanded={isOpen}
+                        className="w-full justify-center sm:w-auto"
                         onClick={() => setOpenSessionIndex(isOpen ? -1 : index)}
                         size="sm"
                         type="button"
