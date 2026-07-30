@@ -13,6 +13,19 @@ async function completeGoogleRegistration(page: Page) {
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
+async function expireTrainingPlanCache(page: Page) {
+  await page.evaluate(() => {
+    const session = JSON.parse(
+      window.localStorage.getItem('funcione-mock-session') ?? '{}',
+    ) as { user?: { id?: string } };
+    const userId = session.user?.id;
+
+    if (userId) {
+      window.localStorage.removeItem(`funcione-training-plan-cache:${userId}`);
+    }
+  });
+}
+
 type ImportedAdsSlot = {
   format: string;
   fullWidthResponsive: boolean;
@@ -150,5 +163,48 @@ test.describe('Google AdSense display', () => {
       hiddenOnMobile: false,
       visible: true,
     });
+  });
+
+  test('shows the preparation ad during async training generation', async ({
+    page,
+  }) => {
+    await completeGoogleRegistration(page);
+    await page.evaluate(() => {
+      const session = JSON.parse(
+        window.localStorage.getItem('funcione-mock-session') ?? '{}',
+      );
+      window.localStorage.setItem(
+        'funcione-mock-training-plan-scenarios',
+        JSON.stringify({ [session.accessToken]: { pending: true } }),
+      );
+    });
+    await expireTrainingPlanCache(page);
+    await page.getByRole('link', { name: /^treino$/i }).click();
+
+    await expect(
+      page.getByRole('heading', { name: /preparando seu treino/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('progressbar', { name: /preparo estimado do treino/i }),
+    ).toBeVisible();
+    const preparationAd = page.getByTestId('adsense-slot-training-preparation');
+    await expect(preparationAd).toBeVisible();
+    await expect(preparationAd).toHaveAttribute('data-ad-slot', '9544709295');
+    await expect(page.getByRole('button', { name: /tentar novamente/i })).toBeVisible();
+  });
+
+  test('shows desktop sidebar ad on dashboard without loading AdSense network script', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only ad');
+
+    await completeGoogleRegistration(page);
+
+    const sidebarAd = page.getByTestId('adsense-slot-desktop-sidebar');
+    await expect(sidebarAd).toBeVisible();
+    await expect(sidebarAd).toHaveAttribute('data-ad-slot', '6487869331');
+    await expect(
+      page.locator('script[src*="pagead2.googlesyndication.com"]'),
+    ).toHaveCount(0);
   });
 });

@@ -1,5 +1,6 @@
 import { AlertCircle, Dumbbell, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { TrainingPreparationAd } from '@/ads/ad-placements.js';
 import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
 import { AppLoading } from './app-loading.js';
@@ -70,6 +71,7 @@ function TrainingScreenContent() {
       ) : state?.pendingGeneration ? (
         <div className="grid gap-3">
           <TrainingPreparationProgress generation={state.pendingGeneration} />
+          <TrainingPreparationAd />
           <p className="rounded-2xl border border-primary/25 bg-primary/10 p-4 text-sm font-bold text-muted-foreground">
             {t('training.pendingMessage')}
           </p>

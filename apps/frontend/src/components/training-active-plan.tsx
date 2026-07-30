@@ -12,6 +12,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { DesktopSidebarAd } from '@/ads/ad-placements.js';
 import type {
   MonthlyTrainingPlan,
   TrainingModality,
@@ -726,6 +727,9 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
             </p>
           </CardContent>
         </Card>
+        <div className="mt-4">
+          <DesktopSidebarAd suppress={hasInProgressSession} />
+        </div>
       </aside>
       {pendingFinishSessionId ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-background/80 p-4 backdrop-blur-sm sm:place-items-center">

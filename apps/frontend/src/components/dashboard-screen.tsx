@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { DesktopSidebarAd } from '@/ads/ad-placements.js';
 import { useAuth } from '@/auth/use-auth.js';
 import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
@@ -195,6 +196,7 @@ function DashboardContent() {
               </Button>
             </CardContent>
           </Card>
+          <DesktopSidebarAd />
         </aside>
       </div>
     </section>
