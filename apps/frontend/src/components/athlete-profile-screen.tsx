@@ -1,6 +1,7 @@
 import { Dumbbell, IdCard, UserRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { PreFooterAd } from '@/ads/ad-placements.js';
 import { useAuth } from '@/auth/use-auth.js';
 import { TrainingPlanProvider } from '@/training/training-plan-provider.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
@@ -206,6 +207,7 @@ function AthleteProfileContent() {
           </CardContent>
         </Card>
       </div>
+      <PreFooterAd />
     </section>
   );
 }

@@ -797,6 +797,8 @@ test.describe('monthly training plan route', () => {
       })
       .click();
 
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toHaveCount(0);
+    await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toHaveCount(0);
     await expect(page.getByText(/em andamento/i).first()).toBeVisible();
     await expect(page.getByText(/0 de 2 concluidos/i).first()).toBeVisible();
     await expect(page.getByText(/mobilidade de tornozelo/i)).toBeVisible();

@@ -207,4 +207,26 @@ test.describe('Google AdSense display', () => {
       page.locator('script[src*="pagead2.googlesyndication.com"]'),
     ).toHaveCount(0);
   });
+
+  test('shows pre-footer ad before the footer on mobile without horizontal overflow', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 844, width: 390 });
+    await completeGoogleRegistration(page);
+
+    const preFooterAd = page.getByTestId('adsense-slot-pre-footer');
+    await expect(preFooterAd).toBeVisible();
+    await expect(preFooterAd).toHaveAttribute('data-ad-slot', '7261326735');
+
+    const footer = page.getByRole('contentinfo');
+    const adBox = await preFooterAd.boundingBox();
+    const footerBox = await footer.boundingBox();
+    expect(adBox?.y ?? 0).toBeLessThan(footerBox?.y ?? 0);
+
+    const scrollWidth = await page.evaluate(
+      () => document.documentElement.scrollWidth,
+    );
+    const viewportWidth = await page.evaluate(() => window.innerWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
+  });
 });
