@@ -90,4 +90,65 @@ test.describe('Google AdSense display', () => {
       'google.com, pub-6699167964598590, DIRECT, f08c47fec0942fa0\n',
     );
   });
+
+  test('builds the AdSense script URL without loading the network script in E2E', async ({
+    page,
+  }) => {
+    await completeGoogleRegistration(page);
+
+    const runtime = await page.evaluate(async () => {
+      const module = (await import('/src/ads/adsense-script.tsx')) as unknown as ImportedAdSenseScript;
+
+      return {
+        id: module.adsenseScriptElementId,
+        src: module.getAdSenseScriptSrc('ca-pub-6699167964598590'),
+      };
+    });
+
+    expect(runtime).toEqual({
+      id: 'google-adsense-script',
+      src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6699167964598590',
+    });
+    await expect(
+      page.locator('script[src*="pagead2.googlesyndication.com"]'),
+    ).toHaveCount(0);
+  });
+
+  test('keeps AdSense eligibility centralized', async ({ page }) => {
+    await page.goto('/login');
+
+    const eligibility = await page.evaluate(async () => {
+      const configModule = (await import('/src/ads/ads-config.ts')) as unknown as ImportedAdsConfig;
+      const module = (await import('/src/ads/use-ads-eligibility.ts')) as unknown as ImportedAdsEligibility;
+      const config = configModule.readAdsConfig({
+        VITE_ADS_ENABLED: 'true',
+        VITE_ADSENSE_CLIENT_ID: 'ca-pub-6699167964598590',
+        VITE_ADSENSE_SLOT_DESKTOP_SIDEBAR: '6487869331',
+        VITE_ADSENSE_SLOT_PRE_FOOTER: '7261326735',
+        VITE_ADSENSE_SLOT_TRAINING_PREPARATION: '9544709295',
+      });
+
+      return {
+        disabled: module.shouldShowAds(configModule.readAdsConfig({}), {
+          slot: 'preFooter',
+        }),
+        hiddenBySuppression: module.shouldShowAds(config, {
+          slot: 'preFooter',
+          suppress: true,
+        }),
+        hiddenOnMobile: module.shouldShowAds(config, {
+          isDesktop: false,
+          slot: 'desktopSidebar',
+        }),
+        visible: module.shouldShowAds(config, { slot: 'preFooter' }),
+      };
+    });
+
+    expect(eligibility).toEqual({
+      disabled: false,
+      hiddenBySuppression: false,
+      hiddenOnMobile: false,
+      visible: true,
+    });
+  });
 });

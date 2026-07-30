@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink } from 'react-router';
 import { useAuth } from '@/auth/use-auth.js';
+import { AdSenseScript } from '@/ads/adsense-script.js';
 import type { AuthUser } from '@/auth/types.js';
 import { Button } from './ui/button.js';
 import { ProductLogo } from './product-logo.js';
@@ -97,6 +98,7 @@ export function AppShell({
 
   return (
     <div className="min-h-dvh overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 md:px-8 md:pb-8">
+      <AdSenseScript />
       <div className="mx-auto grid w-full max-w-6xl gap-5 md:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="hidden min-h-[calc(100dvh-2rem)] flex-col rounded-[2rem] border border-border bg-card/70 p-4 shadow-sm backdrop-blur md:sticky md:top-4 md:flex md:min-h-[calc(100dvh-3rem)]">
           <div className="flex items-center gap-3">

@@ -5,6 +5,9 @@
     "logoAlt": "Official Funcione logo",
     "milexLogoAlt": "Official MileX logo"
   },
+  "ads": {
+    "label": "Advertisement"
+  },
   "footer": {
     "label": "Footer",
     "privacy": "Privacy policy",
