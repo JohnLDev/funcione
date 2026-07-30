@@ -1041,7 +1041,7 @@ rtk git commit -m "feat(ads): add pre-footer placements"
 - Produces English privacy copy mentioning `Google AdSense`.
 - Produces E2E verification for both locales.
 
-- [ ] **Step 1: Add failing legal-copy tests**
+- [x] **Step 1: Add failing legal-copy tests**
 
 Append this test to `apps/frontend/e2e/adsense-display.spec.ts`:
 
@@ -1062,7 +1062,7 @@ Append this test to `apps/frontend/e2e/adsense-display.spec.ts`:
   });
 ```
 
-- [ ] **Step 2: Run the focused legal test and verify it fails**
+- [x] **Step 2: Run the focused legal test and verify it fails**
 
 Run:
 
@@ -1072,7 +1072,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- adsense-display
 
 Expected: FAIL because the current privacy documents do not mention AdSense advertising cookies.
 
-- [ ] **Step 3: Update Portuguese privacy policy**
+- [x] **Step 3: Update Portuguese privacy policy**
 
 In `apps/frontend/src/legal/documents/pt-BR/privacy.md`, update section `## 3. Finalidades de uso` to include publicidade:
 
@@ -1086,7 +1086,7 @@ Update section `## 4. Compartilhamento e operadores` to include Google AdSense:
 Podemos usar provedores de tecnologia para hospedagem, banco de dados, autenticacao, observabilidade, processamento por inteligencia artificial e publicidade. O Google AdSense pode usar cookies de publicidade, identificadores e sinais de navegacao para entregar, medir e proteger anuncios, conforme as configuracoes de consentimento e privacidade aplicaveis.
 ```
 
-- [ ] **Step 4: Update English privacy policy**
+- [x] **Step 4: Update English privacy policy**
 
 In `apps/frontend/src/legal/documents/en-US/privacy.md`, update section `## 3. Purposes of use` to include advertising:
 
@@ -1100,7 +1100,7 @@ Update section `## 4. Sharing and processors` to include Google AdSense:
 We may use technology providers for hosting, database, authentication, observability, artificial intelligence processing, and advertising. Google AdSense may use advertising cookies, identifiers, and browsing signals to deliver, measure, and protect ads, according to the applicable consent and privacy settings.
 ```
 
-- [ ] **Step 5: Run the focused legal test**
+- [x] **Step 5: Run the focused legal test**
 
 Run:
 
@@ -1110,7 +1110,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- adsense-display
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit Task 5**
+- [x] **Step 6: Commit Task 5**
 
 ```bash
 rtk git add apps/frontend/src/legal/documents/pt-BR/privacy.md apps/frontend/src/legal/documents/en-US/privacy.md apps/frontend/e2e/adsense-display.spec.ts
