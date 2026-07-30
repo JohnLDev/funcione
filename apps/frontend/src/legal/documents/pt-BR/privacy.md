@@ -12,11 +12,11 @@ Podemos tratar dados de cadastro, como nome, sobrenome, CPF, data de nascimento,
 
 ## 3. Finalidades de uso
 
-Usamos os dados para autenticar usuarios, manter o cadastro, personalizar solicitacoes de treino, gerar planos com apoio de inteligencia artificial, melhorar a experiencia, prevenir abuso, corrigir falhas e cumprir obrigacoes legais ou regulatórias aplicaveis.
+Usamos os dados para autenticar usuarios, manter o cadastro, personalizar solicitacoes de treino, gerar planos com apoio de inteligencia artificial, melhorar a experiencia, exibir publicidade por meio do Google AdSense, prevenir abuso, corrigir falhas e cumprir obrigacoes legais ou regulatórias aplicaveis.
 
 ## 4. Compartilhamento e operadores
 
-Podemos usar provedores de tecnologia para hospedagem, banco de dados, autenticacao, observabilidade e processamento por inteligencia artificial. Esses provedores devem tratar os dados apenas conforme necessario para operar o Funcione.
+Podemos usar provedores de tecnologia para hospedagem, banco de dados, autenticacao, observabilidade, processamento por inteligencia artificial e publicidade. O Google AdSense pode usar cookies de publicidade, identificadores e sinais de navegacao para entregar, medir e proteger anuncios, conforme as configuracoes de consentimento e privacidade aplicaveis.
 
 ## 5. Direitos do usuario
 

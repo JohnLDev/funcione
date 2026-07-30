@@ -229,4 +229,19 @@ test.describe('Google AdSense display', () => {
     const viewportWidth = await page.evaluate(() => window.innerWidth);
     expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
   });
+
+  test('discloses Google AdSense in privacy policy in both languages', async ({
+    page,
+  }) => {
+    await page.goto('/privacy');
+    await expect(page.getByText(/Google AdSense/i).first()).toBeVisible();
+    await expect(page.getByText(/cookies de publicidade/i)).toBeVisible();
+
+    await page.evaluate(() => {
+      window.localStorage.setItem('funcione-language', 'en-US');
+    });
+    await page.reload();
+    await expect(page.getByText(/Google AdSense/i).first()).toBeVisible();
+    await expect(page.getByText(/advertising cookies/i)).toBeVisible();
+  });
 });

@@ -12,11 +12,11 @@ We may process registration data, such as first name, last name, CPF, birth date
 
 ## 3. Purposes of use
 
-We use data to authenticate users, maintain registration, personalize training requests, generate plans with artificial intelligence support, improve the experience, prevent abuse, fix issues, and comply with applicable legal or regulatory obligations.
+We use data to authenticate users, maintain registration, personalize training requests, generate plans with artificial intelligence support, improve the experience, display advertising through Google AdSense, prevent abuse, fix issues, and comply with applicable legal or regulatory obligations.
 
 ## 4. Sharing and processors
 
-We may use technology providers for hosting, database, authentication, observability, and artificial intelligence processing. These providers should process data only as needed to operate Funcione.
+We may use technology providers for hosting, database, authentication, observability, artificial intelligence processing, and advertising. Google AdSense may use advertising cookies, identifiers, and browsing signals to deliver, measure, and protect ads, according to the applicable consent and privacy settings.
 
 ## 5. User rights
 
