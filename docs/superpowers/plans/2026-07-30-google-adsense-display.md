@@ -390,7 +390,7 @@ rtk git commit -m "feat(ads): add AdSense config"
 - Produces component: `PreFooterAd(props?: { suppress?: boolean }): JSX.Element | null`
 - Produces component: `DesktopSidebarAd(props?: { suppress?: boolean }): JSX.Element | null`
 
-- [ ] **Step 1: Extend the failing runtime test**
+- [x] **Step 1: Extend the failing runtime test**
 
 Append these tests inside `test.describe('Google AdSense display', ...)` in `apps/frontend/e2e/adsense-display.spec.ts`:
 
@@ -457,7 +457,7 @@ Append these tests inside `test.describe('Google AdSense display', ...)` in `app
   });
 ```
 
-- [ ] **Step 2: Run the focused tests and verify they fail**
+- [x] **Step 2: Run the focused tests and verify they fail**
 
 Run:
 
@@ -467,7 +467,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- adsense-display
 
 Expected: FAIL because `adsense-script.tsx` and `use-ads-eligibility.ts` do not exist.
 
-- [ ] **Step 3: Add ad label translations**
+- [x] **Step 3: Add ad label translations**
 
 Add this object near the top-level keys in `apps/frontend/src/i18n/locales/pt-BR/common.json`:
 
@@ -485,7 +485,7 @@ Add this object near the top-level keys in `apps/frontend/src/i18n/locales/en-US
 }
 ```
 
-- [ ] **Step 4: Implement eligibility**
+- [x] **Step 4: Implement eligibility**
 
 Create `apps/frontend/src/ads/use-ads-eligibility.ts`:
 
@@ -552,7 +552,7 @@ export function useAdsEligibility({
 }
 ```
 
-- [ ] **Step 5: Implement the script loader**
+- [x] **Step 5: Implement the script loader**
 
 Create `apps/frontend/src/ads/adsense-script.tsx`:
 
@@ -588,7 +588,7 @@ export function AdSenseScript() {
 }
 ```
 
-- [ ] **Step 6: Implement the slot component**
+- [x] **Step 6: Implement the slot component**
 
 Create `apps/frontend/src/ads/adsense-slot.tsx`:
 
@@ -688,7 +688,7 @@ export function AdSenseSlot({
 }
 ```
 
-- [ ] **Step 7: Implement placement wrappers**
+- [x] **Step 7: Implement placement wrappers**
 
 Create `apps/frontend/src/ads/ad-placements.tsx`:
 
@@ -718,7 +718,7 @@ export function DesktopSidebarAd({ suppress = false }: { suppress?: boolean }) {
 }
 ```
 
-- [ ] **Step 8: Mount the script once in the authenticated shell**
+- [x] **Step 8: Mount the script once in the authenticated shell**
 
 In `apps/frontend/src/components/app-shell.tsx`, add:
 
@@ -733,7 +733,7 @@ Then render it as the first child inside the outer `<div>`:
       <AdSenseScript />
 ```
 
-- [ ] **Step 9: Run the focused tests and typecheck**
+- [x] **Step 9: Run the focused tests and typecheck**
 
 Run:
 
@@ -744,7 +744,7 @@ rtk npm run typecheck --workspace @langchain-training/frontend
 
 Expected: both PASS.
 
-- [ ] **Step 10: Commit Task 2**
+- [x] **Step 10: Commit Task 2**
 
 ```bash
 rtk git add apps/frontend/src/ads apps/frontend/src/components/app-shell.tsx apps/frontend/src/i18n/locales/pt-BR/common.json apps/frontend/src/i18n/locales/en-US/common.json apps/frontend/e2e/adsense-display.spec.ts
