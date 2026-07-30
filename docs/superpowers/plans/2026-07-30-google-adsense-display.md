@@ -1128,7 +1128,7 @@ rtk git commit -m "docs(privacy): disclose AdSense ads"
 - Produces completed checklist in this plan.
 - Produces verified frontend ads behavior across desktop and mobile.
 
-- [ ] **Step 1: Run frontend typecheck**
+- [x] **Step 1: Run frontend typecheck**
 
 Run:
 
@@ -1138,7 +1138,7 @@ rtk npm run typecheck --workspace @langchain-training/frontend
 
 Expected: PASS.
 
-- [ ] **Step 2: Run focused E2E**
+- [x] **Step 2: Run focused E2E**
 
 Run:
 
@@ -1150,7 +1150,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- training-plan.s
 
 Expected: all PASS.
 
-- [ ] **Step 3: Run full frontend E2E**
+- [x] **Step 3: Run full frontend E2E**
 
 Run:
 
@@ -1160,7 +1160,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend
 
 Expected: PASS.
 
-- [ ] **Step 4: Run root verification**
+- [x] **Step 4: Run root verification**
 
 Run:
 
@@ -1173,7 +1173,7 @@ rtk npm run build
 
 Expected: all PASS.
 
-- [ ] **Step 5: Inspect final diff**
+- [x] **Step 5: Inspect final diff**
 
 Run:
 
@@ -1184,7 +1184,7 @@ rtk git diff --stat
 
 Expected: only intentional AdSense config, frontend ads, placement, E2E, privacy, and plan files changed.
 
-- [ ] **Step 6: Commit plan checklist updates**
+- [x] **Step 6: Commit plan checklist updates**
 
 ```bash
 rtk git add docs/superpowers/plans/2026-07-30-google-adsense-display.md
