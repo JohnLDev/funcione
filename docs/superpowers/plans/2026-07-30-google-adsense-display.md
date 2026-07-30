@@ -924,7 +924,7 @@ rtk git commit -m "feat(ads): place training ad slots"
 - Produces pre-footer marker: `data-testid="adsense-slot-pre-footer"`
 - Keeps `adsense-slot-pre-footer` and `adsense-slot-desktop-sidebar` absent while a workout execution panel is active.
 
-- [ ] **Step 1: Add failing pre-footer and suppression tests**
+- [x] **Step 1: Add failing pre-footer and suppression tests**
 
 Append this test to `apps/frontend/e2e/adsense-display.spec.ts`:
 
@@ -959,7 +959,7 @@ In `apps/frontend/e2e/training-plan.spec.ts`, inside the test named `tracks work
     await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toHaveCount(0);
 ```
 
-- [ ] **Step 2: Run focused tests and verify they fail**
+- [x] **Step 2: Run focused tests and verify they fail**
 
 Run:
 
@@ -970,7 +970,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- training-plan.s
 
 Expected: first command FAILS because no pre-footer slot exists; second command FAILS if the sidebar remains rendered during execution.
 
-- [ ] **Step 3: Add dashboard pre-footer slot**
+- [x] **Step 3: Add dashboard pre-footer slot**
 
 In `apps/frontend/src/components/dashboard-screen.tsx`, render `PreFooterAd` after the `lg:grid-cols-[minmax(0,1fr)_320px]` content grid and before the closing `</section>`:
 
@@ -978,7 +978,7 @@ In `apps/frontend/src/components/dashboard-screen.tsx`, render `PreFooterAd` aft
       <PreFooterAd />
 ```
 
-- [ ] **Step 4: Add profile pre-footer slot**
+- [x] **Step 4: Add profile pre-footer slot**
 
 In `apps/frontend/src/components/athlete-profile-screen.tsx`, add:
 
@@ -992,7 +992,7 @@ Render it after the profile cards and before the closing `</section>`:
       <PreFooterAd />
 ```
 
-- [ ] **Step 5: Add active-plan pre-footer slot with execution suppression**
+- [x] **Step 5: Add active-plan pre-footer slot with execution suppression**
 
 In `apps/frontend/src/components/training-active-plan.tsx`, update the ads import to include `PreFooterAd`:
 
@@ -1008,7 +1008,7 @@ Render this after the desktop aside and before the confirmation modals:
       </div>
 ```
 
-- [ ] **Step 6: Run focused tests and typecheck**
+- [x] **Step 6: Run focused tests and typecheck**
 
 Run:
 
@@ -1020,7 +1020,7 @@ rtk npm run typecheck --workspace @langchain-training/frontend
 
 Expected: all PASS.
 
-- [ ] **Step 7: Commit Task 4**
+- [x] **Step 7: Commit Task 4**
 
 ```bash
 rtk git add apps/frontend/src/components/dashboard-screen.tsx apps/frontend/src/components/athlete-profile-screen.tsx apps/frontend/src/components/training-active-plan.tsx apps/frontend/e2e/adsense-display.spec.ts apps/frontend/e2e/training-plan.spec.ts
