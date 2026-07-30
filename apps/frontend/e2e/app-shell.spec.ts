@@ -1,7 +1,58 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+type GoogleRegistrationProfile = {
+  birthDate: string;
+  cpf: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+};
+
+async function completeGoogleRegistration(
+  page: Page,
+  profile: GoogleRegistrationProfile = {
+    birthDate: '1994-08-20',
+    cpf: '52998224725',
+    firstName: 'Joao',
+    lastName: 'Silva',
+    phoneNumber: '11999999999',
+  },
+) {
+  await page.goto('/login');
+  await page.getByRole('button', { name: /continuar com google/i }).click();
+  await expect(page).toHaveURL(/\/complete-profile$/);
+  await page.getByLabel(/^nome$/i).fill(profile.firstName);
+  await page.getByLabel(/sobrenome/i).fill(profile.lastName);
+  await page.getByLabel(/cpf/i).fill(profile.cpf);
+  await page.getByLabel(/data de nascimento/i).fill(profile.birthDate);
+  await page.getByLabel(/telefone/i).fill(profile.phoneNumber);
+  await page.getByRole('button', { name: /salvar cadastro/i }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
 
 test.describe('Funcione app shell', () => {
-  test('shows a translated sport toast for invalid credentials without leaking provider text', async ({
+  test('uses Google as the only visible auth method', async ({ page }) => {
+    await page.goto('/login');
+
+    await expect(
+      page.getByRole('heading', { name: /entrar no funcione/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /continuar com google/i }),
+    ).toBeVisible();
+    await expect(page.getByLabel(/e-mail/i)).toHaveCount(0);
+    await expect(page.getByLabel(/senha/i)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^entrar$/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /criar conta/i })).toHaveCount(0);
+
+    await page.goto('/signup');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(
+      page.getByRole('button', { name: /continuar com google/i }),
+    ).toBeVisible();
+  });
+
+  test('shows a translated sport toast for Google login failures without leaking provider text', async ({
     page,
   }) => {
     await page.setViewportSize({ height: 844, width: 390 });
@@ -9,25 +60,23 @@ test.describe('Funcione app shell', () => {
       window.localStorage.setItem(
         'funcione-mock-auth-scenario',
         JSON.stringify({
-          signInWithPassword: {
-            code: 'AUTH_INVALID_CREDENTIALS',
-            message: 'Invalid login credentials',
+          signInWithGoogle: {
+            code: 'AUTH_OAUTH_FAILED',
+            message: 'Provider popup blocked',
           },
         }),
       );
     });
 
     await page.goto('/login');
-    await page.getByLabel(/e-mail/i).fill('athlete@funcione.app');
-    await page.getByLabel(/senha/i).fill('WrongPass123!');
-    await page.getByRole('button', { name: /^entrar$/i }).click();
+    await page.getByRole('button', { name: /continuar com google/i }).click();
 
     const toast = page.getByRole('status', {
       name: /feedback do sistema/i,
     });
-    await expect(toast).toContainText(/E-mail ou senha invalidos/i);
+    await expect(toast).toContainText(/Nao foi possivel entrar com o Google agora/i);
     await expect(page.getByTestId('app-toast-sport-icon')).toBeVisible();
-    await expect(page.getByText(/Invalid login credentials/i)).toHaveCount(0);
+    await expect(page.getByText(/Provider popup blocked/i)).toHaveCount(0);
     await expect(page).toHaveURL(/\/login$/);
 
     const scrollWidth = await page.evaluate(
@@ -110,17 +159,10 @@ test.describe('Funcione app shell', () => {
       'rgb(255, 255, 255)',
     );
 
-    await page.getByRole('link', { name: /criar conta/i }).click();
-    await expect(page).toHaveURL(/\/signup$/);
-
-    const signupHeading = page.getByRole('heading', { name: /criar cadastro/i });
-    await expect(signupHeading).toBeVisible();
-    const signupHeadingBox = await signupHeading.boundingBox();
-    expect(signupHeadingBox?.y).toBeLessThan(420);
-    const signupCard = signupHeading.locator(
-      'xpath=ancestor::*[contains(@class, "border-primary/25")]',
-    );
-    await expect(signupCard.getByTestId('auth-milex-logo')).toBeVisible();
+    await expect(page.getByRole('link', { name: /criar conta/i })).toHaveCount(0);
+    await page.goto('/signup');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('heading', { name: /criar cadastro/i })).toHaveCount(0);
 
     const scrollWidth = await page.evaluate(
       () => document.documentElement.scrollWidth,
@@ -161,47 +203,19 @@ test.describe('Funcione app shell', () => {
     ).toHaveCount(0);
   });
 
-  test('creates a password account with required registration data and signs in again', async ({ page }) => {
+  test('completes a Google account with required registration data and signs in again', async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem('funcione-theme', 'system');
     });
 
-    await page.goto('/');
-
-    await expect(page).toHaveURL(/\/login$/);
-    await expect(
-      page.getByRole('heading', { name: /entrar no funcione/i }),
-    ).toBeVisible();
-    await page.getByRole('link', { name: /criar conta/i }).click();
-
-    await expect(page).toHaveURL(/\/signup$/);
-    await expect(
-      page.getByRole('heading', { name: /criar cadastro/i }),
-    ).toBeVisible();
-    await page.goBack();
-
-    await expect(page).toHaveURL(/\/login$/);
-    await expect(
-      page.getByRole('heading', { name: /entrar no funcione/i }),
-    ).toBeVisible();
-    await page.getByRole('link', { name: /criar conta/i }).click();
-    await expect(page).toHaveURL(/\/signup$/);
-
-    await page.getByLabel(/^nome$/i).fill('Joao');
-    await page.getByLabel(/sobrenome/i).fill('Silva');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1994-08-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('athlete@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await completeGoogleRegistration(page);
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(
       page.getByRole('heading', { name: /solicitar treino|request workout/i }),
     ).toBeVisible();
     await expect(
-      page.getByRole('main').getByText('athlete@funcione.app').last(),
+      page.getByRole('main').getByText('google@funcione.app').last(),
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: /solicitar treino|request workout/i }),
@@ -246,24 +260,24 @@ test.describe('Funcione app shell', () => {
       }),
     ).toBeVisible();
 
-    await page.getByLabel(/e-mail|email/i).fill('athlete@funcione.app');
-    await page.getByLabel(/senha|password/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^entrar$|^sign in$/i }).click();
+    await expect(page.getByLabel(/e-mail|email/i)).toHaveCount(0);
+    await expect(page.getByLabel(/senha|password/i)).toHaveCount(0);
+    await page.getByRole('button', { name: /continuar com google|continue with google/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(
-      page.getByRole('main').getByText('athlete@funcione.app').last(),
+      page.getByRole('main').getByText('google@funcione.app').last(),
     ).toBeVisible();
 
-    const passwordSignupProfiles = await page.evaluate(() =>
+    const googleSignupProfiles = await page.evaluate(() =>
       JSON.parse(
         window.localStorage.getItem('funcione-mock-registration-profiles') ??
           '{}',
       ),
     );
-    const passwordSignupProfileValues = Object.values(passwordSignupProfiles);
-    expect(passwordSignupProfileValues).toHaveLength(1);
-    expect(passwordSignupProfileValues[0]).not.toHaveProperty('password');
+    const googleSignupProfileValues = Object.values(googleSignupProfiles);
+    expect(googleSignupProfileValues).toHaveLength(1);
+    expect(googleSignupProfileValues[0]).not.toHaveProperty('password');
   });
 
   test('requires missing registration data after a new Google login', async ({
@@ -366,15 +380,13 @@ test.describe('Funcione app shell', () => {
     test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only layout');
 
     await page.setViewportSize({ height: 1264, width: 1313 });
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Desktop');
-    await page.getByLabel(/sobrenome/i).fill('Atleta');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1994-08-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('desktop@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await completeGoogleRegistration(page, {
+      birthDate: '1994-08-20',
+      cpf: '52998224725',
+      firstName: 'Desktop',
+      lastName: 'Atleta',
+      phoneNumber: '11999999999',
+    });
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(
@@ -461,22 +473,20 @@ test.describe('Funcione app shell', () => {
     test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only layout');
 
     await page.setViewportSize({ height: 1264, width: 1313 });
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('John');
-    await page.getByLabel(/sobrenome/i).fill('Lenon Oliveira da Silva');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1994-08-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('john-shell@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await completeGoogleRegistration(page, {
+      birthDate: '1994-08-20',
+      cpf: '52998224725',
+      firstName: 'John',
+      lastName: 'Lenon Oliveira da Silva',
+      phoneNumber: '11999999999',
+    });
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(
       page.getByRole('banner').getByText('John Lenon Oliveira da Silva'),
     ).toBeVisible();
     await expect(
-      page.getByRole('banner').getByText('john-shell@funcione.app'),
+      page.getByRole('banner').getByText('google@funcione.app'),
     ).toHaveCount(0);
     await expect(
       page.getByRole('heading', {
@@ -516,15 +526,13 @@ test.describe('Funcione app shell', () => {
   test('opens the athlete profile route from dashboard navigation', async ({
     page,
   }) => {
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Perfil');
-    await page.getByLabel(/sobrenome/i).fill('Atleta');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1994-08-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('profile@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await completeGoogleRegistration(page, {
+      birthDate: '1994-08-20',
+      cpf: '52998224725',
+      firstName: 'Perfil',
+      lastName: 'Atleta',
+      phoneNumber: '11999999999',
+    });
 
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.getByRole('link', { name: /^perfil$/i }).click();
@@ -533,7 +541,9 @@ test.describe('Funcione app shell', () => {
     await expect(
       page.getByRole('heading', { name: /perfil do atleta|athlete profile/i }),
     ).toBeVisible();
-    await expect(page.getByRole('main').getByText('profile@funcione.app').last()).toBeVisible();
+    await expect(
+      page.getByRole('main').getByText('google@funcione.app').last(),
+    ).toBeVisible();
     await expect(
       page.getByRole('heading', { name: /perfil atletico|athletic profile/i }),
     ).toBeVisible();

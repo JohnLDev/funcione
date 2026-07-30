@@ -14,19 +14,23 @@ type TrainingScenario = {
 };
 
 async function signUp(page: Page, email: string) {
-  await page.goto('/signup');
-  await expect(
-    page.getByRole('heading', { name: /criar cadastro/i }),
-  ).toBeVisible();
-  await page.locator('#signup-firstName').fill('Estado');
-  await expect(page.locator('#signup-firstName')).toHaveValue('Estado');
-  await page.locator('#signup-lastName').fill('Treino');
-  await page.locator('#signup-cpf').fill('52998224725');
-  await page.locator('#signup-birthDate').fill('1996-07-20');
-  await page.locator('#signup-phoneNumber').fill('11999999999');
-  await page.locator('#signup-email').fill(email);
-  await page.locator('#signup-password').fill('StrongPass123!');
-  await page.getByRole('button', { name: /^criar conta$/i }).click();
+  void email;
+  await page.goto('/login');
+  await page.getByRole('button', { name: /continuar com google/i }).click();
+  await expect(page).toHaveURL(/\/complete-profile$/);
+  await page.locator('#complete-firstName').fill('Estado');
+  await expect(page.locator('#complete-firstName')).toHaveValue('Estado');
+  await page.locator('#complete-lastName').fill('Treino');
+  await page.locator('#complete-cpf').fill('52998224725');
+  await page.locator('#complete-birthDate').fill('1996-07-20');
+  await page.locator('#complete-phoneNumber').fill('11999999999');
+  await page.getByRole('button', { name: /salvar cadastro/i }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
+
+async function signInWithMockGoogle(page: Page) {
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByRole('button', { name: /continuar com google/i }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
@@ -271,17 +275,7 @@ test.describe('monthly training plan route', () => {
   });
 
   test('opens the training route from dashboard navigation', async ({ page }) => {
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Joao');
-    await page.getByLabel(/sobrenome/i).fill('Silva');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('athlete@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
-
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signUp(page, 'athlete@funcione.app');
     await expect(
       page.getByRole('link', { name: /inicio/i }),
     ).toHaveAttribute('aria-current', 'page');
@@ -511,16 +505,7 @@ test.describe('monthly training plan route', () => {
   });
 
   test('fills the mobile wizard and generates an active plan', async ({ page }) => {
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Joao');
-    await page.getByLabel(/sobrenome/i).fill('Silva');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('wizard@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signUp(page, 'wizard@funcione.app');
     await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page).toHaveURL(/\/training$/);
 
@@ -582,16 +567,7 @@ test.describe('monthly training plan route', () => {
   test('accepts bounded free text as data without breaking the flow', async ({
     page,
   }) => {
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Livre');
-    await page.getByLabel(/sobrenome/i).fill('Texto');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('free-text@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signUp(page, 'free-text@funcione.app');
     await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page).toHaveURL(/\/training$/);
 
@@ -667,15 +643,7 @@ test.describe('monthly training plan route', () => {
   test('requires nonblank custom descriptions before continuing from safety', async ({
     page,
   }) => {
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Descricoes');
-    await page.getByLabel(/sobrenome/i).fill('Vazias');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('blank-custom@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
+    await signUp(page, 'blank-custom@funcione.app');
     await page.getByRole('link', { name: /^treino$/i }).click();
 
     await page.getByRole('button', { name: /continuar/i }).click();
@@ -728,19 +696,7 @@ test.describe('monthly training plan route', () => {
   test('shows active plan summary, detail and blocks another generation', async ({
     page,
   }) => {
-    const email = 'active@funcione.app';
-    const password = 'StrongPass123!';
-
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Active');
-    await page.getByLabel(/sobrenome/i).fill('Athlete');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill(email);
-    await page.getByLabel(/senha/i).fill(password);
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signUp(page, 'active@funcione.app');
     await page.getByRole('link', { name: /^treino$/i }).click();
 
     await page.getByRole('button', { name: /volei/i }).click();
@@ -804,11 +760,7 @@ test.describe('monthly training plan route', () => {
     await expect(page.getByRole('button', { name: /solicitar treino/i })).toHaveCount(0);
 
     await page.reload();
-    await expect(page).toHaveURL(/\/login$/);
-    await page.getByLabel(/e-mail/i).fill(email);
-    await page.getByLabel(/senha/i).fill(password);
-    await page.getByRole('button', { name: /^entrar$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signInWithMockGoogle(page);
     await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /solicitar treino/i })).toHaveCount(0);
@@ -865,11 +817,7 @@ test.describe('monthly training plan route', () => {
     ).resolves.toBe(true);
 
     await page.reload();
-    await expect(page).toHaveURL(/\/login$/);
-    await page.getByLabel(/e-mail/i).fill(email);
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^entrar$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signInWithMockGoogle(page);
     await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page.getByText(/1 de 2 concluidos/i).first()).toBeVisible();
     await expect(
@@ -914,11 +862,7 @@ test.describe('monthly training plan route', () => {
       'Pliometria explosiva, agilidade lateral e forca de membros superiores';
     await replaceFirstWorkoutFocus(page, longFocus);
     await page.reload();
-    await expect(page).toHaveURL(/\/login$/);
-    await page.getByLabel(/e-mail/i).fill(email);
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^entrar$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signInWithMockGoogle(page);
     await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
 
@@ -970,16 +914,7 @@ test.describe('monthly training plan route', () => {
   }
 
   test('requires positive numeric body measurements before continuing', async ({ page }) => {
-    await page.goto('/signup');
-    await page.getByLabel(/^nome$/i).fill('Joao');
-    await page.getByLabel(/sobrenome/i).fill('Silva');
-    await page.getByLabel(/cpf/i).fill('52998224725');
-    await page.getByLabel(/data de nascimento/i).fill('1996-07-20');
-    await page.getByLabel(/telefone/i).fill('11999999999');
-    await page.getByLabel(/e-mail/i).fill('measurements@funcione.app');
-    await page.getByLabel(/senha/i).fill('StrongPass123!');
-    await page.getByRole('button', { name: /^criar conta$/i }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await signUp(page, 'measurements@funcione.app');
     await page.getByRole('link', { name: /^treino$/i }).click();
     await expect(page).toHaveURL(/\/training$/);
 

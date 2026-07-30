@@ -6,9 +6,8 @@ O sistema usa Supabase Auth como provedor unico de identidade.
 
 Isso cobre:
 
-- login por e-mail e senha;
-- cadastro por e-mail e senha;
-- login social com Google;
+- login visivel pelo Google;
+- metodos de e-mail e senha mantidos apenas como suporte interno/testes;
 - sessao unificada para qualquer metodo de entrada.
 - cadastro interno obrigatorio com dados do perfil Funcione.
 
@@ -19,9 +18,13 @@ Dados vindos de `user_metadata`, como nome retornado pelo Google, podem ser usad
 ## Fluxo
 
 1. O frontend autentica com `@supabase/supabase-js`.
-2. Login por senha usa `supabase.auth.signInWithPassword`.
-3. Cadastro por senha usa `supabase.auth.signUp`.
-4. Google usa `supabase.auth.signInWithOAuth({ provider: 'google' })`.
+2. Google usa `supabase.auth.signInWithOAuth({ provider: 'google' })` como
+   metodo visivel no app.
+3. Login e cadastro por senha continuam implementados em gateways/providers,
+   mas ficam escondidos pela opcao de frontend `passwordAuthEnabled: false`.
+   Esse caminho existe para suporte interno e testes, nao como fluxo publico.
+4. Em E2E, `VITE_AUTH_MODE=mock` simula o mesmo botao do Google sem chamar o
+   OAuth real.
 5. A sessao retornada possui `access_token`.
 6. Chamadas protegidas para a REST API devem enviar `Authorization: Bearer <access_token>`.
 7. O backend valida o token com `supabase.auth.getUser(token)`.
@@ -46,9 +49,10 @@ Rotas atuais:
 Comportamento esperado:
 
 - `/` redireciona para `/login` quando nao existe sessao.
-- `/login` exibe entrada por senha e Google.
-- `/signup` exibe cadastro por senha com perfil interno obrigatorio.
-- `/complete-profile` exige sessao e coleta dados faltantes de login social.
+- `/login` exibe apenas o botao de entrada com Google.
+- `/signup` redireciona usuarios anonimos para `/login`.
+- `/complete-profile` exige sessao e coleta dados faltantes depois do login com
+  Google.
 - `/dashboard` exige sessao e perfil interno completo.
 - rotas publicas redirecionam usuarios autenticados para `/dashboard` ou
   `/complete-profile`, conforme o estado do perfil.
@@ -65,9 +69,9 @@ Campos obrigatorios:
 - numero de telefone;
 - e-mail.
 
-Para cadastro com senha, o formulario inicial tambem pede senha. A senha e enviada apenas ao Supabase Auth; o backend recebe somente o perfil.
+O cadastro publico visivel acontece depois do login com Google. Se a conta autenticada ainda nao tem cadastro interno no Funcione, o app solicita apenas os dados faltantes. O e-mail autenticado e mantido como base do perfil.
 
-Para login social com Google, se a conta autenticada ainda nao tem cadastro interno no Funcione, o app solicita apenas os dados faltantes. O e-mail autenticado e mantido como base do perfil.
+O fluxo por senha nao fica exposto na interface. Quando usado em suporte interno/testes, a senha e enviada apenas ao Supabase Auth; o backend recebe somente o perfil.
 
 ## Variaveis
 
@@ -162,5 +166,5 @@ GET /documentation/json
 ## Referencias
 
 - Supabase Auth Google: https://supabase.com/docs/guides/auth/social-login/auth-google
-- Supabase Auth password login: https://supabase.com/docs/reference/javascript/auth-signinwithpassword
+- Supabase Auth password login, mantido como referencia de implementacao interna: https://supabase.com/docs/reference/javascript/auth-signinwithpassword
 - Supabase `getUser`: https://supabase.com/docs/reference/javascript/auth-getuser

@@ -2,6 +2,7 @@ import { ArrowLeft, LogIn, UserPlus } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { authOptions } from '@/auth/auth-options.js';
 import type { RegistrationProfileInput } from '@/auth/registration-profile.js';
 import { useAuth } from '@/auth/use-auth.js';
 import { RegistrationProfileForm } from './registration-profile-form.js';
@@ -23,6 +24,14 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const isSignIn = mode === 'signin';
+  const isPasswordAuthEnabled = authOptions.passwordAuthEnabled;
+  const isGoogleOnlySignIn = isSignIn && !isPasswordAuthEnabled;
+  const mainClassName = [
+    'mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-md flex-col sm:max-w-xl',
+    isGoogleOnlySignIn
+      ? 'justify-start py-12 sm:py-20'
+      : 'justify-center py-16 sm:py-20',
+  ].join(' ');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,7 +52,7 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
         <SettingsMenu />
       </div>
 
-      <main className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-md flex-col justify-center py-16 sm:max-w-xl sm:py-20">
+      <main className={mainClassName}>
         <div className="mx-auto mb-5 flex w-full flex-col items-center gap-2 sm:mb-6">
           <img
             alt={t('brand.logoAlt')}
@@ -72,55 +81,61 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
           <CardContent className="grid gap-4 p-5 pt-0">
             {isSignIn ? (
               <>
-                <form className="grid gap-3" onSubmit={handleSubmit}>
-                  <label className="grid gap-2 text-sm font-bold" htmlFor="email">
-                    {t('auth.email')}
-                    <input
-                      autoComplete="email"
-                      className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring"
-                      id="email"
-                      inputMode="email"
-                      onChange={(event) => setEmail(event.target.value)}
-                      required
-                      type="email"
-                      value={email}
-                    />
-                  </label>
+                {isPasswordAuthEnabled ? (
+                  <>
+                    <form className="grid gap-3" onSubmit={handleSubmit}>
+                      <label className="grid gap-2 text-sm font-bold" htmlFor="email">
+                        {t('auth.email')}
+                        <input
+                          autoComplete="email"
+                          className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring"
+                          id="email"
+                          inputMode="email"
+                          onChange={(event) => setEmail(event.target.value)}
+                          required
+                          type="email"
+                          value={email}
+                        />
+                      </label>
 
-                  <label className="grid gap-2 text-sm font-bold" htmlFor="password">
-                    {t('auth.password')}
-                    <input
-                      autoComplete="current-password"
-                      className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring"
-                      id="password"
-                      minLength={8}
-                      onChange={(event) => setPassword(event.target.value)}
-                      required
-                      type="password"
-                      value={password}
-                    />
-                  </label>
+                      <label className="grid gap-2 text-sm font-bold" htmlFor="password">
+                        {t('auth.password')}
+                        <input
+                          autoComplete="current-password"
+                          className="h-12 rounded-2xl border border-input bg-background px-4 text-base text-foreground outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring"
+                          id="password"
+                          minLength={8}
+                          onChange={(event) => setPassword(event.target.value)}
+                          required
+                          type="password"
+                          value={password}
+                        />
+                      </label>
 
-                  <Button disabled={isAuthActionRunning} type="submit">
-                    <LogIn aria-hidden="true" size={18} />
-                    {t('auth.signIn')}
-                  </Button>
-                </form>
+                      <Button disabled={isAuthActionRunning} type="submit">
+                        <LogIn aria-hidden="true" size={18} />
+                        {t('auth.signIn')}
+                      </Button>
+                    </form>
 
-                <Button
-                  asChild
-                  className={
-                    isAuthActionRunning ? 'pointer-events-none opacity-50' : undefined
-                  }
-                  variant="outline"
-                >
-                  <Link to="/signup">
-                    <UserPlus aria-hidden="true" size={18} />
-                    {t('auth.signUp')}
-                  </Link>
-                </Button>
+                    <Button
+                      asChild
+                      className={
+                        isAuthActionRunning
+                          ? 'pointer-events-none opacity-50'
+                          : undefined
+                      }
+                      variant="outline"
+                    >
+                      <Link to="/signup">
+                        <UserPlus aria-hidden="true" size={18} />
+                        {t('auth.signUp')}
+                      </Link>
+                    </Button>
 
-                <div className="h-px bg-border" />
+                    <div className="h-px bg-border" />
+                  </>
+                ) : null}
 
                 <Button
                   className="border-[#dadce0] bg-white text-[#3c4043] shadow-sm hover:bg-[#f8fafd]"
@@ -133,7 +148,7 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
                   {t('auth.continueWithGoogle')}
                 </Button>
               </>
-            ) : (
+            ) : isPasswordAuthEnabled ? (
               <>
                 <RegistrationProfileForm
                   isSubmitting={isAuthActionRunning}
@@ -155,7 +170,7 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
                   </Link>
                 </Button>
               </>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </main>

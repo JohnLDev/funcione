@@ -5,6 +5,7 @@ import {
   Routes,
   useNavigate,
 } from 'react-router';
+import { authOptions } from './auth/auth-options.js';
 import { AuthProvider } from './auth/auth-provider.js';
 import { useAuth } from './auth/use-auth.js';
 import { AuthScreen } from './components/auth-screen.js';
@@ -87,8 +88,10 @@ function AppRoutes() {
         element={
           session ? (
             <Navigate replace to={getAuthenticatedPath(hasCompletedProfile)} />
-          ) : (
+          ) : authOptions.passwordAuthEnabled ? (
             <AuthScreen mode="signup" />
+          ) : (
+            <Navigate replace to="/login" />
           )
         }
         path="/signup"
