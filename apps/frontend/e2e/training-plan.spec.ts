@@ -832,12 +832,16 @@ test.describe('monthly training plan route', () => {
     });
     await expect(pendingConfirmation).toBeVisible();
     await expect(pendingConfirmation).toContainText(/exercicios pendentes/i);
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toHaveCount(0);
+    await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toHaveCount(0);
     await pendingConfirmation.getByRole('button', { name: /^finalizar$/i }).click();
 
     const completionFeedback = page.getByRole('alertdialog', {
       name: /treino concluido/i,
     });
     await expect(completionFeedback).toBeVisible();
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toHaveCount(0);
+    await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toHaveCount(0);
     await expect(
       page.getByText(/voce esta cada vez mais funcional/i),
     ).toBeVisible();

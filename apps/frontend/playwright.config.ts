@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const e2ePort = Number(process.env.E2E_PORT ?? 5174);
 const e2eBaseUrl = `http://127.0.0.1:${e2ePort}`;
+const e2eAdsTestMode = process.env.E2E_ADS_TEST_MODE ?? 'true';
 const e2eEnv = [
   'VITE_AUTH_MODE=mock',
   'VITE_ADS_ENABLED=true',
@@ -9,6 +10,7 @@ const e2eEnv = [
   'VITE_ADSENSE_SLOT_TRAINING_PREPARATION=9544709295',
   'VITE_ADSENSE_SLOT_PRE_FOOTER=7261326735',
   'VITE_ADSENSE_SLOT_DESKTOP_SIDEBAR=6487869331',
+  `VITE_ADS_TEST_MODE=${e2eAdsTestMode}`,
 ].join(' ');
 
 export default defineConfig({

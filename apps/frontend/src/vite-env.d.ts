@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_ADSENSE_SLOT_DESKTOP_SIDEBAR?: string;
   readonly VITE_ADSENSE_SLOT_PRE_FOOTER?: string;
   readonly VITE_ADSENSE_SLOT_TRAINING_PREPARATION?: string;
+  readonly VITE_ADS_TEST_MODE?: string;
   readonly VITE_AUTH_MODE?: 'mock';
   readonly VITE_API_BASE_URL?: string;
   readonly VITE_AUTH_REDIRECT_URL?: string;

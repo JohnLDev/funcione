@@ -1,6 +1,6 @@
 # Politica de privacidade
 
-Atualizado em 24/07/2026
+Atualizado em 30/07/2026
 
 ## 1. Visao geral
 
@@ -16,7 +16,7 @@ Usamos os dados para autenticar usuarios, manter o cadastro, personalizar solici
 
 ## 4. Compartilhamento e operadores
 
-Podemos usar provedores de tecnologia para hospedagem, banco de dados, autenticacao, observabilidade, processamento por inteligencia artificial e publicidade. O Google AdSense pode usar cookies de publicidade, identificadores e sinais de navegacao para entregar, medir e proteger anuncios, conforme as configuracoes de consentimento e privacidade aplicaveis.
+Podemos usar provedores de tecnologia para hospedagem, banco de dados, autenticacao, observabilidade, processamento por inteligencia artificial e publicidade. O Google AdSense pode usar cookies de publicidade, identificadores e sinais de navegacao para entregar, medir e proteger anuncios, conforme as configuracoes de consentimento e privacidade aplicaveis. Os anuncios podem ser personalizados ou nao personalizados, de acordo com essas configuracoes e com os requisitos aplicaveis.
 
 ## 5. Direitos do usuario
 

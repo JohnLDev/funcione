@@ -60,6 +60,52 @@ type ImportedAdsEligibility = {
   ) => boolean;
 };
 
+type AdSenseRuntimeWindow = Window & {
+  __adsensePushes?: unknown[];
+  adsbygoogle?: unknown[];
+};
+
+const runsRealAdSenseRuntime = process.env.E2E_ADS_TEST_MODE === 'false';
+
+async function interceptAdSenseScript(page: Page) {
+  let requests = 0;
+
+  await page.addInitScript(() => {
+    const runtimeWindow = window as AdSenseRuntimeWindow;
+    const adsbygoogle: unknown[] = [];
+    const pushes: unknown[] = [];
+    const push = adsbygoogle.push.bind(adsbygoogle);
+
+    adsbygoogle.push = (...items: unknown[]) => {
+      pushes.push(...items);
+      return push(...items);
+    };
+
+    runtimeWindow.adsbygoogle = adsbygoogle;
+    runtimeWindow.__adsensePushes = pushes;
+  });
+  await page.route(
+    /https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js/,
+    async (route) => {
+      requests += 1;
+      await route.fulfill({
+        body: 'window.adsbygoogle = window.adsbygoogle || [];',
+        contentType: 'application/javascript',
+      });
+    },
+  );
+
+  return () => requests;
+}
+
+async function getAdSensePushCount(page: Page) {
+  return page.evaluate(() => {
+    const runtimeWindow = window as AdSenseRuntimeWindow;
+
+    return runtimeWindow.__adsensePushes?.length ?? 0;
+  });
+}
+
 test.describe('Google AdSense display', () => {
   test('reads public AdSense config and serves ads.txt', async ({
     page,
@@ -81,6 +127,15 @@ test.describe('Google AdSense display', () => {
         }).enabled,
         runtime: module.adsConfig,
         trainingSlot: module.adsConfig.slots.trainingPreparation,
+        mockAuthWithRealRuntime: module.readAdsConfig({
+          VITE_ADS_ENABLED: 'true',
+          VITE_ADSENSE_CLIENT_ID: 'ca-pub-6699167964598590',
+          VITE_ADSENSE_SLOT_DESKTOP_SIDEBAR: '6487869331',
+          VITE_ADSENSE_SLOT_PRE_FOOTER: '7261326735',
+          VITE_ADSENSE_SLOT_TRAINING_PREPARATION: '9544709295',
+          VITE_ADS_TEST_MODE: 'false',
+          VITE_AUTH_MODE: 'mock',
+        }).testMode,
       };
     });
 
@@ -89,6 +144,7 @@ test.describe('Google AdSense display', () => {
     expect(parsed.runtime.enabled).toBe(true);
     expect(parsed.runtime.clientId).toBe('ca-pub-6699167964598590');
     expect(parsed.runtime.testMode).toBe(true);
+    expect(parsed.mockAuthWithRealRuntime).toBe(false);
     expect(parsed.trainingSlot).toEqual({
       format: 'auto',
       fullWidthResponsive: true,
@@ -208,6 +264,60 @@ test.describe('Google AdSense display', () => {
     ).toHaveCount(0);
   });
 
+  test('runs the real AdSense runtime once with mock auth when explicitly requested', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!runsRealAdSenseRuntime, 'requires E2E_ADS_TEST_MODE=false');
+    test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only runtime coverage');
+
+    const getScriptRequestCount = await interceptAdSenseScript(page);
+    await completeGoogleRegistration(page);
+
+    const script = page.locator('#google-adsense-script');
+    const ads = page.locator('ins.adsbygoogle');
+    await expect(script).toHaveCount(1);
+    await expect(ads).toHaveCount(2);
+    await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toBeVisible();
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toBeVisible();
+    await expect.poll(() => getAdSensePushCount(page)).toBe(2);
+    expect(getScriptRequestCount()).toBe(1);
+
+    await page.getByRole('link', { name: /^perfil$/i }).click();
+    await expect(ads).toHaveCount(1);
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toBeVisible();
+    await expect.poll(() => getAdSensePushCount(page)).toBe(3);
+
+    await page.getByRole('link', { name: /^inicio$/i }).click();
+    await expect(ads).toHaveCount(2);
+    await expect.poll(() => getAdSensePushCount(page)).toBe(5);
+
+    await page.getByRole('button', { name: /sair/i }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole('button', { name: /continuar com google/i }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(script).toHaveCount(1);
+    await expect(ads).toHaveCount(2);
+    await expect.poll(() => getAdSensePushCount(page)).toBe(7);
+    expect(getScriptRequestCount()).toBe(1);
+  });
+
+  test('keeps the desktop sidebar absent in the real runtime on mobile', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!runsRealAdSenseRuntime, 'requires E2E_ADS_TEST_MODE=false');
+    test.skip(testInfo.project.name !== 'mobile-chrome', 'mobile-only runtime coverage');
+
+    const getScriptRequestCount = await interceptAdSenseScript(page);
+    await completeGoogleRegistration(page);
+
+    await expect(page.locator('#google-adsense-script')).toHaveCount(1);
+    await expect(page.locator('ins.adsbygoogle')).toHaveCount(1);
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toBeVisible();
+    await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toHaveCount(0);
+    await expect.poll(() => getAdSensePushCount(page)).toBe(1);
+    expect(getScriptRequestCount()).toBe(1);
+  });
+
   test('shows pre-footer ad before the footer on mobile without horizontal overflow', async ({
     page,
   }) => {
@@ -236,6 +346,10 @@ test.describe('Google AdSense display', () => {
     await page.goto('/privacy');
     await expect(page.getByText(/Google AdSense/i).first()).toBeVisible();
     await expect(page.getByText(/cookies de publicidade/i)).toBeVisible();
+    await expect(page.getByText('Atualizado em 30/07/2026')).toBeVisible();
+    await expect(
+      page.getByText(/anuncios podem ser personalizados ou nao personalizados/i),
+    ).toBeVisible();
 
     await page.evaluate(() => {
       window.localStorage.setItem('funcione-language', 'en-US');
@@ -243,5 +357,9 @@ test.describe('Google AdSense display', () => {
     await page.reload();
     await expect(page.getByText(/Google AdSense/i).first()).toBeVisible();
     await expect(page.getByText(/advertising cookies/i)).toBeVisible();
+    await expect(page.getByText('Updated on July 30, 2026')).toBeVisible();
+    await expect(
+      page.getByText(/ads may be personalized or non-personalized/i),
+    ).toBeVisible();
   });
 });

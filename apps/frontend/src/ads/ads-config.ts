@@ -28,7 +28,7 @@ export type AdsEnv = Partial<
     | 'VITE_ADSENSE_SLOT_DESKTOP_SIDEBAR'
     | 'VITE_ADSENSE_SLOT_PRE_FOOTER'
     | 'VITE_ADSENSE_SLOT_TRAINING_PREPARATION'
-    | 'VITE_AUTH_MODE'
+    | 'VITE_ADS_TEST_MODE'
   >
 >;
 
@@ -86,7 +86,7 @@ export function readAdsConfig(env: AdsEnv = import.meta.env): AdsConfig {
     clientId,
     enabled,
     slots,
-    testMode: env.VITE_AUTH_MODE === 'mock',
+    testMode: readEnabled(env.VITE_ADS_TEST_MODE),
   };
 }
 

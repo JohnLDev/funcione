@@ -422,6 +422,10 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
   const hasInProgressSession = Object.values(executionStates).some(
     (state) => state.status === 'in_progress',
   );
+  const shouldSuppressAds =
+    hasInProgressSession ||
+    pendingFinishSessionId !== null ||
+    completionSessionId !== null;
 
   useEffect(() => {
     setExecutionStates(
@@ -728,11 +732,11 @@ export function TrainingActivePlan({ plan }: { plan: MonthlyTrainingPlan }) {
           </CardContent>
         </Card>
         <div className="mt-4">
-          <DesktopSidebarAd suppress={hasInProgressSession} />
+          <DesktopSidebarAd suppress={shouldSuppressAds} />
         </div>
       </aside>
       <div className="lg:col-span-2">
-        <PreFooterAd suppress={hasInProgressSession} />
+        <PreFooterAd suppress={shouldSuppressAds} />
       </div>
       {pendingFinishSessionId ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-background/80 p-4 backdrop-blur-sm sm:place-items-center">

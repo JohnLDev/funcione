@@ -1,6 +1,6 @@
 # Privacy policy
 
-Updated on 2026-07-24
+Updated on July 30, 2026
 
 ## 1. Overview
 
@@ -16,7 +16,7 @@ We use data to authenticate users, maintain registration, personalize training r
 
 ## 4. Sharing and processors
 
-We may use technology providers for hosting, database, authentication, observability, artificial intelligence processing, and advertising. Google AdSense may use advertising cookies, identifiers, and browsing signals to deliver, measure, and protect ads, according to the applicable consent and privacy settings.
+We may use technology providers for hosting, database, authentication, observability, artificial intelligence processing, and advertising. Google AdSense may use advertising cookies, identifiers, and browsing signals to deliver, measure, and protect ads, according to the applicable consent and privacy settings. Ads may be personalized or non-personalized according to those settings and applicable requirements.
 
 ## 5. User rights
 

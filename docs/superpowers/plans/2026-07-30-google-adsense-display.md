@@ -1198,3 +1198,29 @@ rtk git commit -m "docs(ads): mark implementation plan progress"
 - Spec coverage: the plan covers AdSense IDs, `ads.txt`, manual slots, no Auto ads, future segmentation boundary, privacy copy, UX risks, E2E coverage, and no backend REST changes.
 - Type consistency: slot names are `trainingPreparation`, `preFooter`, and `desktopSidebar` across config, eligibility, components, and tests.
 - Test strategy: each behavior task starts with an E2E failure, implements the minimal surface, and reruns focused tests before commit.
+
+---
+
+### Task 7: Final Review Hardening
+
+**Files:**
+- Modify: `apps/frontend/src/components/training-active-plan.tsx`
+- Modify: `apps/frontend/src/ads/ads-config.ts`
+- Modify: `apps/frontend/src/ads/adsense-script.tsx`
+- Modify: `apps/frontend/src/ads/adsense-slot.tsx`
+- Modify: `apps/frontend/src/vite-env.d.ts`
+- Modify: `apps/frontend/playwright.config.ts`
+- Modify: `apps/frontend/e2e/adsense-display.spec.ts`
+- Modify: `apps/frontend/e2e/training-plan.spec.ts`
+- Modify: `.env.example`
+- Modify: `.env.production`
+- Modify: `apps/frontend/src/legal/documents/pt-BR/privacy.md`
+- Modify: `apps/frontend/src/legal/documents/en-US/privacy.md`
+- Modify: `docs/superpowers/specs/2026-07-30-google-adsense-display-design.md`
+
+- [x] Add failing E2E assertions that sidebar and pre-footer slots stay absent while the finish confirmation and completion feedback dialogs are open.
+- [x] Separate mock ad markers from mock auth with `VITE_ADS_TEST_MODE`, keeping placeholders in normal E2E.
+- [x] Add a focused mock-auth runtime E2E path with `VITE_ADS_TEST_MODE=false`, a fulfilled external-script route, script deduplication checks, real `ins.adsbygoogle` checks, per-slot push checks, and mobile sidebar absence.
+- [x] Gate production activation with `VITE_ADS_ENABLED=false` while preserving public IDs and document the operations readiness checklist.
+- [x] State personalized and non-personalized advertising in both privacy policies, update effective dates, and assert both language disclosures.
+- [x] Run focused and requested verification, remove any untracked `apps/frontend/.wrangler/`, and commit the hardening changes.

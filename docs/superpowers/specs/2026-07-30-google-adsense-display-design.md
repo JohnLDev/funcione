@@ -97,7 +97,7 @@ Criar uma pequena camada de ads no frontend:
 - `AdSenseSlot`: renderiza o `<ins class="adsbygoogle">` com `data-ad-client`, `data-ad-slot`, `data-ad-format` e `data-full-width-responsive` conforme o slot.
 - `shouldShowAds`: regra central que considera `VITE_ADS_ENABLED`, client ID, slot ID, ambiente, segmento futuro e contexto de tela.
 
-O componente de slot deve chamar `(window.adsbygoogle = window.adsbygoogle || []).push({})` apenas no cliente e apenas depois que o elemento `<ins>` estiver montado. Em ambiente de teste/E2E e quando `VITE_ADS_ENABLED` estiver falso, o componente deve renderizar nada ou um marcador interno controlado por teste, sem carregar script externo.
+O componente de slot deve chamar `(window.adsbygoogle = window.adsbygoogle || []).push({})` apenas no cliente e apenas depois que o elemento `<ins>` estiver montado. Em ambiente de teste/E2E, `VITE_ADS_TEST_MODE=true` deve renderizar um marcador interno estavel sem carregar script externo. Esse modo e independente de `VITE_AUTH_MODE=mock`, para que um teste focado possa usar a autenticacao mock com `VITE_ADS_TEST_MODE=false` e exercitar o runtime real. Quando `VITE_ADS_ENABLED` estiver falso, o componente nao deve renderizar o slot nem carregar o script externo.
 
 Os slots devem reservar dimensoes minimas responsivas para reduzir mudanca de layout quando o anuncio carregar ou quando um bloqueador de anuncios impedir a renderizacao.
 
@@ -120,6 +120,16 @@ Nao criar plano pago, billing, tabela de assinatura ou backend de segmentacao ne
 A politica de privacidade deve ser atualizada em `pt-BR` e `en-US` para informar uso de Google AdSense, cookies, identificadores, anuncios personalizados ou nao personalizados e compartilhamento com provedor de publicidade.
 
 Antes de ativar para trafego real, a operacao deve revisar os requisitos de consentimento aplicaveis ao publico do app. O AdSense possui recursos de Privacy & messaging para mensagens de consentimento e revogacao; se o app atender usuarios em regioes que exigem consentimento especifico, a ativacao deve respeitar esse fluxo. Esta spec nao substitui revisao juridica.
+
+## Checklist de ativacao em producao
+
+`VITE_ADS_ENABLED` deve permanecer `false` em `.env.production` ate que a operacao confirme todos os itens abaixo:
+
+- dominio de producao aprovado no Google AdSense;
+- `https://funcione.pages.dev/ads.txt` publicado e validado pela conta;
+- Auto ads desabilitado na configuracao da conta, preservando apenas os placements manuais desta spec;
+- Privacy & Messaging/CMP configurado, quando aplicavel ao trafego regulado, incluindo consentimento e revogacao;
+- politicas de privacidade publicadas com a divulgacao de anuncios personalizados ou nao personalizados.
 
 ## Impacto na experiencia do usuario
 
