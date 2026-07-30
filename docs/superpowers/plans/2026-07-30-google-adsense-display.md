@@ -73,7 +73,7 @@
 - Produces const: `adsConfig: AdsConfig`
 - Later tasks consume `adsConfig.enabled`, `adsConfig.clientId`, `adsConfig.testMode`, and `adsConfig.slots[slot]`.
 
-- [ ] **Step 1: Write the failing E2E config test**
+- [x] **Step 1: Write the failing E2E config test**
 
 Create `apps/frontend/e2e/adsense-display.spec.ts`:
 
@@ -173,7 +173,7 @@ test.describe('Google AdSense display', () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify it fails**
+- [x] **Step 2: Run the focused test and verify it fails**
 
 Run:
 
@@ -183,7 +183,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- adsense-display
 
 Expected: FAIL because `/src/ads/ads-config.ts` and `/ads.txt` do not exist.
 
-- [ ] **Step 3: Add Vite env declarations**
+- [x] **Step 3: Add Vite env declarations**
 
 Update `apps/frontend/src/vite-env.d.ts` by adding these fields inside `ImportMetaEnv`. Do not add imports to this file.
 
@@ -195,7 +195,7 @@ Update `apps/frontend/src/vite-env.d.ts` by adding these fields inside `ImportMe
   readonly VITE_ADSENSE_SLOT_TRAINING_PREPARATION?: string;
 ```
 
-- [ ] **Step 4: Add public env values**
+- [x] **Step 4: Add public env values**
 
 Append this block to `.env.example`:
 
@@ -219,7 +219,7 @@ VITE_ADSENSE_SLOT_PRE_FOOTER=7261326735
 VITE_ADSENSE_SLOT_DESKTOP_SIDEBAR=6487869331
 ```
 
-- [ ] **Step 5: Enable mock AdSense values in Playwright**
+- [x] **Step 5: Enable mock AdSense values in Playwright**
 
 Modify `apps/frontend/playwright.config.ts` so the web server command includes ads envs in E2E:
 
@@ -240,7 +240,7 @@ Then change the web server command to:
 command: `${e2eEnv} npm run dev -- --host 127.0.0.1 --port ${e2ePort} --strictPort`,
 ```
 
-- [ ] **Step 6: Add `ads.txt`**
+- [x] **Step 6: Add `ads.txt`**
 
 Create `apps/frontend/public/ads.txt`:
 
@@ -248,7 +248,7 @@ Create `apps/frontend/public/ads.txt`:
 google.com, pub-6699167964598590, DIRECT, f08c47fec0942fa0
 ```
 
-- [ ] **Step 7: Implement `ads-config.ts`**
+- [x] **Step 7: Implement `ads-config.ts`**
 
 Create `apps/frontend/src/ads/ads-config.ts`:
 
@@ -348,7 +348,7 @@ export function readAdsConfig(env: AdsEnv = import.meta.env): AdsConfig {
 export const adsConfig = readAdsConfig();
 ```
 
-- [ ] **Step 8: Run the focused test and verify it passes**
+- [x] **Step 8: Run the focused test and verify it passes**
 
 Run:
 
@@ -358,7 +358,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- adsense-display
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit Task 1**
+- [x] **Step 9: Commit Task 1**
 
 ```bash
 rtk git add .env.example .env.production apps/frontend/playwright.config.ts apps/frontend/public/ads.txt apps/frontend/src/vite-env.d.ts apps/frontend/src/ads/ads-config.ts apps/frontend/e2e/adsense-display.spec.ts
