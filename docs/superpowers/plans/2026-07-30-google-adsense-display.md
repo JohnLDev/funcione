@@ -768,7 +768,7 @@ rtk git commit -m "feat(ads): add AdSense runtime"
 - Produces visible mock marker: `data-testid="adsense-slot-training-preparation"` in pending training generation.
 - Produces visible mock marker: `data-testid="adsense-slot-desktop-sidebar"` on desktop dashboard/sidebar states.
 
-- [ ] **Step 1: Add failing placement tests**
+- [x] **Step 1: Add failing placement tests**
 
 Append these tests to `apps/frontend/e2e/adsense-display.spec.ts`:
 
@@ -816,7 +816,7 @@ Append these tests to `apps/frontend/e2e/adsense-display.spec.ts`:
   });
 ```
 
-- [ ] **Step 2: Run focused placement tests and verify they fail**
+- [x] **Step 2: Run focused placement tests and verify they fail**
 
 Run:
 
@@ -826,7 +826,7 @@ rtk npm run test:e2e --workspace @langchain-training/frontend -- adsense-display
 
 Expected: FAIL because the placement components are not rendered in screens.
 
-- [ ] **Step 3: Add the training preparation slot**
+- [x] **Step 3: Add the training preparation slot**
 
 In `apps/frontend/src/components/training-screen.tsx`, add:
 
@@ -842,7 +842,7 @@ Then render it directly after `TrainingPreparationProgress`:
           <p className="rounded-2xl border border-primary/25 bg-primary/10 p-4 text-sm font-bold text-muted-foreground">
 ```
 
-- [ ] **Step 4: Add dashboard sidebar slot**
+- [x] **Step 4: Add dashboard sidebar slot**
 
 In `apps/frontend/src/components/dashboard-screen.tsx`, add:
 
@@ -858,7 +858,7 @@ Inside the existing dashboard `<aside className="grid content-start gap-4">`, re
 
 Do not render `PreFooterAd` in this task; Task 4 adds pre-footer behavior and tests.
 
-- [ ] **Step 5: Add wizard sidebar slot**
+- [x] **Step 5: Add wizard sidebar slot**
 
 In `apps/frontend/src/components/training-plan-wizard.tsx`, add:
 
@@ -874,7 +874,7 @@ Inside the wizard `<aside>`, render below the monthly limit card:
         </div>
 ```
 
-- [ ] **Step 6: Add active-plan sidebar slot with execution suppression**
+- [x] **Step 6: Add active-plan sidebar slot with execution suppression**
 
 In `apps/frontend/src/components/training-active-plan.tsx`, add:
 
@@ -890,7 +890,7 @@ Inside the existing desktop `<aside className="hidden lg:block">`, render below 
         </div>
 ```
 
-- [ ] **Step 7: Run focused placement tests and typecheck**
+- [x] **Step 7: Run focused placement tests and typecheck**
 
 Run:
 
@@ -901,7 +901,7 @@ rtk npm run typecheck --workspace @langchain-training/frontend
 
 Expected: both PASS.
 
-- [ ] **Step 8: Commit Task 3**
+- [x] **Step 8: Commit Task 3**
 
 ```bash
 rtk git add apps/frontend/src/components/training-screen.tsx apps/frontend/src/components/training-plan-wizard.tsx apps/frontend/src/components/training-active-plan.tsx apps/frontend/src/components/dashboard-screen.tsx apps/frontend/e2e/adsense-display.spec.ts
