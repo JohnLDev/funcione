@@ -123,7 +123,7 @@ Antes de ativar para trafego real, a operacao deve revisar os requisitos de cons
 
 ## Checklist de ativacao em producao
 
-`VITE_ADS_ENABLED` deve permanecer `false` em `.env.production` ate que a operacao confirme todos os itens abaixo:
+Por decisao de produto de 2026-07-31, `VITE_ADS_ENABLED` permanece `true` em `.env.production`. Antes de depender de entrega real de anuncios, a operacao ainda deve confirmar:
 
 - dominio de producao aprovado no Google AdSense;
 - `https://funcione.pages.dev/ads.txt` publicado e validado pela conta;

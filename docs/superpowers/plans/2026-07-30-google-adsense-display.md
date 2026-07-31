@@ -1221,6 +1221,6 @@ rtk git commit -m "docs(ads): mark implementation plan progress"
 - [x] Add failing E2E assertions that sidebar and pre-footer slots stay absent while the finish confirmation and completion feedback dialogs are open.
 - [x] Separate mock ad markers from mock auth with `VITE_ADS_TEST_MODE`, keeping placeholders in normal E2E.
 - [x] Add a focused mock-auth runtime E2E path with `VITE_ADS_TEST_MODE=false`, a fulfilled external-script route, script deduplication checks, real `ins.adsbygoogle` checks, per-slot push checks, and mobile sidebar absence.
-- [x] Gate production activation with `VITE_ADS_ENABLED=false` while preserving public IDs and document the operations readiness checklist.
+- [x] Keep production activation with `VITE_ADS_ENABLED=true` per the 2026-07-31 product decision while preserving public IDs and documenting the operations readiness checklist.
 - [x] State personalized and non-personalized advertising in both privacy policies, update effective dates, and assert both language disclosures.
 - [x] Run focused and requested verification, remove any untracked `apps/frontend/.wrangler/`, and commit the hardening changes.

@@ -92,8 +92,9 @@ VITE_AUTH_REDIRECT_URL=
 
 `VITE_AUTH_REDIRECT_URL` define para onde o Supabase deve retornar depois do
 login social. Em producao, use a origem publica do frontend, por exemplo
-`https://funcione.pages.dev`. Se ela nao for definida, o app usa
-`window.location.origin`, preservando o comportamento local.
+`https://funcione.pages.dev`. Em desenvolvimento local, deixe a variavel vazia
+para o app usar `window.location.origin`, o que permite testar em qualquer porta
+`localhost` aberta pelo Vite ou pelo Codex.
 
 E2E:
 
@@ -109,13 +110,15 @@ No painel do Supabase, habilite o provider Google e configure o OAuth client do 
 
 - origem autorizada do app;
 - URL de callback do projeto Supabase;
-- redirect URL local durante desenvolvimento, como `http://localhost:5173`.
+- redirect URLs locais durante desenvolvimento, como `http://localhost:5173` e
+  qualquer outra porta usada para teste local.
 
 No painel do Supabase, em Authentication > URL Configuration, mantenha o Site
 URL e/ou Additional Redirect URLs compativeis com os valores usados pelo app:
 
 - producao: `https://funcione.pages.dev`;
-- desenvolvimento: `http://localhost:5173`.
+- desenvolvimento: `http://localhost:5173` e as demais origens `localhost`
+  usadas no teste local.
 
 Se `https://funcione.pages.dev` nao estiver autorizado nessa tela, o Supabase
 pode ignorar o `redirectTo` enviado pelo frontend e voltar para o Site URL

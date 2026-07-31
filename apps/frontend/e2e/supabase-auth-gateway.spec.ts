@@ -1,7 +1,19 @@
 import { expect, test } from '@playwright/test';
-import { createSupabaseAuthGateway } from '../src/auth/supabase-auth-gateway.js';
+import {
+  createSupabaseAuthGateway,
+  resolveOAuthRedirectUrl,
+} from '../src/auth/supabase-auth-gateway.js';
 
 test.describe('Supabase auth gateway', () => {
+  test('uses the current localhost origin when no redirect URL is configured', () => {
+    expect(resolveOAuthRedirectUrl(undefined, 'http://localhost:51394/')).toBe(
+      'http://localhost:51394',
+    );
+    expect(resolveOAuthRedirectUrl('   ', 'http://127.0.0.1:5173/')).toBe(
+      'http://127.0.0.1:5173',
+    );
+  });
+
   test('uses the configured production redirect URL for Google login', async () => {
     let oauthRequest: unknown;
     const gateway = createSupabaseAuthGateway({

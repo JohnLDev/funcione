@@ -118,14 +118,17 @@ function createConfiguredSupabaseClient(
   return createClient(config.url, config.publishableKey);
 }
 
-function resolveOAuthRedirectUrl(configuredRedirectUrl: string | undefined) {
+export function resolveOAuthRedirectUrl(
+  configuredRedirectUrl: string | undefined,
+  currentOrigin?: string,
+) {
   const trimmedRedirectUrl = configuredRedirectUrl?.trim().replace(/\/+$/, '');
 
   if (trimmedRedirectUrl) {
     return trimmedRedirectUrl;
   }
 
-  return window.location.origin;
+  return (currentOrigin ?? window.location.origin).trim().replace(/\/+$/, '');
 }
 
 export function createSupabaseAuthGateway(
