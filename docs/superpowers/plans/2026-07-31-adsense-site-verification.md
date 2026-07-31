@@ -55,9 +55,9 @@ Fazer o AdSense verificar o site publicado com as mudancas de anuncios realmente
 - [x] Rodar E2E focado de AdSense.
 - [x] Rodar build do frontend.
 - [x] Fazer commit da alternativa temporaria Pages.
-- [ ] Fazer push da alternativa temporaria Pages.
-- [ ] Validar `https://funcione-milex.pages.dev/ads.txt` apos o deploy.
-- [ ] Validar meta tag `google-adsense-account` no HTML publico do Pages.
+- [x] Fazer push da alternativa temporaria Pages.
+- [x] Validar `https://funcione-milex.pages.dev/ads.txt` apos o deploy.
+- [x] Validar meta tag `google-adsense-account` no HTML publico do Pages.
 
 ## Estado Em 2026-07-31
 
@@ -70,6 +70,8 @@ O workflow `30654540777` publicou com sucesso usando `wrangler deploy`. Depois d
 O AdSense recusou `https://funcione.john-lenon-dev.workers.dev` como novo site e reduziu a sugestao para `john-lenon-dev.workers.dev`, que nao resolve DNS. A opcao temporaria escolhida passa a ser Cloudflare Pages em `https://funcione-milex.pages.dev`.
 
 O workflow `30655670725` compilou com sucesso, mas falhou no passo `Ensure Cloudflare Pages project` porque `wrangler pages project list` recebeu erro Cloudflare `code: 8000000` no endpoint `/pages/projects`. Para reduzir a dependencia desse endpoint, o workflow passa a tentar `wrangler pages project create funcione-milex --production-branch=main` diretamente e continua quando o retorno indicar que o projeto ja existe.
+
+O workflow `30655794960` criou o projeto Pages `funcione-milex` e publicou o build. Depois da propagacao inicial, `https://funcione-milex.pages.dev/ads.txt` respondeu HTTP 200 com `content-type: text/plain; charset=utf-8` e a linha do publisher. A home respondeu HTTP 200 e incluiu `<meta name="google-adsense-account" content="ca-pub-6699167964598590" />`.
 
 ## Verificacao Esperada
 
