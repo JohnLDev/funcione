@@ -9,7 +9,7 @@
     "test:e2e": "playwright test",
     "dev": "vite",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=funcione --branch=main"
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
