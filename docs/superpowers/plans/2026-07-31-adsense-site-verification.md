@@ -34,8 +34,14 @@ Fazer o AdSense verificar o site publicado em `https://funcione.pages.dev` com a
 - [x] Ajustar workflow para Cloudflare Pages.
 - [x] Rodar E2E focado de AdSense.
 - [x] Rodar build do frontend.
-- [ ] Fazer commit e push para disparar o deploy.
+- [x] Fazer commit e push para disparar o deploy.
+- [ ] Corrigir permissao do `CLOUDFLARE_API_TOKEN` para deploy de Cloudflare Pages.
+- [ ] Rerodar o workflow `Deploy frontend`.
 - [ ] Validar `https://funcione.pages.dev/ads.txt` apos o deploy.
+
+## Estado Em 2026-07-31
+
+O workflow `30653369345` compilou com sucesso, mas falhou em `wrangler pages deploy dist --project-name=funcione --branch=main` com `Authentication error [code: 10000]` ao acessar `/pages/projects/funcione`. O token atual autentica no Cloudflare e ja publicava Workers, mas nao esta autorizado para Cloudflare Pages.
 
 ## Verificacao Esperada
 
