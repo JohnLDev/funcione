@@ -68,10 +68,17 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          if npx wrangler pages project list | grep -Fq "$CLOUDFLARE_PAGES_PROJECT_NAME"; then
+          set +e
+          create_output="$(npx wrangler pages project create "$CLOUDFLARE_PAGES_PROJECT_NAME" --production-branch=main 2>&1)"
+          create_status="$?"
+          set -e
+          echo "$create_output"
+          if [ "$create_status" -eq 0 ]; then
+            echo "Created Cloudflare Pages project $CLOUDFLARE_PAGES_PROJECT_NAME"
+          elif echo "$create_output" | grep -Eiq "already exists|project.*exists"; then
             echo "Cloudflare Pages project $CLOUDFLARE_PAGES_PROJECT_NAME already exists"
           else
-            npx wrangler pages project create "$CLOUDFLARE_PAGES_PROJECT_NAME" --production-branch=main
+            exit "$create_status"
           fi
 
       - name: Deploy frontend to Cloudflare Pages

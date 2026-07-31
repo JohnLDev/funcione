@@ -69,6 +69,8 @@ O workflow `30654540777` publicou com sucesso usando `wrangler deploy`. Depois d
 
 O AdSense recusou `https://funcione.john-lenon-dev.workers.dev` como novo site e reduziu a sugestao para `john-lenon-dev.workers.dev`, que nao resolve DNS. A opcao temporaria escolhida passa a ser Cloudflare Pages em `https://funcione-milex.pages.dev`.
 
+O workflow `30655670725` compilou com sucesso, mas falhou no passo `Ensure Cloudflare Pages project` porque `wrangler pages project list` recebeu erro Cloudflare `code: 8000000` no endpoint `/pages/projects`. Para reduzir a dependencia desse endpoint, o workflow passa a tentar `wrangler pages project create funcione-milex --production-branch=main` diretamente e continua quando o retorno indicar que o projeto ja existe.
+
 ## Verificacao Esperada
 
 ```bash
