@@ -38,7 +38,7 @@ O arquivo `apps/frontend/public/ads.txt` deve conter:
 google.com, pub-6699167964598590, DIRECT, f08c47fec0942fa0
 ```
 
-O site de producao precisa estar aprovado no AdSense antes de esperar entrega real de anuncios. O dominio aprovado deve corresponder ao dominio publico usado pelos usuarios, como `funcione.pages.dev` ou o dominio proprio final, conforme decisao operacional.
+O site de producao precisa estar aprovado no AdSense antes de esperar entrega real de anuncios. O dominio aprovado deve corresponder ao dominio publico usado pelos usuarios, como `funcione-milex.pages.dev` temporariamente ou o dominio proprio final, conforme decisao operacional.
 
 ## Slots
 
@@ -126,7 +126,7 @@ Antes de ativar para trafego real, a operacao deve revisar os requisitos de cons
 Por decisao de produto de 2026-07-31, `VITE_ADS_ENABLED` permanece `true` em `.env.production`. Antes de depender de entrega real de anuncios, a operacao ainda deve confirmar:
 
 - dominio de producao aprovado no Google AdSense;
-- `https://funcione.john-lenon-dev.workers.dev/ads.txt` publicado e validado pela conta, ou o dominio proprio final quando configurado;
+- `https://funcione-milex.pages.dev/ads.txt` publicado e validado pela conta, ou o dominio proprio final quando configurado;
 - Auto ads desabilitado na configuracao da conta, preservando apenas os placements manuais desta spec;
 - Privacy & Messaging/CMP configurado, quando aplicavel ao trafego regulado, incluindo consentimento e revogacao;
 - politicas de privacidade publicadas com a divulgacao de anuncios personalizados ou nao personalizados.

@@ -4,7 +4,7 @@
 
 **Goal:** Keep AdSense enabled in production and make Google OAuth redirect work on localhost and deployed domains through environment configuration with a safe current-origin fallback.
 
-**Architecture:** Preserve `VITE_AUTH_REDIRECT_URL` as the optional explicit redirect target. When it is empty or omitted, the Supabase auth gateway uses the current browser origin so localhost ports used by Vite/Codex and the current Worker deploy work without changing code. AdSense remains enabled with the existing public IDs.
+**Architecture:** Preserve `VITE_AUTH_REDIRECT_URL` as the optional explicit redirect target. When it is empty or omitted, the Supabase auth gateway uses the current browser origin so localhost ports used by Vite/Codex work without changing code. The temporary production deploy sets `VITE_AUTH_REDIRECT_URL=https://funcione-milex.pages.dev`. AdSense remains enabled with the existing public IDs.
 
 **Tech Stack:** React 19, Vite 7.3.x, TypeScript, Playwright, Supabase Auth, Google OAuth, Google AdSense.
 
@@ -54,11 +54,11 @@ Export the resolver from `apps/frontend/src/auth/supabase-auth-gateway.ts` with 
 
 - [x] **Step 4: Update env files**
 
-Set `.env.example` and `.env.production` to leave `VITE_AUTH_REDIRECT_URL` blank with comments explaining the current-origin fallback. Keep `VITE_ADS_ENABLED=true` in production.
+Set `.env.example` to leave `VITE_AUTH_REDIRECT_URL` blank with comments explaining the current-origin fallback. Set `.env.production` to `VITE_AUTH_REDIRECT_URL=https://funcione-milex.pages.dev` while the temporary Pages domain is in use. Keep `VITE_ADS_ENABLED=true` in production.
 
 - [x] **Step 5: Update docs**
 
-Update auth and AdSense docs so localhost testing and the current Worker deploy use blank `VITE_AUTH_REDIRECT_URL` unless an explicit stable production domain is configured. AdSense production remains enabled per the current decision.
+Update auth and AdSense docs so localhost testing uses blank `VITE_AUTH_REDIRECT_URL`, while the temporary production deploy uses `https://funcione-milex.pages.dev`. AdSense production remains enabled per the current decision.
 
 - [x] **Step 6: Run focused tests and typecheck**
 
