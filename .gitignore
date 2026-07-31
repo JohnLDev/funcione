@@ -10,3 +10,4 @@ agent-debug.json
 apps/frontend/test-results/
 apps/frontend/playwright-report/
 apps/frontend/dev-dist/
+apps/frontend/.wrangler/

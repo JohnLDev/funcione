@@ -158,6 +158,12 @@ test.describe('Google AdSense display', () => {
     expect(await adsTxt.text()).toBe(
       'google.com, pub-6699167964598590, DIRECT, f08c47fec0942fa0\n',
     );
+
+    const appShell = await request.get('/');
+    expect(appShell.ok()).toBe(true);
+    expect(await appShell.text()).toContain(
+      '<meta name="google-adsense-account" content="ca-pub-6699167964598590" />',
+    );
   });
 
   test('builds the AdSense script URL without loading the network script in E2E', async ({
