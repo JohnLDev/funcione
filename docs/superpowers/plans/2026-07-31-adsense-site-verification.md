@@ -42,16 +42,18 @@ Fazer o AdSense verificar o site publicado com as mudancas de anuncios realmente
 - [x] Voltar workflow para deploy no Worker existente.
 - [x] Remover default `funcione.pages.dev` do redirect de producao.
 - [x] Fazer commit da correcao de alvo.
-- [ ] Fazer push da correcao de alvo.
-- [ ] Rerodar o workflow `Deploy frontend`.
-- [ ] Validar `https://funcione.john-lenon-dev.workers.dev/ads.txt` apos o deploy.
-- [ ] Validar meta tag `google-adsense-account` no HTML publico do Worker.
+- [x] Fazer push da correcao de alvo.
+- [x] Rerodar o workflow `Deploy frontend`.
+- [x] Validar `https://funcione.john-lenon-dev.workers.dev/ads.txt` apos o deploy.
+- [x] Validar meta tag `google-adsense-account` no HTML publico do Worker.
 
 ## Estado Em 2026-07-31
 
 O workflow `30653369345` compilou com sucesso, mas falhou em `wrangler pages deploy dist --project-name=funcione --branch=main` com `Authentication error [code: 10000]` ao acessar `/pages/projects/funcione`. O token atual autentica no Cloudflare e ja publicava Workers, mas nao esta autorizado para Cloudflare Pages.
 
 Em nova execucao com o token ajustado, o Cloudflare passou a retornar: `The Pages project "funcione" does not exist`. Isso invalida o alvo `funcione.pages.dev` para esta conta.
+
+O workflow `30654540777` publicou com sucesso usando `wrangler deploy`. Depois do deploy, `https://funcione.john-lenon-dev.workers.dev/ads.txt` retornou `text/plain` com a linha do publisher, e o HTML publico da home retornou a meta tag `google-adsense-account` com `ca-pub-6699167964598590`.
 
 ## Verificacao Esperada
 
