@@ -13,6 +13,7 @@ import { AppLoading } from './components/app-loading.js';
 import { AppShell } from './components/app-shell.js';
 import { AthleteProfileScreen } from './components/athlete-profile-screen.js';
 import { DashboardScreen } from './components/dashboard-screen.js';
+import { EditorialTrainingScreen } from './components/editorial-training-screen.js';
 import { LegalDocumentScreen } from './components/legal-document-screen.js';
 import { useTranslation } from 'react-i18next';
 import { ProfileCompletionScreen } from './components/profile-completion-screen.js';
@@ -115,6 +116,10 @@ function AppRoutes() {
       <Route
         element={<LegalDocumentScreen documentType="privacy" />}
         path="/privacy"
+      />
+      <Route
+        element={<EditorialTrainingScreen />}
+        path="/treino-personalizado"
       />
       <Route
         element={

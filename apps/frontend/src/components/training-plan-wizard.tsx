@@ -23,7 +23,6 @@ import type {
   TrainingPlace,
   WeeklyAvailability,
 } from '@/training/training-plan.js';
-import { DesktopSidebarAd } from '@/ads/ad-placements.js';
 import { useTrainingPlan } from '@/training/use-training-plan.js';
 import { FieldGroup, OptionChip } from './training-form-controls.js';
 import { Button } from './ui/button.js';
@@ -1026,9 +1025,6 @@ export function TrainingPlanWizard() {
             {t('training.monthlyLimitNotice')}
           </CardContent>
         </Card>
-        <div className="mt-4">
-          <DesktopSidebarAd />
-        </div>
       </aside>
     </section>
   );

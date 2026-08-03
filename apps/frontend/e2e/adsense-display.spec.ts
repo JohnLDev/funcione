@@ -26,6 +26,35 @@ async function expireTrainingPlanCache(page: Page) {
   });
 }
 
+async function generateActiveTrainingPlan(page: Page) {
+  await page.getByRole('link', { name: /^treino$/i }).click();
+  await page.getByRole('button', { name: /volei/i }).click();
+  await page.getByRole('button', { name: /performance/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByLabel(/peso/i).fill('82');
+  await page.getByLabel(/altura/i).fill('180');
+  await page.getByRole('button', { name: /intermediario/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByRole('button', { name: /3x por semana/i }).click();
+  await page.getByRole('button', { name: /60 minutos/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByRole('button', { name: /casa/i }).click();
+  await page.getByRole('button', { name: /halteres/i }).click();
+  await page.getByRole('button', { name: /sem lesoes/i }).click();
+  await page.getByRole('button', { name: /continuar/i }).click();
+  await page.getByRole('button', { name: /solicitar treino/i }).click();
+
+  const confirmation = page.getByRole('alertdialog', {
+    name: /confirmar solicitacao do treino/i,
+  });
+
+  await expect(confirmation).toBeVisible();
+  await confirmation
+    .getByRole('button', { name: /preparar treino/i })
+    .click();
+  await expect(page.getByRole('heading', { name: /plano ativo/i })).toBeVisible();
+}
+
 type ImportedAdsSlot = {
   format: string;
   fullWidthResponsive: boolean;
@@ -143,7 +172,7 @@ test.describe('Google AdSense display', () => {
     expect(parsed.missingClient).toBe(false);
     expect(parsed.runtime.enabled).toBe(true);
     expect(parsed.runtime.clientId).toBe('ca-pub-6699167964598590');
-    expect(parsed.runtime.testMode).toBe(true);
+    expect(parsed.runtime.testMode).toBe(!runsRealAdSenseRuntime);
     expect(parsed.mockAuthWithRealRuntime).toBe(false);
     expect(parsed.trainingSlot).toEqual({
       format: 'auto',
@@ -227,7 +256,32 @@ test.describe('Google AdSense display', () => {
     });
   });
 
-  test('shows the preparation ad during async training generation', async ({
+  test('shows a public editorial training page with a compliant pre-footer ad', async ({
+    page,
+  }) => {
+    test.skip(runsRealAdSenseRuntime, 'test-mode slot policy coverage');
+
+    await page.goto('/treino-personalizado');
+
+    await expect(
+      page.getByRole('heading', { name: /treino personalizado/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/frequencia, duracao, local de treino e equipamentos/i),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /comecar agora/i })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+    const preFooterAd = page.getByTestId('adsense-slot-pre-footer');
+    await expect(preFooterAd).toBeVisible();
+    await expect(preFooterAd).toHaveAttribute('data-ad-slot', '7261326735');
+    await expect(
+      page.locator('script[src*="pagead2.googlesyndication.com"]'),
+    ).toHaveCount(0);
+  });
+
+  test('keeps ads out of async training generation and profile screens', async ({
     page,
   }) => {
     await completeGoogleRegistration(page);
@@ -249,18 +303,28 @@ test.describe('Google AdSense display', () => {
     await expect(
       page.getByRole('progressbar', { name: /preparo estimado do treino/i }),
     ).toBeVisible();
-    const preparationAd = page.getByTestId('adsense-slot-training-preparation');
-    await expect(preparationAd).toBeVisible();
-    await expect(preparationAd).toHaveAttribute('data-ad-slot', '9544709295');
+    await expect(page.locator('[data-testid^="adsense-slot-"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /tentar novamente/i })).toBeVisible();
+
+    await page.getByRole('link', { name: /^perfil$/i }).click();
+    await expect(
+      page.getByRole('heading', { name: /perfil do atleta/i }),
+    ).toBeVisible();
+    await expect(page.locator('[data-testid^="adsense-slot-"]')).toHaveCount(0);
   });
 
-  test('shows desktop sidebar ad on dashboard without loading AdSense network script', async ({
+  test('shows dashboard ads only after an active plan exists', async ({
     page,
   }, testInfo) => {
+    test.skip(runsRealAdSenseRuntime, 'test-mode slot policy coverage');
     test.skip(testInfo.project.name !== 'desktop-chromium', 'desktop-only ad');
 
     await completeGoogleRegistration(page);
+    await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toHaveCount(0);
+    await expect(page.getByTestId('adsense-slot-pre-footer')).toHaveCount(0);
+
+    await generateActiveTrainingPlan(page);
+    await page.getByRole('link', { name: /^inicio$/i }).click();
 
     const sidebarAd = page.getByTestId('adsense-slot-desktop-sidebar');
     await expect(sidebarAd).toBeVisible();
@@ -281,6 +345,12 @@ test.describe('Google AdSense display', () => {
 
     const script = page.locator('#google-adsense-script');
     const ads = page.locator('ins.adsbygoogle');
+    await expect(script).toHaveCount(0);
+    await expect(ads).toHaveCount(0);
+    expect(getScriptRequestCount()).toBe(0);
+
+    await generateActiveTrainingPlan(page);
+
     await expect(script).toHaveCount(1);
     await expect(ads).toHaveCount(2);
     await expect(page.getByTestId('adsense-slot-desktop-sidebar')).toBeVisible();
@@ -289,13 +359,12 @@ test.describe('Google AdSense display', () => {
     expect(getScriptRequestCount()).toBe(1);
 
     await page.getByRole('link', { name: /^perfil$/i }).click();
-    await expect(ads).toHaveCount(1);
-    await expect(page.getByTestId('adsense-slot-pre-footer')).toBeVisible();
-    await expect.poll(() => getAdSensePushCount(page)).toBe(3);
+    await expect(ads).toHaveCount(0);
+    await expect.poll(() => getAdSensePushCount(page)).toBe(2);
 
     await page.getByRole('link', { name: /^inicio$/i }).click();
     await expect(ads).toHaveCount(2);
-    await expect.poll(() => getAdSensePushCount(page)).toBe(5);
+    await expect.poll(() => getAdSensePushCount(page)).toBe(4);
 
     await page.getByRole('button', { name: /sair/i }).click();
     await expect(page).toHaveURL(/\/login$/);
@@ -303,7 +372,7 @@ test.describe('Google AdSense display', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
     await expect(script).toHaveCount(1);
     await expect(ads).toHaveCount(2);
-    await expect.poll(() => getAdSensePushCount(page)).toBe(7);
+    await expect.poll(() => getAdSensePushCount(page)).toBe(6);
     expect(getScriptRequestCount()).toBe(1);
   });
 
@@ -315,6 +384,10 @@ test.describe('Google AdSense display', () => {
 
     const getScriptRequestCount = await interceptAdSenseScript(page);
     await completeGoogleRegistration(page);
+    await expect(page.locator('#google-adsense-script')).toHaveCount(0);
+    await expect(page.locator('ins.adsbygoogle')).toHaveCount(0);
+
+    await generateActiveTrainingPlan(page);
 
     await expect(page.locator('#google-adsense-script')).toHaveCount(1);
     await expect(page.locator('ins.adsbygoogle')).toHaveCount(1);
@@ -327,8 +400,10 @@ test.describe('Google AdSense display', () => {
   test('shows pre-footer ad before the footer on mobile without horizontal overflow', async ({
     page,
   }) => {
+    test.skip(runsRealAdSenseRuntime, 'test-mode layout coverage');
+
     await page.setViewportSize({ height: 844, width: 390 });
-    await completeGoogleRegistration(page);
+    await page.goto('/treino-personalizado');
 
     const preFooterAd = page.getByTestId('adsense-slot-pre-footer');
     await expect(preFooterAd).toBeVisible();

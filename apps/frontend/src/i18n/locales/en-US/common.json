@@ -17,6 +17,47 @@
     "backToApp": "Back to athlete area",
     "backToLogin": "Back to sign in"
   },
+  "editorialTraining": {
+    "eyebrow": "Funcione guide",
+    "title": "Personalized training for a routine that actually works",
+    "subtitle": "A good training plan combines frequency, duration, training location, and equipment with the athlete's goal. Funcione organizes those inputs into clear, progressive sessions that are easy to follow.",
+    "primaryCta": "Start now",
+    "signIn": "Sign in",
+    "highlights": {
+      "frequency": {
+        "title": "Realistic frequency",
+        "body": "The plan has to fit the athlete's actual week. Training twice with consistency is usually better than promising six days and stopping in the second week."
+      },
+      "equipment": {
+        "title": "Place and resources",
+        "body": "Home, gym, or court changes exercise selection. Dumbbells, bands, cones, and a mat become useful resources, not blockers."
+      },
+      "recovery": {
+        "title": "Safety and recovery",
+        "body": "Injury history, intensity, and rest help keep progress steady without turning every session into a gamble."
+      }
+    },
+    "sections": {
+      "personalization": {
+        "title": "What makes a workout truly personalized",
+        "body": "Personalization is not just placing the athlete's name in a header. The plan should account for sport, experience, goals, availability, session duration, training location, equipment, and physical restrictions. These inputs reduce guesswork and give each session a clear reason to exist."
+      },
+      "routine": {
+        "title": "How frequency and duration shape the plan",
+        "body": "A 30-minute workout needs to be more direct than a 75-minute session. Likewise, a two-day routine needs different priorities than a five-day routine. The structure should respect those limits before increasing volume."
+      },
+      "safety": {
+        "title": "Why place, equipment, and injuries matter",
+        "body": "The same goal may need different solutions at home, in the gym, or on a court. When the athlete shares equipment and points of attention, the plan can suggest more coherent alternatives and avoid movements that do not fit the current context."
+      },
+      "consistency": {
+        "title": "Consistency before complexity",
+        "body": "The best workout is the one the athlete can repeat, review, and adjust. Funcione organizes stretches, main exercises, notes, and the reason behind each choice in a simple reading flow, so the important decision is training, not decoding a spreadsheet."
+      }
+    },
+    "reviewTitle": "Use the plan as direction, not pressure",
+    "reviewBody": "Even with a personalized structure, athletes should respect pain, fatigue, sleep, and professional guidance when a specific condition exists. Training works better when progress and safety move together."
+  },
   "toast": {
     "dismiss": "Close notification",
     "label": "System feedback",

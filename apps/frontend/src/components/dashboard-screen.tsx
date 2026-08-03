@@ -117,6 +117,7 @@ function DashboardContent() {
   const { profileState, session } = useAuth();
   const { errorMessage, isLoading, reload, state } = useTrainingPlan();
   const profile = profileState?.profile;
+  const hasPublisherContent = Boolean(state?.activePlan);
   const displayName =
     profile ? `${profile.firstName} ${profile.lastName}` : session?.user.fullName;
 
@@ -196,10 +197,10 @@ function DashboardContent() {
               </Button>
             </CardContent>
           </Card>
-          <DesktopSidebarAd />
+          <DesktopSidebarAd suppress={!hasPublisherContent} />
         </aside>
       </div>
-      <PreFooterAd />
+      <PreFooterAd suppress={!hasPublisherContent} />
     </section>
   );
 }

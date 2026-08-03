@@ -2,13 +2,13 @@
 
 ## Objetivo
 
-Adicionar exibicao de anuncios do Google AdSense ao Funcione sem prejudicar o fluxo principal do atleta. A primeira versao usa posicionamento manual controlado, com foco no tempo ocioso da geracao de treino e em areas secundarias da pagina.
+Adicionar exibicao de anuncios do Google AdSense ao Funcione sem prejudicar o fluxo principal do atleta. Esta especificacao registra a primeira estrategia tecnica de AdSense, mas a politica ativa de posicionamento foi substituida em 2026-08-03 por `docs/superpowers/specs/2026-08-03-adsense-editorial-placement-design.md`.
 
 ## Contexto
 
 O frontend vive em `apps/frontend`, usa React, Vite, Cloudflare Pages e rotas autenticadas dentro do `AppShell`. A geracao mensal de treino ja e assincrona: depois da solicitacao, a tela mostra `TrainingPreparationProgress` enquanto o backend processa o job e o frontend acompanha por polling.
 
-Esse estado de preparo e o melhor momento para monetizacao inicial, porque o usuario esta aguardando o treino ficar pronto e a tela ja comunica que ele pode manter a navegacao sem bloquear o sistema. Em contrapartida, o fluxo de execucao de treino exige foco, checklists e botoes de conclusao; anuncios ali aumentariam risco de distracao e clique acidental.
+Depois da revisao do AdSense em 2026-08-03, estados de preparo, loading e geracao passaram a ser tratados como telas operacionais, nao como conteudo do editor. A estrategia ativa move a primeira exibicao publica para uma tela editorial rastreavel e restringe anuncios autenticados a telas com plano de treino ativo.
 
 ## Decisoes
 
@@ -17,6 +17,7 @@ Esse estado de preparo e o melhor momento para monetizacao inicial, porque o usu
 - Carregar o script do AdSense uma unica vez no frontend quando anuncios estiverem habilitados.
 - Renderizar slots por componentes proprios, em vez de copiar o snippet completo do AdSense em cada tela.
 - Preparar segmentacao futura desde a primeira entrega com uma regra central de elegibilidade.
+- Substituida em 2026-08-03: nao exibir anuncios em preparo, loading, wizard, perfil ou dashboard sem plano ativo.
 - Nao exibir anuncios em modais, bottom nav mobile, loading inicial curto, execucao ativa de treino ou pontos proximos a botoes de acao.
 - Nao adicionar Auto ads nesta versao. Auto ads pode ser avaliado depois, com exclusoes e metricas de UX ja estabelecidas.
 
@@ -42,14 +43,14 @@ O site de producao precisa estar aprovado no AdSense antes de esperar entrega re
 
 ## Slots
 
-### Preparo do treino
+### Preparo do treino (desativado pela politica de 2026-08-03)
 
 - Env: `VITE_ADSENSE_SLOT_TRAINING_PREPARATION`
 - Valor: `9544709295`
 - Formato: `auto`
 - Responsivo: `data-full-width-responsive="true"`
-- Local: dentro do estado `pendingGeneration`, abaixo do progresso/feedback de `TrainingPreparationProgress`.
-- Objetivo: monetizar o tempo de espera do job de geracao sem cobrir conteudo nem acoes de retry.
+- Local historico: dentro do estado `pendingGeneration`, abaixo do progresso/feedback de `TrainingPreparationProgress`.
+- Status: nao deve ser renderizado. O AdSense sinalizou risco para anuncios em telas sem conteudo do editor, e esse estado e operacional/comportamental.
 
 ### Pre-rodape
 
@@ -72,11 +73,11 @@ O site de producao precisa estar aprovado no AdSense antes de esperar entrega re
 
 ## Regras de exibicao
 
-Anuncios podem aparecer:
+Anuncios podem aparecer pela politica ativa:
 
-- na tela de preparo assincrono do treino;
+- na tela publica editorial `/treino-personalizado`, depois de conteudo textual substancial;
 - antes do rodape em paginas autenticadas elegiveis;
-- em sidebars desktop de conteudo nao critico.
+- em sidebars desktop de conteudo nao critico quando houver plano ativo.
 
 Anuncios nao devem aparecer:
 
@@ -85,6 +86,10 @@ Anuncios nao devem aparecer:
 - dentro de modais de confirmacao ou conclusao;
 - junto aos botoes de solicitar, preparar, tentar novamente, comecar treino, finalizar treino, voltar ou continuar;
 - no loading inicial curto de sessao/perfil/plano ativo;
+- no preparo assincrono de treino;
+- no wizard de solicitacao;
+- no perfil do atleta;
+- no dashboard sem plano ativo;
 - sobre ou dentro da bottom nav mobile;
 - em telas de autenticacao e completacao de cadastro nesta primeira versao.
 
@@ -174,7 +179,8 @@ O backend nao precisa mudar na primeira versao porque a elegibilidade inicial de
 ## Testes esperados
 
 - Teste unitario ou E2E importando a config para provar que anuncios ficam desabilitados quando `VITE_ADS_ENABLED` nao e `true`.
-- E2E do preparo do treino verificando que o slot de preparo aparece no estado `pendingGeneration` e nao substitui progresso, retry ou mensagens.
+- E2E da tela publica editorial verificando conteudo original e slot de pre-rodape.
+- E2E do preparo do treino verificando que nenhum slot aparece no estado `pendingGeneration`.
 - E2E mobile verificando que o pre-rodape nao causa overflow horizontal e nao sobrepoe a bottom nav.
 - E2E desktop verificando que o slot de sidebar aparece apenas em layout desktop.
 - E2E do treino em execucao verificando que nenhum anuncio aparece durante checklist, confirmacao de finalizacao e modal de conclusao.

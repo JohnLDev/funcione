@@ -17,6 +17,47 @@
     "backToApp": "Voltar para area do atleta",
     "backToLogin": "Voltar para login"
   },
+  "editorialTraining": {
+    "eyebrow": "Guia Funcione",
+    "title": "Treino personalizado para uma rotina que realmente funciona",
+    "subtitle": "Um bom plano de treino combina frequencia, duracao, local de treino e equipamentos com o objetivo do atleta. O Funcione organiza esses dados para transformar a rotina em sessoes claras, progressivas e faceis de acompanhar.",
+    "primaryCta": "Comecar agora",
+    "signIn": "Entrar",
+    "highlights": {
+      "frequency": {
+        "title": "Frequencia possivel",
+        "body": "O plano precisa caber na semana real do atleta. Treinar duas vezes com consistencia costuma ser melhor do que prometer seis dias e parar na segunda semana."
+      },
+      "equipment": {
+        "title": "Local e recursos",
+        "body": "Casa, academia ou quadra mudam a escolha de exercicios. Halteres, elasticos, cones e colchonete entram como recursos, nao como obstaculos."
+      },
+      "recovery": {
+        "title": "Seguranca e recuperacao",
+        "body": "Historico de lesoes, intensidade e descanso ajudam a manter evolucao sem transformar cada treino em uma aposta."
+      }
+    },
+    "sections": {
+      "personalization": {
+        "title": "O que torna um treino realmente personalizado",
+        "body": "Personalizar nao e apenas trocar o nome do atleta no cabecalho. O plano deve considerar modalidade, experiencia, objetivos, disponibilidade, tempo por sessao, local de treino, equipamentos e restricoes fisicas. Esses dados reduzem improviso e ajudam cada sessao a ter um motivo claro."
+      },
+      "routine": {
+        "title": "Como frequencia e duracao mudam o plano",
+        "body": "Um treino de 30 minutos precisa ser mais direto do que uma sessao de 75 minutos. Da mesma forma, uma rotina de duas vezes por semana exige prioridades diferentes de uma rotina de cinco vezes por semana. A estrutura do plano precisa respeitar esse limite antes de aumentar volume."
+      },
+      "safety": {
+        "title": "Por que local, equipamentos e lesoes importam",
+        "body": "O mesmo objetivo pode pedir solucoes diferentes em casa, na academia ou em uma quadra. Quando o atleta informa equipamentos e pontos de atencao, o plano consegue sugerir alternativas mais coerentes e evitar movimentos que nao combinam com o contexto atual."
+      },
+      "consistency": {
+        "title": "Consistencia antes de complexidade",
+        "body": "O melhor treino e aquele que o atleta consegue repetir, revisar e ajustar. Por isso, o Funcione organiza alongamentos, exercicios principais, observacoes e motivo de escolha em uma leitura simples, para que a decisao importante seja treinar, nao decifrar a planilha."
+      }
+    },
+    "reviewTitle": "Use o plano como direcao, nao como pressao",
+    "reviewBody": "Mesmo com uma estrutura personalizada, o atleta deve respeitar dor, fadiga, sono e orientacao profissional quando houver condicao especifica. O treino funciona melhor quando progresso e seguranca caminham juntos."
+  },
   "toast": {
     "dismiss": "Fechar notificacao",
     "label": "Feedback do sistema",

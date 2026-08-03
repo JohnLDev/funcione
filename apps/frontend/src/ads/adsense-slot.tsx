@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.js';
 import { adsConfig, type AdsSlotKey } from './ads-config.js';
+import { ensureAdSenseScript } from './adsense-script.js';
 import { useAdsEligibility } from './use-ads-eligibility.js';
 
 declare global {
@@ -44,6 +45,7 @@ export function AdSenseSlot({
     }
 
     ins.dataset.adsensePushed = 'true';
+    ensureAdSenseScript();
     window.adsbygoogle = window.adsbygoogle ?? [];
     window.adsbygoogle.push({});
   }, [shouldRender, slotConfig.id]);

@@ -1,9 +1,5 @@
 import { AdSenseSlot } from './adsense-slot.js';
 
-export function TrainingPreparationAd() {
-  return <AdSenseSlot slot="trainingPreparation" />;
-}
-
 export function PreFooterAd({ suppress = false }: { suppress?: boolean }) {
   return (
     <div className="mt-4">
