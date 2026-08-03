@@ -188,6 +188,12 @@ export function AppShell({
               >
                 {t('footer.privacy')}
               </Link>
+              <Link
+                className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                to="/treino-personalizado"
+              >
+                {t('footer.trainingGuide')}
+              </Link>
             </div>
             <img
               alt={t('brand.milexLogoAlt')}

@@ -419,6 +419,11 @@ test.describe('Funcione app shell', () => {
         name: /politica de privacidade|privacy policy/i,
       }),
     ).toHaveAttribute('href', '/privacy');
+    await expect(
+      footer.getByRole('link', {
+        name: /guia de treino|training guide/i,
+      }),
+    ).toHaveAttribute('href', '/treino-personalizado');
     await expect(footer.getByTestId('footer-milex-logo')).toHaveAttribute(
       'src',
       /\/brand\/milex-logo-transparent\.png$/,
@@ -443,6 +448,18 @@ test.describe('Funcione app shell', () => {
       page.getByRole('heading', {
         name: /politica de privacidade|privacy policy/i,
       }),
+    ).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page
+      .getByRole('contentinfo', { name: /rodape|footer/i })
+      .getByRole('link', {
+        name: /guia de treino|training guide/i,
+      })
+      .click();
+    await expect(page).toHaveURL(/\/treino-personalizado$/);
+    await expect(
+      page.getByRole('heading', { name: /treino personalizado|personalized training/i }),
     ).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(/\/dashboard$/);
@@ -564,6 +581,11 @@ test.describe('Funcione app shell', () => {
     ).toBeVisible();
     await expect(page.getByRole('link', { name: /voltar para login/i }))
       .toHaveAttribute('href', '/login');
+    await expect(
+      page
+        .getByRole('contentinfo', { name: /rodape|footer/i })
+        .getByRole('link', { name: /guia de treino/i }),
+    ).toHaveAttribute('href', '/treino-personalizado');
 
     const scrollWidth = await page.evaluate(
       () => document.documentElement.scrollWidth,
