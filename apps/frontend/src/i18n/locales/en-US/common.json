@@ -322,6 +322,7 @@
   "auth": {
     "continueWithGoogle": "Continue with Google",
     "email": "Email",
+    "legalLinksLabel": "Legal documents",
     "loading": "Loading Funcione",
     "loadingDescription": "Preparing your experience.",
     "password": "Password",

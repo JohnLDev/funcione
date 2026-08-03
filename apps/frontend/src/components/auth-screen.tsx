@@ -154,6 +154,24 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
                     {t('auth.trainingGuide')}
                   </Link>
                 </Button>
+
+                <nav
+                  aria-label={t('auth.legalLinksLabel')}
+                  className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border pt-4 text-xs font-bold text-muted-foreground"
+                >
+                  <Link
+                    className="min-h-10 rounded-md px-2 py-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    to="/terms"
+                  >
+                    {t('footer.terms')}
+                  </Link>
+                  <Link
+                    className="min-h-10 rounded-md px-2 py-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    to="/privacy"
+                  >
+                    {t('footer.privacy')}
+                  </Link>
+                </nav>
               </>
             ) : isPasswordAuthEnabled ? (
               <>

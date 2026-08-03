@@ -82,6 +82,41 @@ test.describe('Funcione app shell', () => {
     ).toBeVisible();
   });
 
+  test('opens public legal documents from sign-in', async ({ page }) => {
+    await page.goto('/login');
+
+    const legalNav = page.getByRole('navigation', {
+      name: /documentos legais|legal documents/i,
+    });
+    const termsLink = legalNav.getByRole('link', {
+      name: /termos de uso|terms of use/i,
+    });
+    const privacyLink = legalNav.getByRole('link', {
+      name: /politica de privacidade|privacy policy/i,
+    });
+
+    await expect(termsLink).toHaveAttribute('href', '/terms');
+    await expect(privacyLink).toHaveAttribute('href', '/privacy');
+
+    await termsLink.click();
+    await expect(page).toHaveURL(/\/terms$/);
+    await expect(
+      page.getByRole('heading', { name: /termos de uso|terms of use/i }),
+    ).toBeVisible();
+
+    await page.goto('/login');
+    await page
+      .getByRole('navigation', { name: /documentos legais|legal documents/i })
+      .getByRole('link', { name: /politica de privacidade|privacy policy/i })
+      .click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(
+      page.getByRole('heading', {
+        name: /politica de privacidade|privacy policy/i,
+      }),
+    ).toBeVisible();
+  });
+
   test('shows a translated sport toast for Google login failures without leaking provider text', async ({
     page,
   }) => {
