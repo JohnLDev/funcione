@@ -1,4 +1,4 @@
-import { ArrowLeft, LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, BookOpen, LogIn, UserPlus } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -146,6 +146,13 @@ export function AuthScreen({ mode }: { mode: AuthScreenMode }) {
                 >
                   <GoogleIcon className="h-[18px] w-[18px]" />
                   {t('auth.continueWithGoogle')}
+                </Button>
+
+                <Button asChild variant="ghost">
+                  <Link to="/treino-personalizado">
+                    <BookOpen aria-hidden="true" size={18} />
+                    {t('auth.trainingGuide')}
+                  </Link>
                 </Button>
               </>
             ) : isPasswordAuthEnabled ? (

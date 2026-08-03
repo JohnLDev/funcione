@@ -70,7 +70,11 @@ function AppRoutes() {
         element={
           <Navigate
             replace
-            to={session ? getAuthenticatedPath(hasCompletedProfile) : '/login'}
+            to={
+              session
+                ? getAuthenticatedPath(hasCompletedProfile)
+                : '/treino-personalizado'
+            }
           />
         }
         path="/"

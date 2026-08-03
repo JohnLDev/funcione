@@ -329,7 +329,8 @@
     "signIn": "Sign in",
     "signOut": "Sign out",
     "signUp": "Create account",
-    "title": "Sign in to Funcione"
+    "title": "Sign in to Funcione",
+    "trainingGuide": "View training guide"
   },
   "registration": {
     "backToSignIn": "I already have an account",

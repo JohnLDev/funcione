@@ -52,6 +52,36 @@ test.describe('Funcione app shell', () => {
     ).toBeVisible();
   });
 
+  test('opens the public training guide from root and sign-in', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    await expect(page).toHaveURL(/\/treino-personalizado$/);
+    await expect(
+      page.getByRole('heading', {
+        name: /treino personalizado|personalized training/i,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /comecar agora|start now/i }),
+    ).toHaveAttribute('href', '/login');
+
+    await page.goto('/login');
+    const guideLink = page.getByRole('link', {
+      name: /guia de treino|training guide/i,
+    });
+    await expect(guideLink).toHaveAttribute('href', '/treino-personalizado');
+    await guideLink.click();
+
+    await expect(page).toHaveURL(/\/treino-personalizado$/);
+    await expect(
+      page.getByRole('heading', {
+        name: /treino personalizado|personalized training/i,
+      }),
+    ).toBeVisible();
+  });
+
   test('shows a translated sport toast for Google login failures without leaking provider text', async ({
     page,
   }) => {
@@ -192,7 +222,7 @@ test.describe('Funcione app shell', () => {
       window.localStorage.removeItem('funcione-mock-registration-profiles');
     });
 
-    await page.goto('/');
+    await page.goto('/login');
     await expect(page).toHaveURL(/\/login$/);
 
     await expect(
@@ -283,7 +313,7 @@ test.describe('Funcione app shell', () => {
   test('requires missing registration data after a new Google login', async ({
     page,
   }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await expect(page).toHaveURL(/\/login$/);
     await expect(
@@ -344,7 +374,7 @@ test.describe('Funcione app shell', () => {
     const longFirstName = 'A'.repeat(81);
     const longLastName = 'B'.repeat(81);
 
-    await page.goto('/');
+    await page.goto('/login');
 
     await expect(page).toHaveURL(/\/login$/);
     await page.getByRole('button', { name: /continuar com google/i }).click();
@@ -360,7 +390,7 @@ test.describe('Funcione app shell', () => {
   test('allows signing out from complete profile before saving', async ({
     page,
   }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await expect(page).toHaveURL(/\/login$/);
     await page.getByRole('button', { name: /continuar com google/i }).click();

@@ -329,7 +329,8 @@
     "signIn": "Entrar",
     "signOut": "Sair",
     "signUp": "Criar conta",
-    "title": "Entrar no Funcione"
+    "title": "Entrar no Funcione",
+    "trainingGuide": "Ver guia de treino"
   },
   "registration": {
     "backToSignIn": "Ja tenho conta",
