@@ -100,7 +100,7 @@ Run: `npm run build`
 
 Expected: all commands finish with exit code 0, allowing known non-blocking Vite chunk-size warnings.
 
-- [ ] **Step 9: Commit and push**
+- [x] **Step 9: Commit and push**
 
 Commit with: `feat(content): add public guide pages`
 
