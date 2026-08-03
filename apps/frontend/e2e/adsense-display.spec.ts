@@ -281,6 +281,87 @@ test.describe('Google AdSense display', () => {
     ).toHaveCount(0);
   });
 
+  test('exposes a public editorial content graph for AdSense review', async ({
+    page,
+  }) => {
+    test.skip(runsRealAdSenseRuntime, 'test-mode public content coverage');
+
+    const publicPages = [
+      {
+        heading: /sobre o funcione/i,
+        href: '/sobre',
+        linkName: /sobre o funcione/i,
+        text: /organizar a rotina de treino/i,
+      },
+      {
+        heading: /como montar uma rotina de treino personalizada/i,
+        href: '/guias/rotina-de-treino-personalizada',
+        linkName: /rotina de treino personalizada/i,
+        text: /frequencia semanal/i,
+      },
+      {
+        heading: /treino em casa, academia ou quadra/i,
+        href: '/guias/treino-em-casa-academia-quadra',
+        linkName: /casa, academia ou quadra/i,
+        text: /local de treino muda/i,
+      },
+      {
+        heading: /seguranca, recuperacao e lesoes/i,
+        href: '/guias/seguranca-recuperacao-lesoes',
+        linkName: /seguranca e recuperacao/i,
+        text: /orientacao profissional/i,
+      },
+      {
+        heading: /perguntas frequentes/i,
+        href: '/perguntas-frequentes',
+        linkName: /perguntas frequentes/i,
+        text: /por que vejo anuncios/i,
+      },
+    ] as const;
+
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto('/treino-personalizado');
+    const trainingArticle = page.getByRole('article');
+
+    for (const publicPage of publicPages) {
+      await expect(
+        trainingArticle.getByRole('link', { name: publicPage.linkName }),
+      ).toHaveAttribute('href', publicPage.href);
+    }
+
+    for (const publicPage of publicPages) {
+      await page.goto(publicPage.href);
+      await expect(
+        page.getByRole('heading', { name: publicPage.heading }),
+      ).toBeVisible();
+      await expect(page.getByText(publicPage.text).first()).toBeVisible();
+
+      const content = page.getByTestId('public-editorial-content');
+      const preFooterAd = page.getByTestId('adsense-slot-pre-footer');
+      await expect(content).toBeVisible();
+      await expect(preFooterAd).toBeVisible();
+      await expect(preFooterAd).toHaveAttribute('data-ad-slot', '7261326735');
+
+      const contentBox = await content.boundingBox();
+      const adBox = await preFooterAd.boundingBox();
+      expect((contentBox?.y ?? 0) + (contentBox?.height ?? 0)).toBeLessThanOrEqual(
+        (adBox?.y ?? 0) + 1,
+      );
+
+      const scrollWidth = await page.evaluate(
+        () => document.documentElement.scrollWidth,
+      );
+      const viewportWidth = await page.evaluate(() => window.innerWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
+    }
+
+    await page.goto('/sobre');
+    const aboutText = await page.getByRole('main').innerText();
+    expect(aboutText).not.toMatch(
+      /\b(?:ai|ia)\b|artificial intelligence|inteligencia artificial|algoritm|modelo/i,
+    );
+  });
+
   test('keeps ads out of async training generation and profile screens', async ({
     page,
   }) => {

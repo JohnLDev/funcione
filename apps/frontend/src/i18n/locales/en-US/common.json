@@ -9,6 +9,8 @@
     "label": "Advertisement"
   },
   "footer": {
+    "about": "About Funcione",
+    "faq": "Frequently asked questions",
     "label": "Footer",
     "privacy": "Privacy policy",
     "terms": "Terms of use",
@@ -58,6 +60,18 @@
     },
     "reviewTitle": "Use the plan as direction, not pressure",
     "reviewBody": "Even with a personalized structure, athletes should respect pain, fatigue, sleep, and professional guidance when a specific condition exists. Training works better when progress and safety move together."
+  },
+  "publicContent": {
+    "readMoreTitle": "Keep exploring Funcione",
+    "readMoreBody": "Read public content about routine, environment, safety, and how the experience works before entering the athlete area.",
+    "relatedTitle": "Keep reading",
+    "links": {
+      "about": "About Funcione",
+      "faq": "Frequently asked questions",
+      "location": "Home, gym, or court",
+      "routine": "Personalized training routine",
+      "safety": "Safety and recovery"
+    }
   },
   "toast": {
     "dismiss": "Close notification",

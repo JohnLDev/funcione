@@ -15,11 +15,13 @@ import { AthleteProfileScreen } from './components/athlete-profile-screen.js';
 import { DashboardScreen } from './components/dashboard-screen.js';
 import { EditorialTrainingScreen } from './components/editorial-training-screen.js';
 import { LegalDocumentScreen } from './components/legal-document-screen.js';
+import { PublicEditorialPageScreen } from './components/public-editorial-page-screen.js';
 import { useTranslation } from 'react-i18next';
 import { ProfileCompletionScreen } from './components/profile-completion-screen.js';
 import { TrainingScreen } from './components/training-screen.js';
 import { ThemeProvider } from './theme/theme-provider.js';
 import { AppToastProvider } from './toast/app-toast-provider.js';
+import { publicEditorialPageRoutes } from './content/public-editorial-pages.js';
 
 function LoadingScreen() {
   const { t } = useTranslation();
@@ -125,6 +127,13 @@ function AppRoutes() {
         element={<EditorialTrainingScreen />}
         path="/treino-personalizado"
       />
+      {publicEditorialPageRoutes.map((route) => (
+        <Route
+          element={<PublicEditorialPageScreen pageId={route.id} />}
+          key={route.path}
+          path={route.path}
+        />
+      ))}
       <Route
         element={
           !session ? (

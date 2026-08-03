@@ -5,11 +5,12 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link, NavLink } from 'react-router';
+import { NavLink } from 'react-router';
 import { useAuth } from '@/auth/use-auth.js';
 import type { AuthUser } from '@/auth/types.js';
 import { Button } from './ui/button.js';
 import { ProductLogo } from './product-logo.js';
+import { PublicFooter } from './public-footer.js';
 import { SettingsMenu } from './settings-menu.js';
 import { cn } from '@/lib/utils.js';
 
@@ -170,38 +171,7 @@ export function AppShell({
 
           <div className="min-w-0">{children}</div>
 
-          <footer
-            aria-label={t('footer.label')}
-            className="mt-8 flex flex-col gap-3 border-t border-border/70 pb-1 pt-4 text-xs font-bold text-muted-foreground sm:flex-row sm:items-center sm:justify-between md:mt-auto"
-            role="contentinfo"
-          >
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Link
-                className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                to="/terms"
-              >
-                {t('footer.terms')}
-              </Link>
-              <Link
-                className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                to="/privacy"
-              >
-                {t('footer.privacy')}
-              </Link>
-              <Link
-                className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                to="/treino-personalizado"
-              >
-                {t('footer.trainingGuide')}
-              </Link>
-            </div>
-            <img
-              alt={t('brand.milexLogoAlt')}
-              className="h-8 w-fit object-contain brightness-75 contrast-125 drop-shadow-[0_14px_30px_rgba(0,89,255,0.2)] dark:brightness-100 dark:contrast-100"
-              data-testid="footer-milex-logo"
-              src="/brand/milex-logo-transparent.png"
-            />
-          </footer>
+          <PublicFooter className="md:mt-auto" />
         </main>
       </div>
 

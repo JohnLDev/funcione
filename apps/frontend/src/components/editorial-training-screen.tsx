@@ -2,6 +2,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Dumbbell,
+  LibraryBig,
   ShieldCheck,
   Timer,
 } from 'lucide-react';
@@ -10,6 +11,7 @@ import { Link } from 'react-router';
 import { PreFooterAd } from '@/ads/ad-placements.js';
 import { Button } from './ui/button.js';
 import { ProductLogo } from './product-logo.js';
+import { PublicFooter } from './public-footer.js';
 import { SettingsMenu } from './settings-menu.js';
 
 const sections = ['personalization', 'routine', 'safety', 'consistency'] as const;
@@ -20,6 +22,14 @@ const highlightIcons = {
   frequency: Timer,
   recovery: ShieldCheck,
 } as const;
+
+const publicContentLinks = [
+  { labelKey: 'about', to: '/sobre' },
+  { labelKey: 'routine', to: '/guias/rotina-de-treino-personalizada' },
+  { labelKey: 'location', to: '/guias/treino-em-casa-academia-quadra' },
+  { labelKey: 'safety', to: '/guias/seguranca-recuperacao-lesoes' },
+  { labelKey: 'faq', to: '/perguntas-frequentes' },
+] as const;
 
 export function EditorialTrainingScreen() {
   const { t } = useTranslation();
@@ -127,34 +137,39 @@ export function EditorialTrainingScreen() {
             </p>
           </section>
 
+          <section className="grid gap-4 border-t border-border/70 pt-6">
+            <div className="grid gap-2 md:max-w-3xl">
+              <h2 className="text-2xl font-black leading-tight text-foreground">
+                {t('publicContent.readMoreTitle')}
+              </h2>
+              <p className="text-sm font-semibold leading-7 text-muted-foreground sm:text-base">
+                {t('publicContent.readMoreBody')}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {publicContentLinks.map((link) => (
+                <Link
+                  className="flex min-h-20 items-center gap-3 rounded-2xl border border-border bg-card/78 p-4 text-sm font-black text-foreground transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  key={link.to}
+                  to={link.to}
+                >
+                  <LibraryBig
+                    aria-hidden
+                    className="shrink-0 text-primary"
+                    size={20}
+                  />
+                  <span className="min-w-0">
+                    {t(`publicContent.links.${link.labelKey}`)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+
           <PreFooterAd />
         </article>
 
-        <footer
-          aria-label={t('footer.label')}
-          className="mt-8 flex flex-col gap-3 border-t border-border/70 pb-1 pt-4 text-xs font-bold text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
-          role="contentinfo"
-        >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Link
-              className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              to="/terms"
-            >
-              {t('footer.terms')}
-            </Link>
-            <Link
-              className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              to="/privacy"
-            >
-              {t('footer.privacy')}
-            </Link>
-          </div>
-          <img
-            alt={t('brand.milexLogoAlt')}
-            className="h-8 w-fit object-contain brightness-75 contrast-125 drop-shadow-[0_14px_30px_rgba(0,89,255,0.2)] dark:brightness-100 dark:contrast-100"
-            src="/brand/milex-logo-transparent.png"
-          />
-        </footer>
+        <PublicFooter />
       </main>
     </div>
   );

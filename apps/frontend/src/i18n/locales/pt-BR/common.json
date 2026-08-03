@@ -9,6 +9,8 @@
     "label": "Publicidade"
   },
   "footer": {
+    "about": "Sobre o Funcione",
+    "faq": "Perguntas frequentes",
     "label": "Rodape",
     "privacy": "Politica de privacidade",
     "terms": "Termos de uso",
@@ -58,6 +60,18 @@
     },
     "reviewTitle": "Use o plano como direcao, nao como pressao",
     "reviewBody": "Mesmo com uma estrutura personalizada, o atleta deve respeitar dor, fadiga, sono e orientacao profissional quando houver condicao especifica. O treino funciona melhor quando progresso e seguranca caminham juntos."
+  },
+  "publicContent": {
+    "readMoreTitle": "Continue explorando o Funcione",
+    "readMoreBody": "Acesse conteudos publicos para entender melhor rotina, ambiente, seguranca e funcionamento antes de entrar na area do atleta.",
+    "relatedTitle": "Continue lendo",
+    "links": {
+      "about": "Sobre o Funcione",
+      "faq": "Perguntas frequentes",
+      "location": "Casa, academia ou quadra",
+      "routine": "Rotina de treino personalizada",
+      "safety": "Seguranca e recuperacao"
+    }
   },
   "toast": {
     "dismiss": "Fechar notificacao",
